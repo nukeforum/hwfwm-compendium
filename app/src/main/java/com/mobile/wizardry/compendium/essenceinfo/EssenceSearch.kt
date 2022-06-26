@@ -24,7 +24,7 @@ fun EssenceSearch(essenceProvider: EssenceProvider) {
     val navController = LocalNavController.current
     val essences by produceState(
         initialValue = listOf<Essence>(),
-        producer = { value = essenceProvider.getEssences() }
+        producer = { value = essenceProvider.getEssences().sortedBy { it.name } }
     )
     var filter by remember { mutableStateOf("") }
 
