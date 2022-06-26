@@ -46,7 +46,7 @@ data class Essence(
             return of(
                 name = name,
                 description = "",
-                rarity = Rarity.None
+                rarity = Rarity.Unknown
             )
                 .copy(confluences = confluences.toSet())
         }

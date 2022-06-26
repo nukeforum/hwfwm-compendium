@@ -6,5 +6,5 @@ enum class Rarity {
     Rare,
     Epic,
     Legendary,
-    None,
+    Unknown,
 }

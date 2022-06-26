@@ -28,9 +28,7 @@ fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
         Text(
             text = """
                 Item:[${selectedEssence.name} Essence]
-                (${selectedEssence.rank.toString().lowercase()}, ${
-                selectedEssence.rarity.toString().lowercase()
-            })
+                (${selectedEssence.rank.toString().lowercase()}, ${selectedEssence.rarity.toString().lowercase()})
                 
                 ${selectedEssence.description} (${selectedEssence.properties.joinToString(", ")}).
                 
