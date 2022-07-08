@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.mobile.wizardry.compendium.EssenceProvider
 import com.mobile.wizardry.compendium.data.Essence
+import com.mobile.wizardry.compendium.ui.LinkedEssence
 
 @Composable
 fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
@@ -41,15 +42,13 @@ fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
         if (selectedEssence.isConfluence()) {
             Text("Known confluence combinations:")
             selectedEssence.confluences.forEach { confluence ->
-                Text(confluence.joinToString(" ") { essence -> "[${essence.name}]" })
+                Row { confluence.forEach { LinkedEssence(essence = it) } }
             }
         } else {
             val producedConfluences = essences
                 .filter { it.isConfluence() && it.isProducedBy(selectedEssence) }
             Text("Known to produce the following confluence essences:")
-            producedConfluences.forEach {
-                Text("[${it.name}]")
-            }
+            producedConfluences.forEach { LinkedEssence(essence = it) }
         }
     }
 }
