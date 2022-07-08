@@ -7,6 +7,8 @@ import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import androidx.navigation.compose.rememberNavController
+import com.mobile.wizardry.compendium.LocalNavController
 
 private val DarkColorPalette = darkColors(
     primary = Purple200,
@@ -44,7 +46,9 @@ fun CompendiumTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Compos
         typography = Typography,
         shapes = Shapes,
     ) {
-        CompositionLocalProvider {
+        CompositionLocalProvider(
+            LocalNavController provides rememberNavController()
+        ) {
             content()
         }
     }
