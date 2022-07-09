@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,7 +27,7 @@ fun EssenceSearch(essenceProvider: EssenceProvider) {
         initialValue = listOf<Essence>(),
         producer = { value = essenceProvider.getEssences().sortedBy { it.name } }
     )
-    var filter by remember { mutableStateOf("") }
+    var filter by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -50,6 +51,7 @@ fun EssenceSearch(essenceProvider: EssenceProvider) {
             }
         }
         TextField(
+            label = { Text(text = "Type an essence name")},
             value = filter,
             onValueChange = { filter = it },
             modifier = Modifier
