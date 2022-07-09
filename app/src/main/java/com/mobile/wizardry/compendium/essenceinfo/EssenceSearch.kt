@@ -62,7 +62,6 @@ fun EssenceSearch(essenceProvider: EssenceProvider) {
 
 private fun Essence.matchesFilter(filter: String): Boolean {
     return name.lowercase().contains(filter.lowercase())
-            || confluences.any { essences -> essences.any { essence -> essence.matchesFilter(filter) } }
 }
 
 @Composable
