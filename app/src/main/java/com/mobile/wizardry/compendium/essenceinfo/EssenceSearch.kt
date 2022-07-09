@@ -1,5 +1,6 @@
 package com.mobile.wizardry.compendium.essenceinfo
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -43,15 +44,16 @@ fun EssenceSearch(essenceProvider: EssenceProvider) {
                 if (essence.matchesFilter(filter)) {
                     EssenceListItem(
                         essence = essence,
-                        modifier = Modifier.clickable {
-                            navController.navigate(Nav.EssenceDetail(essence).route)
-                        }
+                        modifier = Modifier
+                            .clickable {
+                                navController.navigate(Nav.EssenceDetail(essence).route)
+                            }
                     )
                 }
             }
         }
         TextField(
-            label = { Text(text = "Type an essence name")},
+            label = { Text(text = "Type an essence name") },
             value = filter,
             onValueChange = { filter = it },
             modifier = Modifier
@@ -71,7 +73,9 @@ fun EssenceListItem(
 ) {
     Row(
         modifier = modifier
-            .padding(8.dp)
+            .padding(vertical = 4.dp)
+            .background(Color.DarkGray)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
