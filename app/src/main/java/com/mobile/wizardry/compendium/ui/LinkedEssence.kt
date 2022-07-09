@@ -13,11 +13,14 @@ import com.mobile.wizardry.compendium.Nav
 import com.mobile.wizardry.compendium.data.Essence
 
 @Composable
-fun LinkedEssence(essence: Essence) {
+fun LinkedEssence(
+    essence: Essence,
+    modifier: Modifier = Modifier,
+) {
     val navHostController = LocalNavController.current
     Text(
         text = essence.name,
-        modifier = Modifier
+        modifier = modifier
             .clickable { navHostController.navigate(Nav.EssenceDetail(essence).route) }
             .border(1.dp, Color.DarkGray)
             .padding(8.dp),
