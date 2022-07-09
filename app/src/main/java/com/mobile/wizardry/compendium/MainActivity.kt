@@ -4,7 +4,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Scaffold
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -27,6 +30,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             CompendiumTheme {
                 Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = { Text("Magic Society Compendium") },
+                            navigationIcon = { ReturnToSearchButton() },
+                        )
+                    },
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     NavHost(
@@ -48,4 +57,17 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+@Composable
+private fun ReturnToSearchButton() {
+    val navHostController = LocalNavController.current
+    IconButton(
+        onClick = {
+            navHostController.popBackStack(
+                route = Nav.EssenceSearch.route,
+                inclusive = false,
+            )
+        }
+    ) { Icon(Icons.Filled.Menu, contentDescription = null) }
 }
