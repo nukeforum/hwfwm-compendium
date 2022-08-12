@@ -44,16 +44,14 @@ fun EssenceSearch(essenceProvider: EssenceProvider) {
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            items(essences, { it.hashCode() }) { essence ->
-                if (essence.matchesFilter(filter)) {
-                    EssenceListItem(
-                        essence = essence,
-                        modifier = Modifier
-                            .clickable {
-                                navController.navigate(Nav.EssenceDetail(essence).route)
-                            }
-                    )
-                }
+            items(essences.filter { it.matchesFilter(filter) }, { it.hashCode() }) { essence ->
+                EssenceListItem(
+                    essence = essence,
+                    modifier = Modifier
+                        .clickable {
+                            navController.navigate(Nav.EssenceDetail(essence).route)
+                        }
+                )
             }
         }
         TextField(
