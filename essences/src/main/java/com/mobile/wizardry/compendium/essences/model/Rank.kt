@@ -1,4 +1,4 @@
-package com.mobile.wizardry.compendium.data
+package com.mobile.wizardry.compendium.essences.model
 
 // Power ranking of items or individuals
 enum class Rank {

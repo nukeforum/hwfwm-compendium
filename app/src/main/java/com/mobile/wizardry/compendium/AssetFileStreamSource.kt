@@ -1,7 +1,7 @@
 package com.mobile.wizardry.compendium
 
 import android.content.res.AssetManager
-import com.mobile.wizardry.compendium.dataloader.FileStreamSource
+import com.mobile.wizardry.compendium.essences.dataloader.FileStreamSource
 import java.io.InputStream
 
 class AssetFileStreamSource(private val assetManager: AssetManager) : FileStreamSource {

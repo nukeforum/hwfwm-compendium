@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.mobile.wizardry.compendium.LocalNavController
 import com.mobile.wizardry.compendium.Nav
-import com.mobile.wizardry.compendium.data.Essence
+import com.mobile.wizardry.compendium.essences.model.Essence
 
 @Composable
 fun LinkedEssence(

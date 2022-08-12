@@ -29,6 +29,7 @@ Elemental,Might,Resolute,Avatar
 Corrupt,Dimension,Might,Avatar
 Magic,Might,Potent,Avatar
 Blood,Bone,Flesh,Avatar
+Dimension,Light,Zeal,Avatar
 Iron,Spike,Vast,Battlefield
 Cattle,Earth,Vast,Behemoth
 Balance,Earth,Shield,Boundary
@@ -50,6 +51,7 @@ Flesh,Magic,Water,Cyborg
 Death,Flesh,Iron,Cyborg
 Flesh,Iron,Technology,Cyborg
 Flesh,Might,Technology,Cyborg
+Balance,Light,Renewal,Cycle
 Renewal,Sun,Water,Dawn
 Dark,Light,Sun,Dawn
 Fire,Omen,Sun,Dawn
@@ -101,6 +103,7 @@ Crystal,Magic,Sword,Empower
 Flesh,Growth,Potent,Empower
 Blood,Hunger,Might,Empower
 Cat,Fungus,Renewal,Fertile
+Magic,Pure,Visage,Fey
 Bird,Fire,Wind,Firebird
 Magic,Potent,Shield,Force
 Adept,Magic,Might,Force

@@ -1,4 +1,4 @@
-package com.mobile.wizardry.compendium.dataloader
+package com.mobile.wizardry.compendium.essences.dataloader
 
 import java.io.InputStream
 

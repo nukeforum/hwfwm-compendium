@@ -1,7 +1,7 @@
 package com.mobile.wizardry.compendium
 
-import com.mobile.wizardry.compendium.data.Essence
-import com.mobile.wizardry.compendium.dataloader.EssenceDataLoader
+import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
+import com.mobile.wizardry.compendium.essences.model.Essence
 
 class EssenceFileCacheProvider(
     private val essenceDataLoader: EssenceDataLoader

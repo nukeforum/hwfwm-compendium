@@ -1,7 +1,7 @@
-package com.mobile.wizardry.compendium.dataloader
+package com.mobile.wizardry.compendium.essences.dataloader
 
-import com.mobile.wizardry.compendium.data.Essence
-import com.mobile.wizardry.compendium.data.Rarity
+import com.mobile.wizardry.compendium.essences.model.Essence
+import com.mobile.wizardry.compendium.essences.model.Rarity
 
 class EssenceCsvLoader(
     private val source: FileStreamSource,

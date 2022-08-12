@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 import com.mobile.wizardry.compendium.EssenceProvider
 import com.mobile.wizardry.compendium.LocalNavController
 import com.mobile.wizardry.compendium.Nav
-import com.mobile.wizardry.compendium.data.Essence
-import com.mobile.wizardry.compendium.data.Rarity
+import com.mobile.wizardry.compendium.essences.model.Essence
+import com.mobile.wizardry.compendium.essences.model.Rarity
 
 private val skyBlue = Color(0xFF87CEEB)
 
