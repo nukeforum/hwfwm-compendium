@@ -37,7 +37,7 @@ fun EssenceSearch(essenceProvider: EssenceProvider) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-        //                            .background(skyBlue)
+//        .background(skyBlue)
     ) {
         LazyColumn(
             modifier = Modifier
@@ -89,7 +89,7 @@ fun EssenceListItem(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(essence.name)
-        if (essence.confluences.isEmpty())
+        if (essence is Essence.Manifestation)
             Text(essence.rarity.toString())
         else
             Text("Confluence")

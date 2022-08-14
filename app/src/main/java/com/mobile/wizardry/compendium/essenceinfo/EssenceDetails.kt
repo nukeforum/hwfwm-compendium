@@ -11,12 +11,14 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.google.accompanist.flowlayout.FlowRow
 import com.google.accompanist.flowlayout.MainAxisAlignment
 import com.mobile.wizardry.compendium.EssenceProvider
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.ui.LinkedEssence
+import java.security.InvalidParameterException
 
 @Composable
 fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
@@ -32,27 +34,25 @@ fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
             .fillMaxSize()
             .padding(16.dp),
     ) {
-        Text(
-            text = """
-                Item: [${selectedEssence.name} Essence]
-                (${selectedEssence.rank.toString().lowercase()}, ${selectedEssence.rarity.toString().lowercase()})
-                
-                ${selectedEssence.description} (${selectedEssence.properties.joinToString(", ")}).
-                
-                Requirements: Less than 4 absorbed essences.
-                
-                ${selectedEssence.effects.joinToString { "Effect: ${it.description}" }}
-                """.trimIndent(),
+        Box(
             modifier = Modifier
+                .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)
                 .border(1.dp, Color.DarkGray)
                 .padding(8.dp)
-        )
+        ) {
+            Text(
+                modifier = Modifier.align(Alignment.Center),
+                text = selectedEssence.report()
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
-        if (selectedEssence.isConfluence()) {
+        if (selectedEssence is Essence.Confluence) {
             Text("Known confluence combinations:")
             ConfluenceCombinationsDisplay(selectedEssence)
         } else {
-            val producedConfluences = essences.filter { it.isProducedBy(selectedEssence) }
+            val producedConfluences = essences.filter {
+                it is Essence.Confluence && it.isProducedBy(selectedEssence)
+            }
             Text("Known to produce the following confluence essences:")
             FlowRow(
                 modifier = Modifier
@@ -67,8 +67,31 @@ fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
     }
 }
 
+private fun Essence.report(): String {
+    return when (this) {
+        is Essence.Confluence -> {
+            """
+                $name Essence
+            """.trimIndent()
+        }
+        is Essence.Manifestation -> {
+            """
+                Item: [$name Essence]
+                (${rank.toString().lowercase()}, ${rarity.toString().lowercase()})
+                
+                $description (${properties.joinToString(", ")}).
+                
+                Requirements: Less than 4 absorbed essences.
+                
+                ${effects.joinToString { "Effect: ${it.description}" }}
+                """.trimIndent()
+        }
+        else -> throw InvalidParameterException("Provided Essence subtype is unsupported in EssenceDetails")
+    }
+}
+
 @Composable
-private fun ConfluenceCombinationsDisplay(selectedEssence: Essence) {
+private fun ConfluenceCombinationsDisplay(selectedEssence: Essence.Confluence) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -77,7 +100,7 @@ private fun ConfluenceCombinationsDisplay(selectedEssence: Essence) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        selectedEssence.confluences.forEach { confluence ->
+        selectedEssence.confluenceSets.forEach { confluence ->
             Row(
                 modifier = Modifier.fillMaxWidth(0.8f),
                 horizontalArrangement = Arrangement.Center,
@@ -89,15 +112,13 @@ private fun ConfluenceCombinationsDisplay(selectedEssence: Essence) {
                     }
                 }
             }
-            if (selectedEssence.confluences.last() != confluence) {
+            if (selectedEssence.confluenceSets.last() != confluence) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 }
 
-private fun Essence.isProducedBy(selectedEssence: Essence): Boolean {
-    return confluences.any { confluence -> confluence.any { essence -> essence == selectedEssence } }
+private fun Essence.Confluence.isProducedBy(selectedEssence: Essence): Boolean {
+    return confluenceSets.any { confluence -> confluence.any { essence -> essence == selectedEssence } }
 }
-
-private fun Essence.isConfluence() = confluences.isNotEmpty()

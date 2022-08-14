@@ -2,32 +2,32 @@ package com.mobile.wizardry.compendium.essences.model
 
 import java.util.*
 
-data class Essence(
-    override val name: String,
-    override val rank: Rank,
-    override val rarity: Rarity,
-    override val properties: List<Property>,
-    override val effects: List<Effect>,
-    override val description: String,
-    val confluences: Set<Set<Essence>> = emptySet()
-) : Item {
-    init {
-        if (
-            confluences.isNotEmpty()
-            && confluences.any { it.size != 3 }
-        ) throw IllegalArgumentException("confluence must contain precisely three Essence.")
-    }
+interface Essence : Entity {
+    data class Confluence(
+        override val name: String,
+        val confluenceSets: Set<Set<Essence.Manifestation>>
+    ) : Essence
+
+    data class Manifestation(
+        override val name: String,
+        override val rank: Rank,
+        override val rarity: Rarity,
+        override val properties: List<Property>,
+        override val effects: List<Effect>,
+        override val description: String
+    ) : Essence, Item
 
     companion object {
         fun of(
             name: String,
             description: String,
             rarity: Rarity,
-        ): Essence {
+        ): Manifestation {
             val titleCaseName = name.replaceFirstChar {
                 if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
             }
-            return Essence(
+
+            return Manifestation(
                 titleCaseName,
                 Rank.Unranked,
                 rarity,
@@ -41,14 +41,17 @@ data class Essence(
 
         fun of(
             name: String,
-            vararg confluences: Set<Essence>
-        ): Essence {
-            return of(
-                name = name,
-                description = "",
-                rarity = Rarity.Unknown
-            )
-                .copy(confluences = confluences.toSet())
+            vararg confluences: Set<Manifestation>
+        ): Confluence {
+            check(confluences.isNotEmpty()) {
+                "Confluence Essences cannot be created without a set of Essences that produce it."
+            }
+
+            check(confluences.all { it.size == 3 }) {
+                "Confluence sets must contain precisely three Essences."
+            }
+
+            return Confluence(name, confluences.toSet())
         }
     }
 }

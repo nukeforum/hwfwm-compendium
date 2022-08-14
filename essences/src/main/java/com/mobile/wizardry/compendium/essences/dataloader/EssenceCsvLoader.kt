@@ -40,33 +40,17 @@ class EssenceCsvLoader(
         }
     }
 
-    private fun getBaseEssences(): Map<String, Essence> {
-        return source.getInputStreamFor(ESSENCE_FILE_NAME).use {
-            it.reader().readLines()
-                .map { entry ->
-                    entry.split(',').let { (name, rarity) ->
-                        Essence.of(
-                            name,
-                            "none",
-                            Rarity.valueOf(rarity)
-                        )
-                    }
-                }
-                .associateBy { essence -> essence.name }
-        }
-    }
-
     companion object {
         private const val ESSENCE_FILE_NAME = "essences.csv"
         private const val CONFLUENCE_FILE_NAME = "combinations.csv"
     }
 }
 
-private fun Essence.merge(essence: Essence): Essence {
+private fun Essence.Confluence.merge(essence: Essence.Confluence): Essence.Confluence {
     if (name != essence.name)
         throw IllegalArgumentException("Cannot merge $name and ${essence.name}, they are not the same essence")
 
-    if (confluences.isEmpty()) return this
+    if (confluenceSets.isEmpty()) return this
 
-    return essence.copy(confluences = essence.confluences + confluences)
+    return essence.copy(confluenceSets = essence.confluenceSets + confluenceSets)
 }
