@@ -6,7 +6,7 @@ plugins {
 android {
     compileSdk 32
 
-    namespace "com.mobile.wizardry.compendium.essences"
+    namespace "com.mobile.wizardry.compendium.dataloader"
 
     defaultConfig {
         minSdk 26
@@ -37,6 +37,8 @@ android {
 }
 
 dependencies {
+    implementation project(":essences")
+
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.1")
 
     testImplementation 'junit:junit:4.13.2'

@@ -1,6 +1,7 @@
 package com.mobile.wizardry.compendium.essenceinfo
 
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
@@ -62,7 +63,14 @@ fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
                 mainAxisAlignment = MainAxisAlignment.Center,
                 mainAxisSpacing = 8.dp,
                 crossAxisSpacing = 8.dp,
-            ) { producedConfluences.forEach { LinkedEssence(essence = it) } }
+            ) {
+                producedConfluences.forEach {
+                    LinkedEssence(
+                        essence = it,
+                        isRestricted = it.isRestricted,
+                    )
+                }
+            }
         }
     }
 }
@@ -71,7 +79,7 @@ private fun Essence.report(): String {
     return when (this) {
         is Essence.Confluence -> {
             """
-                $name Essence
+                $name Confluence
             """.trimIndent()
         }
         is Essence.Manifestation -> {
@@ -100,19 +108,24 @@ private fun ConfluenceCombinationsDisplay(selectedEssence: Essence.Confluence) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
     ) {
-        selectedEssence.confluenceSets.forEach { confluence ->
+        selectedEssence.confluenceSets.forEach { confluenceSet ->
             Row(
-                modifier = Modifier.fillMaxWidth(0.8f),
+                modifier = Modifier
+                    .background(if (confluenceSet.isRestricted) Color.Red.copy(alpha = 0.5f) else Color.Unspecified)
+                    .padding(8.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
-                confluence.forEach {
-                    LinkedEssence(essence = it)
-                    if (confluence.last() != it) {
+                confluenceSet.set.forEach {
+                    LinkedEssence(
+                        essence = it,
+                        isRestricted = it.isRestricted,
+                    )
+                    if (confluenceSet.set.last() != it) {
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                 }
             }
-            if (selectedEssence.confluenceSets.last() != confluence) {
+            if (selectedEssence.confluenceSets.last() != confluenceSet) {
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
@@ -120,5 +133,5 @@ private fun ConfluenceCombinationsDisplay(selectedEssence: Essence.Confluence) {
 }
 
 private fun Essence.Confluence.isProducedBy(selectedEssence: Essence): Boolean {
-    return confluenceSets.any { confluence -> confluence.any { essence -> essence == selectedEssence } }
+    return confluenceSets.any { confluenceSet -> confluenceSet.set.any { essence -> essence == selectedEssence } }
 }

@@ -47,6 +47,8 @@ android {
 
 dependencies {
     implementation project(':essences')
+    implementation project(':dataloader')
+    implementation project(':persistence')
 
     implementation 'androidx.core:core-ktx:1.8.0'
 

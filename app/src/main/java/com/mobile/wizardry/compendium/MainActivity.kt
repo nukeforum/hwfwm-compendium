@@ -18,10 +18,11 @@ import com.mobile.wizardry.compendium.essenceinfo.EssenceDetails
 import com.mobile.wizardry.compendium.essenceinfo.EssenceSearch
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceCsvLoader
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
+import com.mobile.wizardry.compendium.persistence.EssenceCache
 import com.mobile.wizardry.compendium.ui.theme.CompendiumTheme
 
 class MainActivity : ComponentActivity() {
-    private val essenceProvider: EssenceProvider by lazy { EssenceFileCacheProvider(dataLoader) }
+    private val essenceProvider: EssenceProvider by lazy { EssenceRepository(dataLoader, EssenceCache.get()) }
     private val dataLoader: EssenceDataLoader by lazy {
         EssenceCsvLoader(AssetFileStreamSource(assets))
     }

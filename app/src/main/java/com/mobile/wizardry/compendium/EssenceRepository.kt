@@ -2,14 +2,15 @@ package com.mobile.wizardry.compendium
 
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
 import com.mobile.wizardry.compendium.essences.model.Essence
+import com.mobile.wizardry.compendium.persistence.EssenceCache
 
-class EssenceFileCacheProvider(
-    private val essenceDataLoader: EssenceDataLoader
+class EssenceRepository(
+    private val essenceDataLoader: EssenceDataLoader,
+    private val cache: EssenceCache,
 ) : EssenceProvider {
-    private var essences: List<Essence>? = null
-
     override suspend fun getEssences(): List<Essence> {
-        return essences
+        return cache.contents.takeIf { it.isNotEmpty() }
             ?: essenceDataLoader.loadEssenceData()
+                .also { cache.contents = it }
     }
 }

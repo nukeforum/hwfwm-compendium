@@ -22,6 +22,7 @@ import com.mobile.wizardry.compendium.Nav
 import com.mobile.wizardry.compendium.R
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Rarity
+import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
 
 private val skyBlue = Color(0xFF87CEEB)
 
@@ -83,7 +84,7 @@ fun EssenceListItem(
     Row(
         modifier = modifier
             .padding(vertical = 4.dp)
-            .background(Color.DarkGray)
+            .background(essenceHighlight(isRestricted = essence.isRestricted))
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -99,6 +100,11 @@ fun EssenceListItem(
 @Preview
 @Composable
 fun EssenceListItemPreview() {
-    val essence = Essence.of("sin", "Manifested essence of transgression", Rarity.Legendary)
-    EssenceListItem(Modifier, essence)
+    val essence = Essence.of(
+        name = "sin",
+        restricted = false,
+        description = "Manifested essence of transgression",
+        rarity = Rarity.Legendary
+    )
+    EssenceListItem(essence = essence)
 }

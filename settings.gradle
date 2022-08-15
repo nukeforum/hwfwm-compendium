@@ -16,3 +16,4 @@ rootProject.name = "Compendium"
 include ':app'
 include ':essences'
 include ':persistence'
+include ':dataloader'
