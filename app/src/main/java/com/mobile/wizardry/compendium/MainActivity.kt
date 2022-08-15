@@ -7,9 +7,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -30,12 +33,22 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            var isHome by remember { mutableStateOf(true) }
+            var title by remember { mutableStateOf("Magic Society Compendium") }
             CompendiumTheme {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("Magic Society Compendium") },
-                            navigationIcon = { ReturnToSearchButton() },
+                            title = { Text(text = title) },
+                            navigationIcon = {
+                                if (isHome.not()) {
+                                    ReturnToSearchButton()
+                                }
+                            },
+                            actions = {
+                                RandomizerButton()
+                                CreateBuildButton()
+                            }
                         )
                     },
                     modifier = Modifier.fillMaxSize(),
@@ -45,20 +58,46 @@ class MainActivity : ComponentActivity() {
                         navController = LocalNavController.current,
                         startDestination = Nav.EssenceSearch.route
                     ) {
-                        composable(Nav.EssenceSearch.route) { EssenceSearch(essenceProvider) }
+                        composable(Nav.EssenceSearch.route) {
+                            isHome = true
+                            title = "Essence Search"
+                            EssenceSearch(essenceProvider)
+                        }
                         composable(
                             Nav.EssenceDetail().route,
                             arguments = listOf(
                                 navArgument("essenceHash") { type = NavType.IntType }
                             )
                         ) { backStackEntry ->
+                            isHome = false
                             val essenceHash = backStackEntry.arguments!!.getInt("essenceHash")
+                            LaunchedEffect(Unit) {
+                                essenceProvider.getEssences()
+                                    .find { essence -> essence.hashCode() == essenceHash }
+                                    ?.also { title = it.name }
+                            }
                             EssenceDetails(essenceProvider, essenceHash = essenceHash)
                         }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun RandomizerButton() {
+    val navHostController = LocalNavController.current
+    IconButton(onClick = { /*TODO*/ }) {
+        Icon(Icons.Filled.Star, contentDescription = null)
+    }
+}
+
+@Composable
+private fun CreateBuildButton() {
+    val navHostController = LocalNavController.current
+    IconButton(onClick = { /*TODO*/ }) {
+        Icon(Icons.Filled.Build, contentDescription = null)
     }
 }
 
@@ -72,5 +111,5 @@ private fun ReturnToSearchButton() {
                 inclusive = false,
             )
         }
-    ) { Icon(Icons.Filled.Menu, contentDescription = null) }
+    ) { Icon(Icons.Filled.Search, contentDescription = null) }
 }
