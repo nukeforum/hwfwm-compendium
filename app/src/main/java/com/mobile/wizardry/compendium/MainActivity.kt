@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -56,12 +55,15 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         modifier = Modifier.padding(padding),
                         navController = LocalNavController.current,
-                        startDestination = Nav.EssenceSearch.route
+                        startDestination = Nav.EssenceDetailSearch.route
                     ) {
-                        composable(Nav.EssenceSearch.route) {
+                        composable(Nav.EssenceDetailSearch.route) {
                             isHome = true
                             title = "Essence Search"
-                            EssenceSearch(essenceProvider)
+                            val navController = LocalNavController.current
+                            EssenceSearch(essenceProvider) { essence ->
+                                navController.navigate(Nav.EssenceDetail(essence = essence).route)
+                            }
                         }
                         composable(
                             Nav.EssenceDetail().route,
@@ -107,7 +109,7 @@ private fun ReturnToSearchButton() {
     IconButton(
         onClick = {
             navHostController.popBackStack(
-                route = Nav.EssenceSearch.route,
+                route = Nav.EssenceDetailSearch.route,
                 inclusive = false,
             )
         }

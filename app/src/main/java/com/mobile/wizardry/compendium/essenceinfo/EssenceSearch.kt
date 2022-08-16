@@ -17,8 +17,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mobile.wizardry.compendium.EssenceProvider
-import com.mobile.wizardry.compendium.LocalNavController
-import com.mobile.wizardry.compendium.Nav
 import com.mobile.wizardry.compendium.R
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Rarity
@@ -27,8 +25,10 @@ import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
 private val skyBlue = Color(0xFF87CEEB)
 
 @Composable
-fun EssenceSearch(essenceProvider: EssenceProvider) {
-    val navController = LocalNavController.current
+fun EssenceSearch(
+    essenceProvider: EssenceProvider,
+    onEssenceClicked: (Essence) -> Unit
+) {
     val essences by produceState(
         initialValue = listOf<Essence>(),
         producer = { value = essenceProvider.getEssences().sortedBy { it.name } }
@@ -49,9 +49,7 @@ fun EssenceSearch(essenceProvider: EssenceProvider) {
                 EssenceListItem(
                     essence = essence,
                     modifier = Modifier
-                        .clickable {
-                            navController.navigate(Nav.EssenceDetail(essence).route)
-                        }
+                        .clickable(onClick = { onEssenceClicked(essence) })
                 )
             }
         }
