@@ -1,5 +1,6 @@
 package com.mobile.wizardry.compendium
 
+import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.model.ConfluenceSet
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Rarity

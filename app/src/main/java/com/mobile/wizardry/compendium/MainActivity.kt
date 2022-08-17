@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.mobile.wizardry.compendium.essenceinfo.EssenceDetails
 import com.mobile.wizardry.compendium.essenceinfo.EssenceSearch
+import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceCsvLoader
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
 import com.mobile.wizardry.compendium.persistence.EssenceCache

@@ -1,5 +1,6 @@
 package com.mobile.wizardry.compendium
 
+import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.persistence.EssenceCache
