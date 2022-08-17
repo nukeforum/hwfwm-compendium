@@ -22,6 +22,7 @@ import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceCsvLoader
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
 import com.mobile.wizardry.compendium.persistence.EssenceCache
+import com.mobile.wizardry.compendium.randomizer.Randomizer
 import com.mobile.wizardry.compendium.ui.theme.CompendiumTheme
 
 class MainActivity : ComponentActivity() {
@@ -81,6 +82,10 @@ class MainActivity : ComponentActivity() {
                             }
                             EssenceDetails(essenceProvider, essenceHash = essenceHash)
                         }
+                        composable(Nav.EssenceRandomizer.route) {
+                            isHome = false
+                            Randomizer(essenceProvider)
+                        }
                     }
                 }
             }
@@ -91,7 +96,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun RandomizerButton() {
     val navHostController = LocalNavController.current
-    IconButton(onClick = { /*TODO*/ }) {
+    IconButton(
+        onClick = {
+            navHostController.navigate(Nav.EssenceRandomizer.route)
+        }
+    ) {
         Icon(Icons.Filled.Star, contentDescription = null)
     }
 }

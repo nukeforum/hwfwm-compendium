@@ -10,6 +10,7 @@ val LocalNavController = compositionLocalOf<NavHostController> {
 
 sealed class Nav(val route: String) {
     object EssenceDetailSearch : Nav("essencesearch")
+    object EssenceRandomizer : Nav("essencerandomizer")
     class EssenceDetail(
         essence: Essence? = null
     ) : Nav("essencedetail/${essence?.hashCode() ?: "{essenceHash}"}")
