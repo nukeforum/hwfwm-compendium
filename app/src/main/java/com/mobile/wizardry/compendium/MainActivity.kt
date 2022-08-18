@@ -17,19 +17,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.mobile.wizardry.compendium.essenceinfo.EssenceDetails
-import com.mobile.wizardry.compendium.essenceinfo.EssenceSearch
 import com.mobile.wizardry.compendium.essences.EssenceProvider
-import com.mobile.wizardry.compendium.essences.dataloader.EssenceCsvLoader
-import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
-import com.mobile.wizardry.compendium.persistence.EssenceCache
 import com.mobile.wizardry.compendium.randomizer.Randomizer
+import com.mobile.wizardry.compendium.search.EssenceSearch
 import com.mobile.wizardry.compendium.ui.theme.CompendiumTheme
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    private val essenceProvider: EssenceProvider by lazy { EssenceRepository(dataLoader, EssenceCache.get()) }
-    private val dataLoader: EssenceDataLoader by lazy {
-        EssenceCsvLoader(AssetFileStreamSource(assets))
-    }
+    @Inject lateinit var essenceProvider: EssenceProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

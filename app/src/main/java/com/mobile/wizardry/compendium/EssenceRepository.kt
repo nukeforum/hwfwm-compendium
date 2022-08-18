@@ -4,8 +4,12 @@ import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.persistence.EssenceCache
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class EssenceRepository(
+@Singleton
+class EssenceRepository
+@Inject constructor(
     private val essenceDataLoader: EssenceDataLoader,
     private val cache: EssenceCache,
 ) : EssenceProvider {
