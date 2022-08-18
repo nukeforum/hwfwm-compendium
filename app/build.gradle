@@ -4,12 +4,11 @@ plugins {
 }
 
 android {
-    compileSdk 32
+    compileSdk target_sdk
 
     defaultConfig {
         applicationId "com.mobile.wizardry.compendium"
-        minSdk 26
-        targetSdk 32
+        minSdk min_sdk
         versionCode 1
         versionName "1.0"
 
