@@ -26,7 +26,8 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject lateinit var essenceProvider: EssenceProvider
+    @Inject
+    lateinit var essenceProvider: EssenceProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +61,7 @@ class MainActivity : ComponentActivity() {
                             isHome = true
                             title = "Essence Search"
                             val navController = LocalNavController.current
-                            EssenceSearch(essenceProvider) { essence ->
+                            EssenceSearch { essence ->
                                 navController.navigate(Nav.EssenceDetail(essence = essence).route)
                             }
                         }

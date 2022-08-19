@@ -8,16 +8,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.wizardry.compendium.R
-import com.mobile.wizardry.compendium.essences.EssenceProvider
+import com.mobile.wizardry.compendium.UiResult
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Rarity
 import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
@@ -26,52 +29,78 @@ private val skyBlue = Color(0xFF87CEEB)
 
 @Composable
 fun EssenceSearch(
-    essenceProvider: EssenceProvider,
-    onEssenceClicked: (Essence) -> Unit
+    viewModel: SearchViewModel = hiltViewModel(),
+    onEssenceClicked: (Essence) -> Unit,
 ) {
-    val essences by produceState(
-        initialValue = listOf<Essence>(),
-        producer = { value = essenceProvider.getEssences().sortedBy { it.name } }
-    )
-    var filter by rememberSaveable { mutableStateOf("") }
+    val state by viewModel.state.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
 //        .background(skyBlue)
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            items(essences.filter { it.matchesFilter(filter) }, { it.hashCode() }) { essence ->
-                EssenceListItem(
-                    essence = essence,
-                    modifier = Modifier
-                        .clickable(onClick = { onEssenceClicked(essence) })
-                )
-            }
+        when (state) {
+            is UiResult.Error -> TODO()
+            UiResult.Loading -> Loading(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .weight(1f)
+            )
+            is UiResult.Success -> Screen(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                essences = state.data.essences,
+                filter = state.data.filter,
+                onEssenceClicked = onEssenceClicked,
+                onFilterChanged = { viewModel.setFilter(it) }
+            )
         }
-        TextField(
-            label = { Text(text = "Type an essence name") },
-            value = filter,
-            onValueChange = { filter = it },
-            modifier = Modifier
-                .fillMaxWidth(),
-            trailingIcon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_x),
-                    contentDescription = stringResource(R.string.clear_search_accessibility),
-                    modifier = Modifier.clickable { filter = "" }
-                )
-            }
-        )
     }
 }
 
-private fun Essence.matchesFilter(filter: String): Boolean {
-    return name.lowercase().contains(filter.lowercase())
+@Composable
+private fun Screen(
+    modifier: Modifier,
+    essences: List<Essence>,
+    filter: String,
+    onEssenceClicked: (Essence) -> Unit,
+    onFilterChanged: (String) -> Unit,
+) {
+    LazyColumn(modifier = modifier) {
+        items(essences, { it.hashCode() }) { essence ->
+            EssenceListItem(
+                essence = essence,
+                modifier = Modifier
+                    .clickable(onClick = { onEssenceClicked(essence) })
+            )
+        }
+    }
+
+    TextField(
+        label = { Text(text = "Type an essence name") },
+        value = filter,
+        onValueChange = { onFilterChanged(it) },
+        modifier = Modifier
+            .fillMaxWidth(),
+        trailingIcon = {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_x),
+                contentDescription = stringResource(R.string.clear_search_accessibility),
+                modifier = Modifier.clickable { onFilterChanged("") }
+            )
+        }
+    )
+}
+
+@Composable
+private fun Loading(
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        modifier = modifier,
+        text = "Loading",
+    )
 }
 
 @Composable
