@@ -53,7 +53,7 @@ fun EssenceSearch(
                 essences = state.data.essences,
                 filter = state.data.filter,
                 onEssenceClicked = onEssenceClicked,
-                onFilterChanged = { viewModel.setFilter(it) }
+                onFilterChanged = viewModel::setFilter
             )
         }
     }
@@ -97,10 +97,9 @@ private fun Screen(
 private fun Loading(
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        modifier = modifier,
-        text = "Loading",
-    )
+    Box(modifier = modifier) {
+        Text(text = "Loading")
+    }
 }
 
 @Composable
