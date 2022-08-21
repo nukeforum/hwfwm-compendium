@@ -1,5 +1,6 @@
 package com.mobile.wizardry.compendium.search
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.wizardry.compendium.UiResult
@@ -16,7 +17,7 @@ class SearchViewModel
     private val essenceProvider: EssenceProvider
 ) : ViewModel() {
     private val essencesFlow = MutableStateFlow(emptyList<Essence>())
-    private val filtersFlow = MutableStateFlow(emptyMap<String, SearchFilter>())
+    private val filtersFlow = MutableStateFlow(SearchFilter.options.associateBy { it.name })
     private val filterTermFlow = MutableStateFlow("")
 
     private val _state = MutableStateFlow<UiResult<SearchUiState>>(UiResult.Loading)
@@ -24,17 +25,17 @@ class SearchViewModel
 
     init {
         viewModelScope.launch {
-                combine(
-                    essencesFlow,
-                    filterTermFlow,
-                    filtersFlow.map { it.values }
-                ) { essences, filterTerm, filters ->
-                    SearchUiState(
-                        essences.filterWith(filterTerm, filters),
-                        filterTerm,
-                        filters
-                    )
-                }
+            combine(
+                essencesFlow,
+                filterTermFlow,
+                filtersFlow.map { it.values }
+            ) { essences, filterTerm, filters ->
+                SearchUiState(
+                    essences.filterWith(filterTerm, filters),
+                    filterTerm,
+                    filters
+                )
+            }
                 .onEach {
                     if (_state.value !is UiResult.Loading || it.essences.isNotEmpty()) {
                         it.emit()
@@ -53,21 +54,16 @@ class SearchViewModel
     }
 
     fun applyFilter(filter: SearchFilter) {
-        when(filter) {
-            SearchFilter.Confluence -> toggleConfluencesVisibility()
-        }
-    }
-
-    private fun toggleConfluencesVisibility() {
         viewModelScope.launch {
             filtersFlow.value.toMutableMap()
                 .apply {
-                    if (containsKey(SearchFilter.Confluence.name)) {
-                        remove(SearchFilter.Confluence.name)
+                    if (containsKey(filter.name)) {
+                        remove(filter.name)
                     } else {
-                        set(SearchFilter.Confluence.name, SearchFilter.Confluence)
+                        set(filter.name, filter)
                     }
                 }
+                .also { Log.d("chaser", it.values.joinToString { it.name }) }
                 .emit()
         }
     }

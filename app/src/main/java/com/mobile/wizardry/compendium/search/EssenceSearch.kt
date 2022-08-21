@@ -97,6 +97,7 @@ private fun Screen(
         var dropdownExpanded by remember { mutableStateOf(false) }
         Box(
             modifier = Modifier
+                .background(color = MaterialTheme.colors.background)
                 .wrapContentSize(Alignment.TopStart)
         ) {
             TextButton(onClick = { dropdownExpanded = true }) { Text(text = "Show/Hide Kinds") }
