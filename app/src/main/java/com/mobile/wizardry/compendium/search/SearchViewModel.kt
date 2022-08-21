@@ -54,7 +54,7 @@ class SearchViewModel
 
     fun applyFilter(filter: SearchFilter) {
         when(filter) {
-            SearchFilter.HideConfluences -> toggleConfluencesVisibility()
+            SearchFilter.Confluence -> toggleConfluencesVisibility()
         }
     }
 
@@ -62,10 +62,10 @@ class SearchViewModel
         viewModelScope.launch {
             filtersFlow.value.toMutableMap()
                 .apply {
-                    if (containsKey(SearchFilter.HideConfluences.name)) {
-                        remove(SearchFilter.HideConfluences.name)
+                    if (containsKey(SearchFilter.Confluence.name)) {
+                        remove(SearchFilter.Confluence.name)
                     } else {
-                        set(SearchFilter.HideConfluences.name, SearchFilter.HideConfluences)
+                        set(SearchFilter.Confluence.name, SearchFilter.Confluence)
                     }
                 }
                 .emit()

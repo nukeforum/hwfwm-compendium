@@ -6,15 +6,15 @@ sealed interface SearchFilter {
     val name: String get() = this::class.java.simpleName
     fun predicate(essence: Essence): Boolean
 
-    object HideConfluences : SearchFilter {
+    object Confluence : SearchFilter {
         override fun predicate(essence: Essence): Boolean {
-            return essence !is Essence.Confluence
+            return essence is Essence.Confluence
         }
     }
 
     companion object {
         val options = listOf<SearchFilter>(
-            HideConfluences
+            Confluence
         )
     }
 }
