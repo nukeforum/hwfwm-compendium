@@ -16,17 +16,24 @@ class SearchViewModel
     private val essenceProvider: EssenceProvider
 ) : ViewModel() {
     private val essencesFlow = MutableStateFlow(emptyList<Essence>())
-    private val transformersFlow = MutableStateFlow(emptyMap<String, SearchTransformer>())
+    private val filtersFlow = MutableStateFlow(emptyMap<String, SearchFilter>())
+    private val filterTermFlow = MutableStateFlow("")
 
     private val _state = MutableStateFlow<UiResult<SearchUiState>>(UiResult.Loading)
     val state = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            essencesFlow
-                .combine(transformersFlow.map { it.values }) { essences, transformers ->
-                    val transformed = essences.transformWith(transformers)
-                    SearchUiState(transformed, transformers.getFilterTerm())
+                combine(
+                    essencesFlow,
+                    filterTermFlow,
+                    filtersFlow.map { it.values }
+                ) { essences, filterTerm, filters ->
+                    SearchUiState(
+                        essences.filterWith(filterTerm, filters),
+                        filterTerm,
+                        filters
+                    )
                 }
                 .onEach {
                     if (_state.value !is UiResult.Loading || it.essences.isNotEmpty()) {
@@ -41,33 +48,37 @@ class SearchViewModel
         }
     }
 
-    fun setFilter(filter: String) {
-        viewModelScope.launch {
-            transformersFlow.value.toMutableMap()
-                .apply { set(SearchTransformer.Filter::class.java.simpleName, SearchTransformer.Filter(filter)) }
-                .emit()
+    fun setFilterTerm(term: String) {
+        viewModelScope.launch { filterTermFlow.emit(term) }
+    }
+
+    fun applyFilter(filter: SearchFilter) {
+        when(filter) {
+            SearchFilter.HideConfluences -> toggleConfluencesVisibility()
         }
     }
 
-    fun setShowConfluences(showConfluences: Boolean) {
+    private fun toggleConfluencesVisibility() {
         viewModelScope.launch {
-            transformersFlow.value.toMutableMap()
+            filtersFlow.value.toMutableMap()
                 .apply {
-                    if (showConfluences) {
-                        remove(SearchTransformer.HideConfluences.name)
+                    if (containsKey(SearchFilter.HideConfluences.name)) {
+                        remove(SearchFilter.HideConfluences.name)
                     } else {
-                        set(SearchTransformer.HideConfluences.name, SearchTransformer.HideConfluences)
+                        set(SearchFilter.HideConfluences.name, SearchFilter.HideConfluences)
                     }
                 }
                 .emit()
         }
     }
 
-    private fun List<Essence>.transformWith(
-        transformers: Collection<SearchTransformer>
+    private fun List<Essence>.filterWith(
+        term: String,
+        filters: Collection<SearchFilter>
     ): List<Essence> = mapNotNull { essence ->
         essence.takeIf {
-            transformers.all { transformer -> transformer.predicate(essence) }
+            essence.name.lowercase().contains(term.lowercase())
+                    && filters.any { filter -> filter.predicate(essence) }
         }
     }
 
@@ -75,8 +86,8 @@ class SearchViewModel
         essencesFlow.emit(this)
     }
 
-    private suspend fun Map<String, SearchTransformer>.emit() {
-        transformersFlow.emit(this)
+    private suspend fun Map<String, SearchFilter>.emit() {
+        filtersFlow.emit(this)
     }
 
     private suspend fun SearchUiState.emit() {

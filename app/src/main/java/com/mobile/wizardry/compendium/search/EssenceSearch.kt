@@ -5,12 +5,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,6 +31,7 @@ fun EssenceSearch(
     onEssenceClicked: (Essence) -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
+    var showPopUp by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -50,10 +49,10 @@ fun EssenceSearch(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                essences = state.data.essences,
-                filter = state.data.filter,
+                state = state.data,
                 onEssenceClicked = onEssenceClicked,
-                onFilterChanged = viewModel::setFilter
+                onFilterTermChanged = viewModel::setFilterTerm,
+                onFilterSelected = viewModel::applyFilter,
             )
         }
     }
@@ -62,13 +61,13 @@ fun EssenceSearch(
 @Composable
 private fun Screen(
     modifier: Modifier,
-    essences: List<Essence>,
-    filter: String,
+    state: SearchUiState,
     onEssenceClicked: (Essence) -> Unit,
-    onFilterChanged: (String) -> Unit,
+    onFilterTermChanged: (String) -> Unit,
+    onFilterSelected: (SearchFilter) -> Unit,
 ) {
     LazyColumn(modifier = modifier) {
-        items(essences, { it.hashCode() }) { essence ->
+        items(state.essences, { it.hashCode() }) { essence ->
             EssenceListItem(
                 essence = essence,
                 modifier = Modifier
@@ -77,20 +76,45 @@ private fun Screen(
         }
     }
 
-    TextField(
-        label = { Text(text = "Type an essence name") },
-        value = filter,
-        onValueChange = { onFilterChanged(it) },
+    Row(
         modifier = Modifier
             .fillMaxWidth(),
-        trailingIcon = {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_x),
-                contentDescription = stringResource(R.string.clear_search_accessibility),
-                modifier = Modifier.clickable { onFilterChanged("") }
-            )
+    ) {
+        TextField(
+            label = { Text(text = "Type an essence name") },
+            value = state.filterTerm,
+            onValueChange = { onFilterTermChanged(it) },
+//            modifier = Modifier.weight(1f),
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_x),
+                    contentDescription = stringResource(R.string.clear_search_accessibility),
+                    modifier = Modifier.clickable { onFilterTermChanged("") }
+                )
+            }
+        )
+
+        var dropdownExpanded by remember { mutableStateOf(false) }
+        Box(
+            modifier = Modifier
+                .wrapContentSize(Alignment.TopStart)
+        ) {
+            TextButton(onClick = { dropdownExpanded = true }) { Text(text = "Show/Hide Kinds") }
+            DropdownMenu(
+                expanded = dropdownExpanded,
+                onDismissRequest = { dropdownExpanded = false },
+            ) {
+                SearchFilter.options.forEach {
+                    DropdownMenuItem(onClick = { onFilterSelected(it) }) {
+                        Text(text = it.name)
+                        if (state.appliedFilters.contains(it)) {
+                            Icon(imageVector = Icons.Filled.Check, contentDescription = null)
+                        }
+                    }
+                }
+            }
         }
-    )
+    }
 }
 
 @Composable

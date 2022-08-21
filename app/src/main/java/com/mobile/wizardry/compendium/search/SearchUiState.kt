@@ -4,5 +4,6 @@ import com.mobile.wizardry.compendium.essences.model.Essence
 
 data class SearchUiState(
     val essences: List<Essence>,
-    val filter: String,
+    val filterTerm: String,
+    val appliedFilters: Collection<SearchFilter>
 )
