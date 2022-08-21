@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -14,8 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.wizardry.compendium.R
 import com.mobile.wizardry.compendium.UiResult
@@ -79,38 +83,57 @@ private fun Screen(
     Row(
         modifier = Modifier
             .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         TextField(
             label = { Text(text = "Type an essence name") },
             value = state.filterTerm,
             onValueChange = { onFilterTermChanged(it) },
-//            modifier = Modifier.weight(1f),
             trailingIcon = {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_x),
                     contentDescription = stringResource(R.string.clear_search_accessibility),
                     modifier = Modifier.clickable { onFilterTermChanged("") }
                 )
-            }
+            },
+            modifier = Modifier.weight(1f)
         )
 
-        var dropdownExpanded by remember { mutableStateOf(false) }
-        Box(
-            modifier = Modifier
-                .background(color = MaterialTheme.colors.background)
-                .wrapContentSize(Alignment.TopStart)
+        FilterDropDown(onFilterSelected, state.appliedFilters)
+    }
+}
+
+@Composable
+private fun FilterDropDown(
+    onFilterSelected: (SearchFilter) -> Unit,
+    appliedFilters: Collection<SearchFilter>
+) {
+    var dropdownExpanded by remember { mutableStateOf(false) }
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 8.dp)
+            .background(color = MaterialTheme.colors.primarySurface, shape = RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        TextButton(
+            onClick = { dropdownExpanded = true }
         ) {
-            TextButton(onClick = { dropdownExpanded = true }) { Text(text = "Show/Hide Kinds") }
-            DropdownMenu(
-                expanded = dropdownExpanded,
-                onDismissRequest = { dropdownExpanded = false },
-            ) {
-                SearchFilter.options.forEach {
-                    DropdownMenuItem(onClick = { onFilterSelected(it) }) {
-                        Text(text = it.name)
-                        if (state.appliedFilters.contains(it)) {
-                            Icon(imageVector = Icons.Filled.Check, contentDescription = null)
-                        }
+            Text(
+                text = "Rarity",
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp,
+            )
+        }
+        DropdownMenu(
+            expanded = dropdownExpanded,
+            onDismissRequest = { dropdownExpanded = false },
+        ) {
+            SearchFilter.options.forEach {
+                DropdownMenuItem(onClick = { onFilterSelected(it) }) {
+                    Text(text = it.name)
+                    if (appliedFilters.contains(it)) {
+                        Icon(imageVector = Icons.Filled.Check, contentDescription = null)
                     }
                 }
             }
