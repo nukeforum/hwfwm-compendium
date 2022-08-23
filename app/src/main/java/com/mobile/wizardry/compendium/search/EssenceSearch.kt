@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.wizardry.compendium.R
-import com.mobile.wizardry.compendium.UiResult
+import com.mobile.wizardry.compendium.model.core.UiResult
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Rarity
 import com.mobile.wizardry.compendium.ui.theme.essenceHighlight

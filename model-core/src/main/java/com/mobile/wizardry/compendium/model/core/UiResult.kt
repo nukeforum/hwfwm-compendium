@@ -1,4 +1,4 @@
-package com.mobile.wizardry.compendium
+package com.mobile.wizardry.compendium.model.core
 
 sealed interface UiResult<out T> {
     val data: T
