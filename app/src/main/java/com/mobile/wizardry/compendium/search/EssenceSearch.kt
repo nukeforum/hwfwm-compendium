@@ -17,7 +17,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -35,7 +34,6 @@ fun EssenceSearch(
     onEssenceClicked: (Essence) -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
-    var showPopUp by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier

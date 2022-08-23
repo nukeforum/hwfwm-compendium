@@ -17,7 +17,7 @@ class EssenceCsvLoader(
 
         val confluenceEssences = getConfluenceEssences(baseEssences, restrictedConfluenceSets, restrictedList)
 
-        return@withContext baseEssences.values + confluenceEssences.values
+        return@withContext (baseEssences.values + confluenceEssences.values).sortedBy { it.name }
     }
 
     private fun getRestrictedEssenceNames(): Set<String> {
