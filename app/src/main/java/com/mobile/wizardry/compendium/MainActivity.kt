@@ -82,7 +82,7 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Nav.EssenceRandomizer.route) {
                             isHome = false
-                            Randomizer(essenceProvider)
+                            Randomizer()
                         }
                     }
                 }
