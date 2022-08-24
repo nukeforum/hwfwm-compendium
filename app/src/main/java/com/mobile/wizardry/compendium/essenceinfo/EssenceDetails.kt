@@ -6,33 +6,57 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.accompanist.flowlayout.FlowRow
 import com.google.accompanist.flowlayout.MainAxisAlignment
-import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.model.Essence
+import com.mobile.wizardry.compendium.model.core.UiResult
 import com.mobile.wizardry.compendium.ui.LinkedEssence
 import java.security.InvalidParameterException
 
 @Composable
 fun EssenceDetails(
-    essenceProvider: EssenceProvider,
     essenceHash: Int,
-    onEssenceClick: (Essence) -> Unit //TODO: Refactor to re-use this screen for every essence
+    onEssenceClick: (Essence) -> Unit, //TODO: Refactor to re-use this screen for every essence
+    viewModel: EssenceDetailViewModel = hiltViewModel()
 ) {
-    val essences by produceState(
-        initialValue = emptyList<Essence>(),
-        producer = { value = essenceProvider.getEssences() }
-    )
+    val state by viewModel.state.collectAsState()
 
-    val selectedEssence = essences.find { it.hashCode() == essenceHash } ?: return
+    when (state) {
+        is UiResult.Error -> TODO()
+        UiResult.Loading -> Loading(onLoad = { viewModel.load(essenceHash) })
+        is UiResult.Success -> Details(state.data, onEssenceClick)
+    }
+}
+
+@Composable
+private fun Loading(
+    onLoad: () -> Unit
+) {
+    SideEffect {
+        onLoad()
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = "Loading")
+    }
+}
+
+@Composable
+private fun Details(
+    state: EssenceDetailUiState,
+    onEssenceClick: (Essence) -> Unit,
+) {
+    val essence = remember { state.essence }
 
     Column(
         modifier = Modifier
@@ -47,20 +71,18 @@ fun EssenceDetails(
         ) {
             Text(
                 modifier = Modifier.align(Alignment.Center),
-                text = selectedEssence.report()
+                text = essence.report()
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        if (selectedEssence is Essence.Confluence) {
+        if (essence is Essence.Confluence) {
             Text("Known confluence combinations:")
             ConfluenceCombinationsDisplay(
-                selectedEssence = selectedEssence,
+                selectedEssence = essence,
                 onEssenceClick = onEssenceClick
             )
         } else {
-            val producedConfluences = essences.filter {
-                it is Essence.Confluence && it.isProducedBy(selectedEssence)
-            }
+            val producedConfluences = (state as EssenceDetailUiState.ManifestationUiState).knownConfluences
             Text("Known to produce the following confluence essences:")
             FlowRow(
                 modifier = Modifier
@@ -142,8 +164,4 @@ private fun ConfluenceCombinationsDisplay(
             }
         }
     }
-}
-
-private fun Essence.Confluence.isProducedBy(selectedEssence: Essence): Boolean {
-    return confluenceSets.any { confluenceSet -> confluenceSet.set.any { essence -> essence == selectedEssence } }
 }

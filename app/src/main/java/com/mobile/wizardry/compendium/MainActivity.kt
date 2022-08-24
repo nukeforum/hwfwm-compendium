@@ -84,7 +84,6 @@ class MainActivity : ComponentActivity() {
                                     ?.also { title = it.name }
                             }
                             EssenceDetails(
-                                essenceProvider = essenceProvider,
                                 essenceHash = essenceHash,
                                 onEssenceClick = { essence ->
                                     navController.navigate(Nav.EssenceDetail.buildRoute(essence))
