@@ -35,7 +35,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val navController = rememberNavController()
-            var isHome by remember { mutableStateOf(true) }
+            var currentRoute by remember { mutableStateOf<String?>(null) }
             var title by remember { mutableStateOf("Magic Society Compendium") }
             CompendiumTheme {
                 Scaffold(
@@ -43,12 +43,13 @@ class MainActivity : ComponentActivity() {
                         TopAppBar(
                             title = { Text(text = title) },
                             navigationIcon = {
-                                if (isHome.not()) {
+
+                                if (currentRoute != Nav.EssenceSearch.route) {
                                     ReturnToSearchButton(navController)
                                 }
                             },
                             actions = {
-                                RandomizerButton(navController)
+                                if (currentRoute != Nav.EssenceRandomizer.route) RandomizerButton(navController)
                                 CreateBuildButton(navController)
                             }
                         )
@@ -58,10 +59,10 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         modifier = Modifier.padding(padding),
                         navController = navController,
-                        startDestination = Nav.EssenceDetailSearch.route
+                        startDestination = Nav.EssenceSearch.route
                     ) {
-                        composable(Nav.EssenceDetailSearch.route) {
-                            isHome = true
+                        composable(Nav.EssenceSearch.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
                             title = "Essence Search"
                             EssenceSearch(
                                 onEssenceClicked = { essence ->
@@ -75,7 +76,7 @@ class MainActivity : ComponentActivity() {
                                 navArgument("essenceHash") { type = NavType.IntType }
                             )
                         ) { backStackEntry ->
-                            isHome = false
+                            currentRoute = backStackEntry.destination.route
                             val essenceHash = backStackEntry.arguments!!.getInt("essenceHash")
                             LaunchedEffect(Unit) {
                                 essenceProvider.getEssences()
@@ -90,8 +91,8 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-                        composable(Nav.EssenceRandomizer.route) {
-                            isHome = false
+                        composable(Nav.EssenceRandomizer.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
                             Randomizer()
                         }
                     }
@@ -124,7 +125,7 @@ private fun ReturnToSearchButton(navController: NavHostController) {
     IconButton(
         onClick = {
             navController.popBackStack(
-                route = Nav.EssenceDetailSearch.route,
+                route = Nav.EssenceSearch.route,
                 inclusive = false,
             )
         }
