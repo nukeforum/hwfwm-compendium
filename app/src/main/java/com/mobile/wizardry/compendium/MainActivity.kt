@@ -12,9 +12,11 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mobile.wizardry.compendium.essenceinfo.EssenceDetails
 import com.mobile.wizardry.compendium.essences.EssenceProvider
@@ -32,6 +34,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val navController = rememberNavController()
             var isHome by remember { mutableStateOf(true) }
             var title by remember { mutableStateOf("Magic Society Compendium") }
             CompendiumTheme {
@@ -41,12 +44,12 @@ class MainActivity : ComponentActivity() {
                             title = { Text(text = title) },
                             navigationIcon = {
                                 if (isHome.not()) {
-                                    ReturnToSearchButton()
+                                    ReturnToSearchButton(navController)
                                 }
                             },
                             actions = {
-                                RandomizerButton()
-                                CreateBuildButton()
+                                RandomizerButton(navController)
+                                CreateBuildButton(navController)
                             }
                         )
                     },
@@ -54,19 +57,20 @@ class MainActivity : ComponentActivity() {
                 ) { padding ->
                     NavHost(
                         modifier = Modifier.padding(padding),
-                        navController = LocalNavController.current,
+                        navController = navController,
                         startDestination = Nav.EssenceDetailSearch.route
                     ) {
                         composable(Nav.EssenceDetailSearch.route) {
                             isHome = true
                             title = "Essence Search"
-                            val navController = LocalNavController.current
-                            EssenceSearch { essence ->
-                                navController.navigate(Nav.EssenceDetail(essence = essence).route)
-                            }
+                            EssenceSearch(
+                                onEssenceClicked = { essence ->
+                                    navController.navigate(Nav.EssenceDetail.buildRoute(essence))
+                                }
+                            )
                         }
                         composable(
-                            Nav.EssenceDetail().route,
+                            Nav.EssenceDetail.route,
                             arguments = listOf(
                                 navArgument("essenceHash") { type = NavType.IntType }
                             )
@@ -78,7 +82,13 @@ class MainActivity : ComponentActivity() {
                                     .find { essence -> essence.hashCode() == essenceHash }
                                     ?.also { title = it.name }
                             }
-                            EssenceDetails(essenceProvider, essenceHash = essenceHash)
+                            EssenceDetails(
+                                essenceProvider = essenceProvider,
+                                essenceHash = essenceHash,
+                                onEssenceClick = { essence ->
+                                    navController.navigate(Nav.EssenceDetail.buildRoute(essence))
+                                }
+                            )
                         }
                         composable(Nav.EssenceRandomizer.route) {
                             isHome = false
@@ -92,11 +102,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun RandomizerButton() {
-    val navHostController = LocalNavController.current
+private fun RandomizerButton(navController: NavHostController) {
     IconButton(
         onClick = {
-            navHostController.navigate(Nav.EssenceRandomizer.route)
+            navController.navigate(Nav.EssenceRandomizer.route)
         }
     ) {
         Icon(Icons.Filled.Star, contentDescription = null)
@@ -104,19 +113,17 @@ private fun RandomizerButton() {
 }
 
 @Composable
-private fun CreateBuildButton() {
-    val navHostController = LocalNavController.current
+private fun CreateBuildButton(navController: NavHostController) {
     IconButton(onClick = { /*TODO*/ }) {
         Icon(Icons.Filled.Build, contentDescription = null)
     }
 }
 
 @Composable
-private fun ReturnToSearchButton() {
-    val navHostController = LocalNavController.current
+private fun ReturnToSearchButton(navController: NavHostController) {
     IconButton(
         onClick = {
-            navHostController.popBackStack(
+            navController.popBackStack(
                 route = Nav.EssenceDetailSearch.route,
                 inclusive = false,
             )

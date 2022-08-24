@@ -9,8 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.mobile.wizardry.compendium.LocalNavController
-import com.mobile.wizardry.compendium.Nav
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
 
@@ -18,12 +16,12 @@ import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
 fun LinkedEssence(
     essence: Essence,
     isRestricted: Boolean,
+    onEssenceClick: (Essence) -> Unit
 ) {
-    val navHostController = LocalNavController.current
     Text(
         text = essence.name,
         modifier = Modifier
-            .clickable { navHostController.navigate(Nav.EssenceDetail(essence).route) }
+            .clickable { onEssenceClick(essence) }
             .background(essenceHighlight(isRestricted = isRestricted))
             .border(1.dp, Color.DarkGray)
             .padding(8.dp),

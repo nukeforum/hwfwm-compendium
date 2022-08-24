@@ -22,7 +22,11 @@ import com.mobile.wizardry.compendium.ui.LinkedEssence
 import java.security.InvalidParameterException
 
 @Composable
-fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
+fun EssenceDetails(
+    essenceProvider: EssenceProvider,
+    essenceHash: Int,
+    onEssenceClick: (Essence) -> Unit //TODO: Refactor to re-use this screen for every essence
+) {
     val essences by produceState(
         initialValue = emptyList<Essence>(),
         producer = { value = essenceProvider.getEssences() }
@@ -49,7 +53,10 @@ fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
         Spacer(modifier = Modifier.height(16.dp))
         if (selectedEssence is Essence.Confluence) {
             Text("Known confluence combinations:")
-            ConfluenceCombinationsDisplay(selectedEssence)
+            ConfluenceCombinationsDisplay(
+                selectedEssence = selectedEssence,
+                onEssenceClick = onEssenceClick
+            )
         } else {
             val producedConfluences = essences.filter {
                 it is Essence.Confluence && it.isProducedBy(selectedEssence)
@@ -68,6 +75,7 @@ fun EssenceDetails(essenceProvider: EssenceProvider, essenceHash: Int) {
                     LinkedEssence(
                         essence = it,
                         isRestricted = it.isRestricted,
+                        onEssenceClick = onEssenceClick,
                     )
                 }
             }
@@ -99,7 +107,10 @@ private fun Essence.report(): String {
 }
 
 @Composable
-private fun ConfluenceCombinationsDisplay(selectedEssence: Essence.Confluence) {
+private fun ConfluenceCombinationsDisplay(
+    selectedEssence: Essence.Confluence,
+    onEssenceClick: (Essence) -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -119,6 +130,7 @@ private fun ConfluenceCombinationsDisplay(selectedEssence: Essence.Confluence) {
                     LinkedEssence(
                         essence = it,
                         isRestricted = it.isRestricted,
+                        onEssenceClick = onEssenceClick
                     )
                     if (confluenceSet.set.last() != it) {
                         Spacer(modifier = Modifier.width(8.dp))

@@ -1,17 +1,11 @@
 package com.mobile.wizardry.compendium
 
-import androidx.compose.runtime.compositionLocalOf
-import androidx.navigation.NavHostController
 import com.mobile.wizardry.compendium.essences.model.Essence
 
-val LocalNavController = compositionLocalOf<NavHostController> {
-    throw IllegalStateException("No NavController provided in this scope")
-}
-
 sealed class Nav(val route: String) {
-    object EssenceDetailSearch : Nav("essencesearch")
-    object EssenceRandomizer : Nav("essencerandomizer")
-    class EssenceDetail(
-        essence: Essence? = null
-    ) : Nav("essencedetail/${essence?.hashCode() ?: "{essenceHash}"}")
+    object EssenceDetailSearch : Nav("search")
+    object EssenceRandomizer : Nav("randomizer")
+    object EssenceDetail : Nav("{essenceHash}/detail") {
+        fun buildRoute(essence: Essence) = "${essence.hashCode()}/detail"
+    }
 }
