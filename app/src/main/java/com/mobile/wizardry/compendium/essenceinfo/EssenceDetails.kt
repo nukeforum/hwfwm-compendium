@@ -1,12 +1,16 @@
 package com.mobile.wizardry.compendium.essenceinfo
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,26 +27,25 @@ import java.security.InvalidParameterException
 @Composable
 fun EssenceDetails(
     essenceHash: Int,
-    onEssenceClick: (Essence) -> Unit, //TODO: Refactor to re-use this screen for every essence
     viewModel: EssenceDetailViewModel = hiltViewModel()
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.load(essenceHash)
+    }
+
     val state by viewModel.state.collectAsState()
+
+    BackHandler(enabled = (state as? UiResult.Success)?.data?.previousEssence != null) { viewModel.goBack() }
 
     when (state) {
         is UiResult.Error -> TODO()
-        UiResult.Loading -> Loading(onLoad = { viewModel.load(essenceHash) })
-        is UiResult.Success -> Details(state.data, onEssenceClick)
+        UiResult.Loading -> Loading()
+        is UiResult.Success -> Details(state = state.data, onEssenceClick = { viewModel.load(it) })
     }
 }
 
 @Composable
-private fun Loading(
-    onLoad: () -> Unit
-) {
-    SideEffect {
-        onLoad()
-    }
-
+private fun Loading() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -56,8 +59,6 @@ private fun Details(
     state: EssenceDetailUiState,
     onEssenceClick: (Essence) -> Unit,
 ) {
-    val essence = remember { state.essence }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -71,36 +72,53 @@ private fun Details(
         ) {
             Text(
                 modifier = Modifier.align(Alignment.Center),
-                text = essence.report()
+                text = state.essence.report()
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        if (essence is Essence.Confluence) {
-            Text("Known confluence combinations:")
-            ConfluenceCombinationsDisplay(
-                selectedEssence = essence,
-                onEssenceClick = onEssenceClick
+        when (state) {
+            is EssenceDetailUiState.ConfluenceUiState -> ConfluenceDetails(state = state, onEssenceClick = onEssenceClick)
+            is EssenceDetailUiState.ManifestationUiState -> ManifestationDetails(state = state, onEssenceClick = onEssenceClick)
+        }
+    }
+}
+
+@Composable
+private fun ConfluenceDetails(
+    state: EssenceDetailUiState.ConfluenceUiState,
+    onEssenceClick: (Essence) -> Unit,
+) {
+    Text("Known confluence combinations:")
+    ConfluenceCombinationsDisplay(
+        selectedEssence = state.essence,
+        previousEssence = state.previousEssence,
+        onEssenceClick = onEssenceClick,
+    )
+}
+
+@Composable
+private fun ManifestationDetails(
+    state: EssenceDetailUiState.ManifestationUiState,
+    onEssenceClick: (Essence) -> Unit,
+) {
+    val producedConfluences = state.knownConfluences
+    Text("Known to produce the following confluence essences:")
+    FlowRow(
+        modifier = Modifier
+            .padding(vertical = 8.dp)
+            .fillMaxWidth()
+            .verticalScroll(ScrollState(0)),
+        mainAxisAlignment = MainAxisAlignment.Center,
+        mainAxisSpacing = 8.dp,
+        crossAxisSpacing = 8.dp,
+    ) {
+        producedConfluences.forEach {
+            LinkedEssence(
+                essence = it,
+                isLastViewed = state.previousEssence == it,
+                isRestricted = it.isRestricted,
+                onEssenceClick = onEssenceClick,
             )
-        } else {
-            val producedConfluences = (state as EssenceDetailUiState.ManifestationUiState).knownConfluences
-            Text("Known to produce the following confluence essences:")
-            FlowRow(
-                modifier = Modifier
-                    .padding(vertical = 8.dp)
-                    .fillMaxWidth()
-                    .verticalScroll(ScrollState(0)),
-                mainAxisAlignment = MainAxisAlignment.Center,
-                mainAxisSpacing = 8.dp,
-                crossAxisSpacing = 8.dp,
-            ) {
-                producedConfluences.forEach {
-                    LinkedEssence(
-                        essence = it,
-                        isRestricted = it.isRestricted,
-                        onEssenceClick = onEssenceClick,
-                    )
-                }
-            }
         }
     }
 }
@@ -131,6 +149,7 @@ private fun Essence.report(): String {
 @Composable
 private fun ConfluenceCombinationsDisplay(
     selectedEssence: Essence.Confluence,
+    previousEssence: Essence?,
     onEssenceClick: (Essence) -> Unit,
 ) {
     Column(
@@ -151,6 +170,7 @@ private fun ConfluenceCombinationsDisplay(
                 confluenceSet.set.forEach {
                     LinkedEssence(
                         essence = it,
+                        isLastViewed = previousEssence == it,
                         isRestricted = it.isRestricted,
                         onEssenceClick = onEssenceClick
                     )

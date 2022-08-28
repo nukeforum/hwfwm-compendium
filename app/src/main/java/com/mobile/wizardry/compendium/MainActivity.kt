@@ -83,12 +83,7 @@ class MainActivity : ComponentActivity() {
                                     .find { essence -> essence.hashCode() == essenceHash }
                                     ?.also { title = it.name }
                             }
-                            EssenceDetails(
-                                essenceHash = essenceHash,
-                                onEssenceClick = { essence ->
-                                    navController.navigate(Nav.EssenceDetail.buildRoute(essence))
-                                }
-                            )
+                            EssenceDetails(essenceHash = essenceHash)
                         }
                         composable(Nav.EssenceRandomizer.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route

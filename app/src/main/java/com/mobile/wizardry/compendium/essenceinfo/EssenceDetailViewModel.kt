@@ -17,36 +17,39 @@ class EssenceDetailViewModel
 @Inject constructor(
     private val essenceProvider: EssenceProvider,
 ) : ViewModel() {
+    private val history = ArrayDeque<Essence>()
     private val _state = MutableStateFlow<UiResult<EssenceDetailUiState>>(UiResult.Loading)
     val state = _state.asStateFlow()
 
     fun load(essenceHash: Int) {
+        currentlyLoadedEssence?.let { history.addFirst(it) }
         viewModelScope.launch(Dispatchers.IO) {
             _state.emit(UiResult.Loading)
 
             essenceProvider.getEssences().find { it.hashCode() == essenceHash }
-                ?.let { essence ->
-                    when(essence) {
-                        is Essence.Manifestation -> buildManifestationState(essence)
-                        is Essence.Confluence -> buildConfluenceState(essence)
-                    }
-                }
+                ?.let { essence -> buildState(essence) }
+                ?: _state.emit(UiResult.Error(IllegalArgumentException("no essence found with hash: $essenceHash")))
         }
     }
 
     fun load(essence: Essence) {
+        currentlyLoadedEssence?.let { history.addFirst(it) }
         viewModelScope.launch(Dispatchers.IO) {
             _state.emit(UiResult.Loading)
 
-            when (essence) {
-                is Essence.Manifestation -> buildManifestationState(essence)
-                is Essence.Confluence -> buildConfluenceState(essence)
-            }
+            buildState(essence)
+        }
+    }
+
+    private suspend fun buildState(essence: Essence) {
+        when (essence) {
+            is Essence.Manifestation -> buildManifestationState(essence)
+            is Essence.Confluence -> buildConfluenceState(essence)
         }
     }
 
     private suspend fun buildConfluenceState(essence: Essence.Confluence) {
-        EssenceDetailUiState.ConfluenceUiState(essence).emit()
+        EssenceDetailUiState.ConfluenceUiState(essence, history.firstOrNull() as? Essence.Manifestation).emit()
     }
 
     private suspend fun buildManifestationState(essence: Essence.Manifestation) {
@@ -56,6 +59,7 @@ class EssenceDetailViewModel
 
         EssenceDetailUiState.ManifestationUiState(
             essence,
+            history.firstOrNull() as? Essence.Confluence,
             confluences
         ).emit()
     }
@@ -66,5 +70,19 @@ class EssenceDetailViewModel
 
     private suspend fun EssenceDetailUiState.emit() {
         _state.emit(UiResult.Success(this))
+    }
+
+    private val currentlyLoadedEssence: Essence?
+        get() {
+            return state.value.takeIf { it is UiResult.Success }?.data?.essence
+        }
+
+    fun goBack() {
+        viewModelScope.launch(Dispatchers.IO) {
+            when (val essence = history.removeFirst()) {
+                is Essence.Manifestation -> buildManifestationState(essence)
+                is Essence.Confluence -> buildConfluenceState(essence)
+            }
+        }
     }
 }

@@ -15,6 +15,7 @@ import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
 @Composable
 fun LinkedEssence(
     essence: Essence,
+    isLastViewed: Boolean,
     isRestricted: Boolean,
     onEssenceClick: (Essence) -> Unit
 ) {
@@ -23,7 +24,7 @@ fun LinkedEssence(
         modifier = Modifier
             .clickable { onEssenceClick(essence) }
             .background(essenceHighlight(isRestricted = isRestricted))
-            .border(1.dp, Color.DarkGray)
+            .border(1.dp, if (isLastViewed) Color.Cyan else Color.DarkGray)
             .padding(8.dp),
     )
 }
