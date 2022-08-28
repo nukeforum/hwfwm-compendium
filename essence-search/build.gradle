@@ -1,0 +1,12 @@
+plugins {
+    id 'compendium.android-lib'
+}
+
+android {
+    namespace "com.mobile.wizardry.compendium.search"
+}
+
+dependencies {
+    implementation project(':design')
+    implementation project(':essences')
+}

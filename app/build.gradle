@@ -50,6 +50,7 @@ dependencies {
     implementation project(':dataloader')
     implementation project(':design')
     implementation project(':essence-details')
+    implementation project(':essence-search')
     implementation project(':essences')
     implementation project(':model-core')
     implementation project(':persistence')
