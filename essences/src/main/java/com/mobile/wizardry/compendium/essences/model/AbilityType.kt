@@ -1,40 +1,31 @@
 package com.mobile.wizardry.compendium.essences.model
 
 sealed interface AbilityType {
-    val description: String
-
     object SpecialAttack : AbilityType {
-        override val description: String
-            get() = "Special attack"
+        override fun toString(): String = "Special attack"
     }
 
     object SpecialAbility : AbilityType {
-        override val description: String
-            get() = "Special ability"
+        override fun toString(): String = "Special ability"
     }
 
     object RacialAbility : AbilityType {
-        override val description: String
-            get() = "Racial ability"
+        override fun toString(): String = "Racial ability"
     }
 
     object Spell : AbilityType {
-        override val description: String
-            get() = "Spell"
+        override fun toString(): String = "Spell"
     }
 
     object Aura : AbilityType {
-        override val description: String
-            get() = "Aura"
+        override fun toString(): String = "Aura"
     }
 
     object Conjuration : AbilityType {
-        override val description: String
-            get() = "Conjuration"
+        override fun toString(): String = "Conjuration"
     }
 
     object Familiar : AbilityType {
-        override val description: String
-            get() = "Special attack"
+        override fun toString(): String = "Special attack"
     }
 }

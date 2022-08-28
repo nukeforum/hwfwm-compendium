@@ -2,21 +2,32 @@ package com.mobile.wizardry.compendium.essences.model
 
 sealed interface Ability : Entity {
     override val name: String
-    val abilityType: AbilityType
-    val properties: List<Property>
-    val cost: AbilityCost
-    /**
-     * In seconds.
-     */
-    val cooldown: Int
     val effects: List<Effect>
+
+    fun reportType(): String {
+        return effects.map { it.type }.toSet().joinToString("/")
+    }
+
+    fun reportProperties(): String {
+        return effects.flatMap { it.properties }.toSet().joinToString(",")
+    }
+
+    fun reportCost(): String {
+        return effects.mapNotNull { effect -> effect.cost.takeIf { cost -> cost.isNotEmpty() } }
+            .takeIf { it.size == 1 }
+            ?.first()?.toString()
+            ?: "Varies"
+    }
+
+    fun reportCooldown(): String {
+        return effects.map { it.cooldown }.toSet()
+            .takeIf { it.size == 1 }
+            ?.first()?.toString()
+            ?: "Varies"
+    }
 
     data class Acquired(
         override val name: String,
-        override val abilityType: AbilityType,
-        override val properties: List<Property>,
-        override val cost: AbilityCost,
-        override val cooldown: Int,
         override val effects: List<Effect>,
         val rank: Rank,
         val tier: Int,
@@ -26,15 +37,28 @@ sealed interface Ability : Entity {
 
     data class Listing(
         override val name: String,
-        override val abilityType: AbilityType,
-        override val properties: List<Property>,
-        override val cost: AbilityCost,
-        override val cooldown: Int,
-        override val effects: List<Effect>
-    ) : Ability
+        override val effects: List<Effect>,
+    ) : Ability {
+        fun acquire(essence: Essence): Acquired {
+            return Acquired(
+                name = name,
+                effects = effects.filter { it.rank == Rank.Iron },
+                rank = Rank.Iron,
+                tier = 0,
+                progress = 0f,
+                boundEssence = essence,
+            )
+        }
 
-    /**
-     * Use for mutating ability to a given rank
-     */
-    abstract class RankDecorator(val ability: Ability, val rank: Rank) : Ability
+        fun rankUp(ability: Acquired): Acquired {
+            return Acquired(
+                name = name,
+                effects = effects.filter { it.rank == Rank.next(ability.rank) },
+                rank = Rank.next(ability.rank),
+                tier = 0,
+                progress = 0f,
+                boundEssence = ability.boundEssence,
+            )
+        }
+    }
 }

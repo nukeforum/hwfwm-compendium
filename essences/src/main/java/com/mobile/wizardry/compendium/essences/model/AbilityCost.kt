@@ -1,7 +1,9 @@
 package com.mobile.wizardry.compendium.essences.model
 
 data class AbilityCost(
-    val mana: Amount,
-    val stamina: Amount,
-    val health: Amount,
-)
+    val resource: Resource,
+    val amount: Amount,
+    val ongoing: Boolean,
+) {
+    override fun toString(): String = "$amount $resource"
+}

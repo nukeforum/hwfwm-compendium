@@ -9,4 +9,17 @@ enum class Rank {
     Gold,
     Diamond,
     Transcendent,
+    ;
+
+    companion object {
+        fun next(rank: Rank): Rank = when (rank) {
+            Unranked -> Iron
+            Iron -> Bronze
+            Bronze -> Silver
+            Silver -> Gold
+            Gold -> Diamond
+            Diamond -> Transcendent
+            Transcendent -> Transcendent
+        }
+    }
 }

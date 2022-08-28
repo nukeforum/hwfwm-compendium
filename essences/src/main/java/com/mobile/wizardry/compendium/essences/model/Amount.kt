@@ -1,20 +1,27 @@
 package com.mobile.wizardry.compendium.essences.model
 
 sealed interface Amount {
-    val ongoing: Boolean
     object None : Amount {
-        override val ongoing: Boolean = false
+        override fun toString(): String = "None"
     }
-    class Low(override val ongoing: Boolean) : Amount {
+
+    object Low : Amount {
         override fun toString(): String = "low"
     }
-    class Moderate(override val ongoing: Boolean) : Amount {
+
+    object Moderate : Amount {
         override fun toString(): String = "moderate"
     }
-    class High(override val ongoing: Boolean) : Amount {
+
+    object High : Amount {
         override fun toString(): String = "high"
     }
-    class Extrem(override val ongoing: Boolean) : Amount {
+
+    object VeryHigh : Amount {
+        override fun toString(): String = "very high"
+    }
+
+    object Extreme : Amount {
         override fun toString(): String = "extreme"
     }
 }
