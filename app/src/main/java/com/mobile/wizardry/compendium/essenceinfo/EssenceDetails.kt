@@ -27,6 +27,7 @@ import java.security.InvalidParameterException
 @Composable
 fun EssenceDetails(
     essenceHash: Int,
+    onEssenceLoaded: (Essence) -> Unit,
     viewModel: EssenceDetailViewModel = hiltViewModel()
 ) {
     LaunchedEffect(Unit) {
@@ -40,7 +41,10 @@ fun EssenceDetails(
     when (state) {
         is UiResult.Error -> TODO()
         UiResult.Loading -> Loading()
-        is UiResult.Success -> Details(state = state.data, onEssenceClick = { viewModel.load(it) })
+        is UiResult.Success -> {
+            onEssenceLoaded(state.data.essence)
+            Details(state = state.data, onEssenceClick = { viewModel.load(it) })
+        }
     }
 }
 
