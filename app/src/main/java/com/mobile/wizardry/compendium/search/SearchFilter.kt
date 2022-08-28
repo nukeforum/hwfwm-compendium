@@ -57,6 +57,7 @@ sealed interface SearchFilter {
             Rare,
             Epic,
             Legendary,
+            Unknown,
         )
     }
 }
