@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace "com.mobile.wizardry.compendium.randomizer"
+    namespace "com.mobile.wizardry.compendium.ui"
 }
 
 dependencies {

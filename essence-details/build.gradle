@@ -1,0 +1,14 @@
+plugins {
+    id 'compendium.android-lib'
+}
+
+android {
+    namespace "com.mobile.wizardry.compendium.essenceinfo"
+}
+
+dependencies {
+    implementation project(':design')
+    implementation project(':essences')
+
+    implementation "com.google.accompanist:accompanist-flowlayout:0.23.1"
+}
