@@ -3,9 +3,9 @@ package com.mobile.wizardry.compendium.search
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mobile.wizardry.compendium.model.core.UiResult
 import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.model.Essence
+import com.mobile.wizardry.compendium.model.core.UiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

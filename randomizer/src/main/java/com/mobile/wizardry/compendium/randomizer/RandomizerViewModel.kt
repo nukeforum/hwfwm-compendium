@@ -7,11 +7,12 @@ import com.mobile.wizardry.compendium.essences.model.ConfluenceSet
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.model.core.UiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
