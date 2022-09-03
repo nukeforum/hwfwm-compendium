@@ -28,4 +28,11 @@ sealed interface AbilityType {
     object Familiar : AbilityType {
         override fun toString(): String = "Special attack"
     }
+
+    /**
+     * For item effects
+     */
+    object Use : AbilityType {
+        override fun toString(): String = "Special attack"
+    }
 }

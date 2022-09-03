@@ -38,7 +38,14 @@ interface Essence : Entity {
                 rarity,
                 listOf(Property.Consumable, Property.Essence),
                 listOf(
-                    Effect("Imbues 1 awakened ${name.lowercase()} essence ability and 4 unawakened ${name.lowercase()} essence abilities")
+                    Effect(
+                        rank = Rank.Unranked,
+                        type = AbilityType.Use,
+                        properties = emptyList(),
+                        cost = emptyList(),
+                        cooldown = 0,
+                        description = "Imbues 1 awakened ${name.lowercase()} essence ability and 4 unawakened ${name.lowercase()} essence abilities"
+                    )
                 ),
                 description,
                 restricted,
