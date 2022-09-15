@@ -4,36 +4,25 @@ sealed interface Ability : Entity {
     override val name: String
     val effects: List<Effect>
 
-    fun reportType(): String {
-        return effects.map { it.type }.toSet().joinToString("/")
-    }
-
-    fun reportProperties(): String {
-        return effects.flatMap { it.properties }.toSet().joinToString(",")
-    }
-
-    fun reportCost(): String {
-        return effects.mapNotNull { effect -> effect.cost.takeIf { cost -> cost.isNotEmpty() } }
-            .takeIf { it.size == 1 }
-            ?.first()?.toString()
-            ?: "Varies"
-    }
-
-    fun reportCooldown(): String {
-        return effects.map { it.cooldown }.toSet()
-            .takeIf { it.size == 1 }
-            ?.first()?.toString()
-            ?: "Varies"
-    }
-
-    data class Acquired(
+    data class Acquired
+    internal constructor(
         override val name: String,
         override val effects: List<Effect>,
         val rank: Rank,
         val tier: Int,
         val progress: Float,
         val boundEssence: Essence,
-    ) : Ability
+        private val listing: Listing,
+    ) : Ability {
+        fun rankUp(): Acquired {
+            return copy(
+                effects = listing.effects.filter { it.rank.ordinal <= Rank.next(rank).ordinal },
+                rank = Rank.next(rank),
+                tier = 0,
+                progress = 0f,
+            )
+        }
+    }
 
     data class Listing(
         override val name: String,
@@ -47,17 +36,7 @@ sealed interface Ability : Entity {
                 tier = 0,
                 progress = 0f,
                 boundEssence = essence,
-            )
-        }
-
-        fun rankUp(ability: Acquired): Acquired {
-            return Acquired(
-                name = name,
-                effects = effects.filter { it.rank == Rank.next(ability.rank) },
-                rank = Rank.next(ability.rank),
-                tier = 0,
-                progress = 0f,
-                boundEssence = ability.boundEssence,
+                listing = this,
             )
         }
     }

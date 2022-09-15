@@ -13,6 +13,7 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "Compendium"
+include ':ability-preview'
 include ':app'
 include ':dataloader'
 include ':design'
