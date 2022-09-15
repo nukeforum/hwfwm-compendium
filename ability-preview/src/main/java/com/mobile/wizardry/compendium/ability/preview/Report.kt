@@ -79,7 +79,7 @@ private fun Ability.reportCooldown(): String {
 }
 
 @Composable
-private fun Collection<Effect>.Report(rank: Rank = Rank.Diamond) {
+private fun Collection<Effect.AbilityEffect>.Report(rank: Rank = Rank.Diamond) {
     val effectsByRank = groupBy { it.rank }
     for (r in Rank.Unranked.ordinal..rank.ordinal) {
         val currentRank = Rank.values()[r]

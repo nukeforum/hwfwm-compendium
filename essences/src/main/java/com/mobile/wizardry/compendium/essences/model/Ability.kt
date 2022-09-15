@@ -2,12 +2,12 @@ package com.mobile.wizardry.compendium.essences.model
 
 sealed interface Ability : Entity {
     override val name: String
-    val effects: List<Effect>
+    val effects: List<Effect.AbilityEffect>
 
     data class Acquired
     internal constructor(
         override val name: String,
-        override val effects: List<Effect>,
+        override val effects: List<Effect.AbilityEffect>,
         val rank: Rank,
         val tier: Int,
         val progress: Float,
@@ -26,7 +26,7 @@ sealed interface Ability : Entity {
 
     data class Listing(
         override val name: String,
-        override val effects: List<Effect>,
+        override val effects: List<Effect.AbilityEffect>,
     ) : Ability {
         fun acquire(essence: Essence): Acquired {
             return Acquired(
