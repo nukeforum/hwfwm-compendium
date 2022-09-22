@@ -5,8 +5,10 @@ import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Rarity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class EssenceCsvLoader(
+class EssenceCsvLoader
+@Inject constructor(
     private val source: FileStreamSource,
 ) : EssenceDataLoader {
     override suspend fun loadEssenceData(): List<Essence> = withContext(Dispatchers.IO) {

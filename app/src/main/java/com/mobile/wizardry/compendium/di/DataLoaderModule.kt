@@ -21,17 +21,15 @@ class DataLoaderModule {
         return EssenceCache.get()
     }
 
-    @Singleton
-    @Provides
-    fun getEssenceDataLoader(source: FileStreamSource): EssenceDataLoader {
-        return EssenceCsvLoader(source)
-    }
-
     @Module
     @InstallIn(SingletonComponent::class)
     interface DataLoaderBinder {
         @Singleton
         @Binds
         fun getFileStreamSource(source: AssetFileStreamSource): FileStreamSource
+
+        @Singleton
+        @Binds
+        fun getEssenceDataLoader(loader: EssenceCsvLoader): EssenceDataLoader
     }
 }

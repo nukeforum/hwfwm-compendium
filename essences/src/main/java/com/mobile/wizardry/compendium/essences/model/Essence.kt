@@ -38,9 +38,8 @@ interface Essence : Entity {
                 rarity,
                 listOf(Property.Consumable, Property.Essence),
                 listOf(
-                    Effect(
+                    Effect.ItemEffect(
                         rank = Rank.Unranked,
-                        type = AbilityType.Use,
                         properties = emptyList(),
                         cost = emptyList(),
                         cooldown = 0,
