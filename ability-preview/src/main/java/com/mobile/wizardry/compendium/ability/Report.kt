@@ -1,4 +1,4 @@
-package com.mobile.wizardry.compendium.ability.preview
+package com.mobile.wizardry.compendium.ability
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -6,6 +6,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.mobile.wizardry.compendium.ability.preview.ability
 import com.mobile.wizardry.compendium.essences.model.Ability
 import com.mobile.wizardry.compendium.essences.model.Effect
 import com.mobile.wizardry.compendium.essences.model.Rank

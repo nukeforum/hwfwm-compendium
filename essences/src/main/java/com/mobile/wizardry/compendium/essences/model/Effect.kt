@@ -3,7 +3,7 @@ package com.mobile.wizardry.compendium.essences.model
 sealed interface Effect {
     val rank: Rank
     val properties: List<Property>
-    val cost: List<AbilityCost>
+    val cost: List<Cost>
 
     /**
      * in seconds
@@ -15,7 +15,7 @@ sealed interface Effect {
         override val rank: Rank,
         val type: AbilityType,
         override val properties: List<Property>,
-        override val cost: List<AbilityCost>,
+        override val cost: List<Cost>,
         override val cooldown: Int,
         override val description: String,
     ) : Effect {
@@ -26,7 +26,7 @@ sealed interface Effect {
         override val rank: Rank,
         val type: StatusType,
         override val properties: List<Property>,
-        override val cost: List<AbilityCost>,
+        override val cost: List<Cost>,
         override val cooldown: Int,
         override val description: String,
     ) : Effect {
@@ -36,7 +36,7 @@ sealed interface Effect {
     data class ItemEffect(
         override val rank: Rank,
         override val properties: List<Property>,
-        override val cost: List<AbilityCost>,
+        override val cost: List<Cost>,
         override val cooldown: Int,
         override val description: String,
     ) : Effect {
