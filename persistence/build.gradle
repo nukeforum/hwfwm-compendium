@@ -1,5 +1,13 @@
 plugins {
     id 'compendium.jvm-lib'
+    id 'com.squareup.sqldelight'
+}
+
+sqldelight {
+    CompendiumDb {
+        packageName = "com.mobile.wizardry.compendium.persistence"
+        verifyMigrations = true
+    }
 }
 
 dependencies {

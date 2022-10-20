@@ -16,7 +16,7 @@ interface Essence : Entity {
         override val rank: Rank,
         override val rarity: Rarity,
         override val properties: List<Property>,
-        override val effects: List<Effect>,
+        override val effects: List<Effect.ItemEffect>,
         override val description: String,
         override val isRestricted: Boolean,
     ) : Essence, Item

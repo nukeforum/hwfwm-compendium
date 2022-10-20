@@ -42,7 +42,6 @@ class MainActivity : ComponentActivity() {
                         TopAppBar(
                             title = { Text(text = title) },
                             navigationIcon = {
-
                                 if (currentRoute != Nav.EssenceSearch.route) {
                                     ReturnToSearchButton {
                                         navController.popBackStack(

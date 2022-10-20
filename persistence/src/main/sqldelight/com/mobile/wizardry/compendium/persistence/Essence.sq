@@ -1,0 +1,51 @@
+import com.mobile.wizardry.compendium.essences.model.Cost;
+import com.mobile.wizardry.compendium.essences.model.Essence;
+import com.mobile.wizardry.compendium.essences.model.Property;
+import com.mobile.wizardry.compendium.essences.model.Rank;
+import com.mobile.wizardry.compendium.essences.model.Rarity;
+import kotlin.collections.List;
+import kotlin.collections.Set;
+
+CREATE TABLE confluence (
+    name TEXT NOT NULL UNIQUE PRIMARY KEY,
+    is_restricted INTEGER AS Boolean NOT NULL,
+    confluence_sets TEXT AS Set<Essence.Manifestation> NOT NULL
+);
+
+CREATE TABLE manifestation (
+    name TEXT NOT NULL UNIQUE PRIMARY KEY,
+    is_restricted INTEGER AS Boolean NOT NULL,
+    rank TEXT AS Rank NOT NULL,
+    rarity TEXT AS Rarity NOT NULL,
+    properties TEXT AS List<Property> NOT NULL,
+    description TEXT NOT NULL
+);
+
+CREATE TABLE essenceEffect (
+    essence_name TEXT NOT NULL PRIMARY KEY,
+    rank TEXT AS Rank NOT NULL,
+    properties TEXT AS List<Property> NOT NULL,
+    cost TEXT AS List<Cost> NOT NULL,
+    cooldown INTEGER NOT NULL,
+    description TEXT NOT NULL
+);
+
+insertConfluences:
+INSERT INTO confluence(name, is_restricted, confluence_sets)
+VALUES(?, ?, ?);
+
+insertManifestations:
+INSERT INTO manifestation(name, is_restricted, rank, rarity, properties, description)
+VALUES(?, ?, ?, ?, ?, ?);
+
+insertEssenceEffect:
+INSERT  INTO essenceEffect(essence_name, rank, properties, cost, cooldown, description)
+VALUES(?,?,?,?,?,?);
+
+getManifestations:
+SELECT *
+FROM manifestation;
+
+getConfluences:
+SELECT *
+FROM confluence;
