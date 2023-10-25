@@ -1,26 +1,48 @@
 package com.mobile.wizardry.compendium.persistence
 
-import com.mobile.wizardry.compendium.essences.model.Effect
-import com.mobile.wizardry.compendium.essences.model.Essence
-import com.mobile.wizardry.compendium.essences.model.Property
+import com.mobile.wizardry.compendium.essences.model.*
+import com.mobile.wizardry.compendium.persistence.adapters.AmountAdapter
+import com.mobile.wizardry.compendium.persistence.adapters.CostAdapter
+import com.mobile.wizardry.compendium.persistence.adapters.PropertiesAdapter
+import com.mobile.wizardry.compendium.persistence.adapters.ResourceAdapter
 import com.squareup.sqldelight.ColumnAdapter
 import com.squareup.sqldelight.EnumColumnAdapter
 import com.squareup.sqldelight.db.SqlDriver
 import javax.inject.Inject
 
 class SqlDelightDatabaseCache
-@Inject constructor(driver: SqlDriver) {
+@Inject constructor(driver: SqlDriver) : EssenceCache {
     private val db = CompendiumDb(
-        driver,
-        Confluence.Adapter(ConfluenceSetAdapter()),
-        ,
-        Manifestation.Adapter(
+        driver = driver,
+        confluenceAdapter = Confluence.Adapter(ConfluenceSetAdapter()),
+        essenceEffectAdapter = EssenceEffect.Adapter(
+            rankAdapter = EnumColumnAdapter(),
+            propertiesAdapter = PropertiesAdapter(),
+            costAdapter = CostAdapter(
+                amountAdapter = AmountAdapter(),
+                resourceAdapter = ResourceAdapter(),
+            )
+        ),
+        manifestationAdapter = Manifestation.Adapter(
             rarityAdapter = EnumColumnAdapter(),
             rankAdapter = EnumColumnAdapter(),
             propertiesAdapter = PropertiesAdapter(),
-            effectsAdapter = ItemEffectsAdapter(),
         ),
     )
+
+    override var contents: List<Essence>
+        get() = db.essenceQueries.getManifestations(
+            mapper = { name, is_restricted, rank, rarity, properties, description ->
+                Essence.Manifestation(
+                    name = name,
+                    rank = rank,
+                    rarity = rarity,
+                    properties = properties,
+                    effects = 
+                )
+            }
+        )
+        set(value) {}
 
     class ItemEffectsAdapter : ColumnAdapter<List<Effect.ItemEffect>, String> {
         override fun decode(databaseValue: String): List<Effect.ItemEffect> {
@@ -32,44 +54,33 @@ class SqlDelightDatabaseCache
         }
     }
 
-    class PropertiesAdapter : ColumnAdapter<List<Property>, String> {
-        override fun decode(databaseValue: String): List<Property> {
-            return databaseValue.split(',')
-                .map {
-                    when (it) {
-                        Property.Consumable.toString() -> Property.Consumable
-                        Property.Essence.toString() -> Property.Essence
-                        Property.Holy.toString() -> Property.Holy
-                        Property.Unholy.toString() -> Property.Unholy
-                        Property.Dimension.toString() -> Property.Dimension
-                        Property.Nature.toString() -> Property.Nature
-                        Property.Recovery.toString() -> Property.Recovery
-                        Property.Cleanse.toString() -> Property.Cleanse
-                        Property.Drain.toString() -> Property.Drain
-                        Property.Dark.toString() -> Property.Dark
-                        Property.Melee.toString() -> Property.Melee
-                        Property.Curse.toString() -> Property.Curse
-                        Property.Blood.toString() -> Property.Blood
-                        Property.Darkness.toString() -> Property.Darkness
-                        Property.Light.toString() -> Property.Light
-                        Property.Teleport.toString() -> Property.Teleport
-                        else -> error("Unsupported Property $it: update PropertiesAdapter")
-                    }
+    class ConfluenceSetAdapter : ColumnAdapter<Set<ConfluenceSet>, String> {
+        override fun decode(databaseValue: String): Set<ConfluenceSet> {
+            return databaseValue.split(SET_DELIMITER)
+                .map { setValue ->
+                    val (firstName, secondName, thirdName, restrictionValue) = setValue.split(ESSENCE_DELIMITER)
+                    ConfluenceSet(
+                        isRestricted = restrictionValue == RESTRICTED_VALUE
+                    )
                 }
+                .toSet()
         }
 
-        override fun encode(value: List<Property>): String {
-            return value.joinToString(",")
+        override fun encode(value: Set<ConfluenceSet>): String {
+            return value.joinToString(SET_DELIMITER) { confluenceSet ->
+                confluenceSet.set.joinToString(ESSENCE_DELIMITER) { it.name }
+                    .let {
+                        if (confluenceSet.isRestricted) "$it:$RESTRICTED_VALUE"
+                        else "$it:$UNRESTRICTED_VALUE"
+                    }
+            }
         }
-    }
 
-    class ConfluenceSetAdapter : ColumnAdapter<Set<Essence.Manifestation>, String> {
-        override fun decode(databaseValue: String): Set<Essence.Manifestation> {
-            TODO("Not yet implemented")
-        }
-
-        override fun encode(value: Set<Essence.Manifestation>): String {
-            TODO("Not yet implemented")
+        companion object {
+            private const val SET_DELIMITER = ","
+            private const val ESSENCE_DELIMITER = ":"
+            private const val RESTRICTED_VALUE = "restricted"
+            private const val UNRESTRICTED_VALUE = "unrestricted"
         }
     }
 }

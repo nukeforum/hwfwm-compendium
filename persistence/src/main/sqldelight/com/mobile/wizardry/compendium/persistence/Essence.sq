@@ -1,3 +1,4 @@
+import com.mobile.wizardry.compendium.essences.model.ConfluenceSet;
 import com.mobile.wizardry.compendium.essences.model.Cost;
 import com.mobile.wizardry.compendium.essences.model.Essence;
 import com.mobile.wizardry.compendium.essences.model.Property;
@@ -9,7 +10,7 @@ import kotlin.collections.Set;
 CREATE TABLE confluence (
     name TEXT NOT NULL UNIQUE PRIMARY KEY,
     is_restricted INTEGER AS Boolean NOT NULL,
-    confluence_sets TEXT AS Set<Essence.Manifestation> NOT NULL
+    confluence_sets TEXT AS Set<ConfluenceSet> NOT NULL
 );
 
 CREATE TABLE manifestation (
