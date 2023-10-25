@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -45,12 +44,19 @@ class MainActivity : ComponentActivity() {
                             navigationIcon = {
 
                                 if (currentRoute != Nav.EssenceSearch.route) {
-                                    ReturnToSearchButton(navController)
+                                    ReturnToSearchButton {
+                                        navController.popBackStack(
+                                            route = Nav.EssenceSearch.route,
+                                            inclusive = false,
+                                        )
+                                    }
                                 }
                             },
                             actions = {
-                                if (currentRoute != Nav.EssenceRandomizer.route) RandomizerButton(navController)
-                                CreateBuildButton(navController)
+                                if (currentRoute != Nav.EssenceRandomizer.route) {
+                                    RandomizerButton { navController.navigate(Nav.EssenceRandomizer.route) }
+                                }
+                                CreateBuildButton { /*TODO*/ }
                             }
                         )
                     },
@@ -100,31 +106,22 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun RandomizerButton(navController: NavHostController) {
-    IconButton(
-        onClick = {
-            navController.navigate(Nav.EssenceRandomizer.route)
-        }
-    ) {
+private fun RandomizerButton(navigate: () -> Unit) {
+    IconButton(onClick = navigate) {
         Icon(Icons.Filled.Star, contentDescription = null)
     }
 }
 
 @Composable
-private fun CreateBuildButton(navController: NavHostController) {
-    IconButton(onClick = { /*TODO*/ }) {
+private fun CreateBuildButton(navigate: () -> Unit) {
+    IconButton(onClick = navigate) {
         Icon(Icons.Filled.Build, contentDescription = null)
     }
 }
 
 @Composable
-private fun ReturnToSearchButton(navController: NavHostController) {
-    IconButton(
-        onClick = {
-            navController.popBackStack(
-                route = Nav.EssenceSearch.route,
-                inclusive = false,
-            )
-        }
-    ) { Icon(Icons.Filled.Search, contentDescription = null) }
+private fun ReturnToSearchButton(navigate: () -> Unit) {
+    IconButton(onClick = navigate) {
+        Icon(Icons.Filled.Search, contentDescription = null)
+    }
 }
