@@ -5,8 +5,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mobile.wizardry.compendium.ability.preview.ability
 import com.mobile.wizardry.compendium.essences.model.Ability
 import com.mobile.wizardry.compendium.essences.model.Effect
 import com.mobile.wizardry.compendium.essences.model.Rank
@@ -24,7 +24,7 @@ private fun Ability.Acquired.Report() {
     Report(
         titleSlot = { Text(text = "Ability: $name (${boundEssence.name})") },
         progressSlot = {
-            Text(text = "Current Rank: ${ability.rank} ${ability.tier}(${ability.progress * 100}%)")
+            Text(text = "Current Rank: $rank ${tier}(${progress * 100}%)")
             Spacer(modifier = Modifier.height(12.dp))
         },
         effectsSlot = { effects.Report(rank) },
@@ -83,10 +83,18 @@ private fun Ability.reportCooldown(): String {
 private fun Collection<Effect.AbilityEffect>.Report(rank: Rank = Rank.Diamond) {
     val effectsByRank = groupBy { it.rank }
     for (r in Rank.Unranked.ordinal..rank.ordinal) {
-        val currentRank = Rank.values()[r]
+        val currentRank = Rank.entries[r]
         val effectsOfRank = effectsByRank.getOrDefault(currentRank, emptyList())
         if (effectsOfRank.isNotEmpty()) {
             Text(text = "Effect (${currentRank.name}): ${effectsOfRank.joinToString("\n") { it.description }}")
         }
     }
 }
+
+//@Preview
+//@Composable
+//private fun Foo() {
+//    Ability.Acquired(
+//
+//    )
+//}
