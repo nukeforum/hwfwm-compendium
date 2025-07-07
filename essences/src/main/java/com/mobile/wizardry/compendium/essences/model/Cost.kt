@@ -21,4 +21,9 @@ sealed interface Cost {
             return "$amount $resource"
         }
     }
+
+    data object None : Cost {
+        override val amount: Amount = Amount.None
+        override val resource: Resource = Resource.Mana
+    }
 }
