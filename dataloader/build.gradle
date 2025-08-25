@@ -1,7 +1,0 @@
-plugins {
-    id 'compendium.jvm-lib'
-}
-
-dependencies {
-    implementation project(":essences")
-}

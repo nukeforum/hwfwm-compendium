@@ -1,0 +1,89 @@
+
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.compose)
+    kotlin("kapt")
+}
+
+android {
+    namespace = "com.mobile.wizardry.compendium"
+    compileSdk = libs.versions.target.sdk.get().toInt()
+
+    defaultConfig {
+        applicationId = "com.mobile.wizardry.compendium"
+        minSdk = libs.versions.min.sdk.get().toInt()
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    kotlinOptions {
+        jvmTarget = "21"
+    }
+
+    buildFeatures {
+        compose = true
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+}
+
+dependencies {
+    val composeBom = platform(libs.androidx.compose.bom)
+    implementation(composeBom)
+    testImplementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation(project(":ability-preview"))
+    implementation(project(":dataloader"))
+    implementation(project(":design"))
+    implementation(project(":essence-details"))
+    implementation(project(":essence-search"))
+    implementation(project(":essences"))
+    implementation(project(":model-core"))
+    implementation(project(":persistence"))
+    implementation(project(":randomizer"))
+
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.hilt.navigation.compose)
+
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.material)
+    implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.material.icons.core)
+
+    // TODO: Add test dependencies to TOML
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    debugImplementation(libs.androidx.compose.ui.tooling)
+}
