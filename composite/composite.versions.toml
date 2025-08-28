@@ -1,0 +1,9 @@
+[versions]
+
+agp = "8.11.1"
+kotlin = "2.1.21"
+
+[libraries]
+
+agp = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+kotlin-gradle = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }

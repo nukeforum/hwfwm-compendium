@@ -1,19 +1,10 @@
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    id("compendium.android")
     alias(libs.plugins.kotlin.compose)
-    kotlin("kapt")
 }
 
 android {
     namespace = "com.mobile.wizardry.compendium.essenceinfo"
-    compileSdk = libs.versions.target.sdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.min.sdk.get().toInt()
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
 
     buildTypes {
         getByName("release") {
@@ -30,13 +21,6 @@ android {
 
     buildFeatures {
         compose = true
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-    kotlinOptions {
-        jvmTarget = "21"
     }
 }
 
