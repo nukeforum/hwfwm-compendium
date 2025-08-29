@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompilerOptions
 class JvmPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         plugins.apply("org.jetbrains.kotlin.jvm")
-        plugins.apply("org.jetbrains.kotlin.kapt")
+        plugins.apply("com.google.devtools.ksp")
 
         extensions.configure<HasConfigurableKotlinCompilerOptions<KotlinJvmCompilerOptions>>("kotlin") {
             compilerOptions {
@@ -23,7 +23,7 @@ class JvmPlugin : Plugin<Project> {
             add("implementation", checkNotNull(findLibrary("kotlin-coroutines")))
             add("implementation", checkNotNull(findLibrary("dagger")))
 
-            add("kapt", checkNotNull(findLibrary("dagger-compiler")))
+            add("ksp", checkNotNull(findLibrary("dagger-compiler")))
 
             add("testImplementation", checkNotNull(findLibrary("junit4")))
         }

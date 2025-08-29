@@ -9,6 +9,7 @@ dependencies {
 
     compileOnly(composite.agp)
     compileOnly(composite.kotlin.gradle)
+    compileOnly(composite.ksp)
 }
 
 gradlePlugin {
