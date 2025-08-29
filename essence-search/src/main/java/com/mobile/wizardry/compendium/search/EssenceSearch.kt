@@ -10,6 +10,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -35,28 +36,20 @@ fun EssenceSearch(
 ) {
     val state by viewModel.state.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-//        .background(skyBlue)
-    ) {
-        when (state) {
-            is UiResult.Error -> TODO()
-            UiResult.Loading -> Loading(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .weight(1f)
-            )
-            is UiResult.Success -> Screen(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                state = state.data,
-                onEssenceClicked = onEssenceClicked,
-                onFilterTermChanged = viewModel::setFilterTerm,
-                onFilterSelected = viewModel::applyFilter,
-            )
-        }
+    when (state) {
+        is UiResult.Error -> TODO()
+
+        UiResult.Loading -> Loading(
+            modifier = Modifier.fillMaxSize()
+        )
+
+        is UiResult.Success -> Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = state.data,
+            onEssenceClicked = onEssenceClicked,
+            onFilterTermChanged = viewModel::setFilterTerm,
+            onFilterSelected = viewModel::applyFilter,
+        )
     }
 }
 
@@ -110,7 +103,10 @@ private fun FilterDropDown(
     Box(
         modifier = Modifier
             .padding(horizontal = 8.dp)
-            .background(color = MaterialTheme.colors.primarySurface, shape = RoundedCornerShape(8.dp))
+            .background(
+                color = MaterialTheme.colors.primarySurface,
+                shape = RoundedCornerShape(8.dp)
+            )
             .padding(horizontal = 8.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -143,7 +139,10 @@ private fun FilterDropDown(
 private fun Loading(
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.Center,
+    ) {
         Text(text = "Loading")
     }
 }
