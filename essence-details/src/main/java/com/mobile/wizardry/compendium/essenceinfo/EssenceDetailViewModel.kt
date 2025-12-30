@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.model.Essence
-import com.mobile.wizardry.compendium.model.core.UiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,24 +17,24 @@ class EssenceDetailViewModel
     private val essenceProvider: EssenceProvider,
 ) : ViewModel() {
     private val history = ArrayDeque<Essence>()
-    private val _state = MutableStateFlow<UiResult<EssenceDetailUiState>>(UiResult.Loading)
+    private val _state = MutableStateFlow<EssenceDetailUiState>(EssenceDetailUiState.Loading)
     val state = _state.asStateFlow()
 
     fun load(essenceHash: Int) {
         currentlyLoadedEssence?.let { history.addFirst(it) }
         viewModelScope.launch(Dispatchers.IO) {
-            _state.emit(UiResult.Loading)
+            _state.emit(EssenceDetailUiState.Loading)
 
             essenceProvider.getEssences().find { it.hashCode() == essenceHash }
                 ?.let { essence -> buildState(essence) }
-                ?: _state.emit(UiResult.Error(IllegalArgumentException("no essence found with hash: $essenceHash")))
+                ?: _state.emit(EssenceDetailUiState.Error(IllegalArgumentException("no essence found with hash: $essenceHash")))
         }
     }
 
     fun load(essence: Essence) {
         currentlyLoadedEssence?.let { history.addFirst(it) }
         viewModelScope.launch(Dispatchers.IO) {
-            _state.emit(UiResult.Loading)
+            _state.emit(EssenceDetailUiState.Loading)
 
             buildState(essence)
         }
@@ -49,7 +48,9 @@ class EssenceDetailViewModel
     }
 
     private suspend fun buildConfluenceState(essence: Essence.Confluence) {
-        EssenceDetailUiState.ConfluenceUiState(essence, history.firstOrNull() as? Essence.Manifestation).emit()
+        EssenceDetailUiState.Success.ConfluenceUiState(
+            essence,
+            history.firstOrNull() as? Essence.Manifestation).emit()
     }
 
     private suspend fun buildManifestationState(essence: Essence.Manifestation) {
@@ -57,7 +58,7 @@ class EssenceDetailViewModel
             .filterIsInstance<Essence.Confluence>()
             .filter { it.isProducedBy(essence) }
 
-        EssenceDetailUiState.ManifestationUiState(
+        EssenceDetailUiState.Success.ManifestationUiState(
             essence,
             history.firstOrNull() as? Essence.Confluence,
             confluences
@@ -69,12 +70,12 @@ class EssenceDetailViewModel
     }
 
     private suspend fun EssenceDetailUiState.emit() {
-        _state.emit(UiResult.Success(this))
+        _state.emit(this)
     }
 
     private val currentlyLoadedEssence: Essence?
         get() {
-            return state.value.takeIf { it is UiResult.Success }?.data?.essence
+            return (state.value as? EssenceDetailUiState.Success)?.essence
         }
 
     fun goBack() {

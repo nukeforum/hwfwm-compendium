@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.wizardry.compendium.essences.model.Essence
-import com.mobile.wizardry.compendium.model.core.UiResult
 
 @Composable
 fun Randomizer(
@@ -20,18 +19,18 @@ fun Randomizer(
     val state by viewModel.state.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        when (state) {
-            is UiResult.Success -> {
+        when (val result = state) {
+            is RandomizerUiState.Success -> {
                 RandomizerResult(
-                    state.data.randomizedSet,
-                    state.data.knownConfluence,
+                    result.randomizedSet,
+                    result.knownConfluence,
                     Modifier
                         .fillMaxWidth()
                         .weight(1f)
                 )
             }
-            is UiResult.Error -> TODO()
-            UiResult.Loading -> Loading(
+            is RandomizerUiState.Error -> TODO()
+            RandomizerUiState.Loading -> Loading(
                 Modifier
                     .fillMaxWidth()
                     .weight(1f)

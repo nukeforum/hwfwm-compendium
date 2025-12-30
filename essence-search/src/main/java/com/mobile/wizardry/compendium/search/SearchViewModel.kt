@@ -20,7 +20,7 @@ class SearchViewModel
     private val filtersFlow = MutableStateFlow(SearchFilter.options.associateBy { it.name })
     private val filterTermFlow = MutableStateFlow("")
 
-    private val _state = MutableStateFlow<UiResult<SearchUiState>>(UiResult.Loading)
+    private val _state = MutableStateFlow<SearchUiState>(SearchUiState.Loading)
     val state = _state.asStateFlow()
 
     init {
@@ -30,16 +30,14 @@ class SearchViewModel
                 filterTermFlow,
                 filtersFlow.map { it.values }
             ) { essences, filterTerm, filters ->
-                SearchUiState(
+                SearchUiState.Success(
                     essences.filterWith(filterTerm, filters),
                     filterTerm,
                     filters
                 )
             }
                 .onEach {
-                    if (_state.value !is UiResult.Loading || it.essences.isNotEmpty()) {
-                        it.emit()
-                    }
+                    it.emit()
                 }
                 .collect()
         }
@@ -87,6 +85,6 @@ class SearchViewModel
     }
 
     private suspend fun SearchUiState.emit() {
-        _state.emit(UiResult.Success(this))
+        _state.emit(this)
     }
 }

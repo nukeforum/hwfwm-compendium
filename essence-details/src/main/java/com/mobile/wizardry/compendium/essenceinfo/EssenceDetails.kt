@@ -36,14 +36,16 @@ fun EssenceDetails(
 
     val state by viewModel.state.collectAsState()
 
-    BackHandler(enabled = (state as? UiResult.Success)?.data?.previousEssence != null) { viewModel.goBack() }
+    BackHandler(
+        enabled = (state as? EssenceDetailUiState.Success)?.previousEssence != null
+    ) { viewModel.goBack() }
 
-    when (state) {
-        is UiResult.Error -> TODO()
-        UiResult.Loading -> Loading()
-        is UiResult.Success -> {
-            onEssenceLoaded(state.data.essence)
-            Details(state = state.data, onEssenceClick = { viewModel.load(it) })
+    when (val details = state) {
+        is EssenceDetailUiState.Error -> TODO()
+        EssenceDetailUiState.Loading -> Loading()
+        is EssenceDetailUiState.Success -> {
+            onEssenceLoaded(details.essence)
+            Details(state = details, onEssenceClick = { viewModel.load(it) })
         }
     }
 }
@@ -60,7 +62,7 @@ private fun Loading() {
 
 @Composable
 private fun Details(
-    state: EssenceDetailUiState,
+    state: EssenceDetailUiState.Success,
     onEssenceClick: (Essence) -> Unit,
 ) {
     Column(
@@ -79,17 +81,25 @@ private fun Details(
                 text = state.essence.report()
             )
         }
+
         Spacer(modifier = Modifier.height(16.dp))
+
         when (state) {
-            is EssenceDetailUiState.ConfluenceUiState -> ConfluenceDetails(state = state, onEssenceClick = onEssenceClick)
-            is EssenceDetailUiState.ManifestationUiState -> ManifestationDetails(state = state, onEssenceClick = onEssenceClick)
+            is EssenceDetailUiState.Success.ConfluenceUiState -> ConfluenceDetails(
+                state = state,
+                onEssenceClick = onEssenceClick
+            )
+            is EssenceDetailUiState.Success.ManifestationUiState -> ManifestationDetails(
+                state = state,
+                onEssenceClick = onEssenceClick
+            )
         }
     }
 }
 
 @Composable
 private fun ConfluenceDetails(
-    state: EssenceDetailUiState.ConfluenceUiState,
+    state: EssenceDetailUiState.Success.ConfluenceUiState,
     onEssenceClick: (Essence) -> Unit,
 ) {
     Text("Known confluence combinations:")
@@ -102,7 +112,7 @@ private fun ConfluenceDetails(
 
 @Composable
 private fun ManifestationDetails(
-    state: EssenceDetailUiState.ManifestationUiState,
+    state: EssenceDetailUiState.Success.ManifestationUiState,
     onEssenceClick: (Essence) -> Unit,
 ) {
     val producedConfluences = state.knownConfluences

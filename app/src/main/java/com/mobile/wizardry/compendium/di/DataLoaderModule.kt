@@ -14,22 +14,20 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-class DataLoaderModule {
+abstract class DataLoaderModule {
     @Singleton
-    @Provides
-    fun getEssenceCache(): EssenceCache {
-        return EssenceCache.get()
-    }
+    @Binds
+    abstract fun getFileStreamSource(source: AssetFileStreamSource): FileStreamSource
 
-    @Module
-    @InstallIn(SingletonComponent::class)
-    interface DataLoaderBinder {
-        @Singleton
-        @Binds
-        fun getFileStreamSource(source: AssetFileStreamSource): FileStreamSource
+    @Singleton
+    @Binds
+    abstract fun getEssenceDataLoader(loader: EssenceCsvLoader): EssenceDataLoader
 
+    companion object {
         @Singleton
-        @Binds
-        fun getEssenceDataLoader(loader: EssenceCsvLoader): EssenceDataLoader
+        @Provides
+        fun getEssenceCache(): EssenceCache {
+            return EssenceCache.get()
+        }
     }
 }

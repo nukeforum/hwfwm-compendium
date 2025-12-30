@@ -1,15 +1,10 @@
 package com.mobile.wizardry.compendium.model.core
 
 sealed interface UiResult<out T> {
-    val data: T
 
-    object Loading : UiResult<Nothing> {
-        override val data get() = throw Exception("Loading contains no data")
-    }
+    object Loading : UiResult<Nothing>
 
-    class Error(val e: Throwable) : UiResult<Nothing> {
-        override val data get() = throw e
-    }
+    class Error(val e: Throwable) : UiResult<Nothing>
 
-    class Success<T>(override val data: T) : UiResult<T>
+    class Success<T>(val data: T) : UiResult<T>
 }

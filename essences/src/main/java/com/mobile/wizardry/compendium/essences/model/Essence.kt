@@ -56,8 +56,9 @@ interface Essence : Entity {
             restricted: Boolean,
             vararg confluences: ConfluenceSet
         ): Confluence {
-            check(confluences.isNotEmpty() && confluences.size == 3) {
-                "Confluence Essences cannot be created without a set of Essences that produce it."
+            check(confluences.isNotEmpty() && confluences.all { it.set.size == 3 }) {
+                "Confluence Essences cannot be created without a set of Essences that produce it." +
+                        "Provided essences:\n${confluences.joinToString("\n")}"
             }
 
             return Confluence(name, confluences.toSet(), restricted)

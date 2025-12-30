@@ -25,11 +25,11 @@ class RandomizerViewModel
     private val manifestations = MutableStateFlow(emptyList<Essence.Manifestation>())
     private val confluences = MutableStateFlow(emptyList<Essence.Confluence>())
 
-    private val _state = MutableStateFlow<UiResult<RandomizerUiState>>(UiResult.Loading)
+    private val _state = MutableStateFlow<RandomizerUiState>(RandomizerUiState.Loading)
     val state get() = _state.asStateFlow()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             _essences.emit(essenceProvider.getEssences())
         }
 
@@ -40,17 +40,21 @@ class RandomizerViewModel
                 .collect {
                     manifestations.emit(it.filterIsInstance<Essence.Manifestation>())
                     confluences.emit(it.filterIsInstance<Essence.Confluence>())
-                    RandomizerUiState(emptySet(), null).emit()
+                    RandomizerUiState.Success(emptySet(), null).emit()
                 }
         }
     }
 
     fun randomize() {
         viewModelScope.launch(Dispatchers.IO) {
-            _state.emit(UiResult.Loading)
+            _state.emit(RandomizerUiState.Loading)
 
             if (essences.isEmpty()) {
-                _state.emit(UiResult.Error(IllegalStateException("No essences are available to randomize.")))
+                _state.emit(
+                    RandomizerUiState.Error(
+                        IllegalStateException("No essences are available to randomize.")
+                    )
+                )
                 return@launch
             }
 
@@ -61,11 +65,11 @@ class RandomizerViewModel
 
             val confluence = confluences.value.find { it.confluenceSets.contains(ConfluenceSet(set)) }
 
-            RandomizerUiState(set, confluence).emit()
+            RandomizerUiState.Success(set, confluence).emit()
         }
     }
 
     private suspend fun RandomizerUiState.emit() {
-        _state.emit(UiResult.Success(this))
+        _state.emit(this)
     }
 }

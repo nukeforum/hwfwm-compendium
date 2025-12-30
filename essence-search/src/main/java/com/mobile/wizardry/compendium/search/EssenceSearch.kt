@@ -27,8 +27,6 @@ import com.mobile.wizardry.compendium.essences.model.Rarity
 import com.mobile.wizardry.compendium.model.core.UiResult
 import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
 
-private val skyBlue = Color(0xFF87CEEB)
-
 @Composable
 fun EssenceSearch(
     viewModel: SearchViewModel = hiltViewModel(),
@@ -36,16 +34,16 @@ fun EssenceSearch(
 ) {
     val state by viewModel.state.collectAsState()
 
-    when (state) {
-        is UiResult.Error -> TODO()
+    when (val result = state) {
+        is SearchUiState.Error -> TODO()
 
-        UiResult.Loading -> Loading(
+        SearchUiState.Loading -> Loading(
             modifier = Modifier.fillMaxSize()
         )
 
-        is UiResult.Success -> Screen(
+        is SearchUiState.Success -> Screen(
             modifier = Modifier.fillMaxSize(),
-            state = state.data,
+            state = result,
             onEssenceClicked = onEssenceClicked,
             onFilterTermChanged = viewModel::setFilterTerm,
             onFilterSelected = viewModel::applyFilter,
@@ -56,41 +54,46 @@ fun EssenceSearch(
 @Composable
 private fun Screen(
     modifier: Modifier,
-    state: SearchUiState,
+    state: SearchUiState.Success,
     onEssenceClicked: (Essence) -> Unit,
     onFilterTermChanged: (String) -> Unit,
     onFilterSelected: (SearchFilter) -> Unit,
 ) {
-    LazyColumn(modifier = modifier) {
-        items(state.essences, { it.hashCode() }) { essence ->
-            EssenceListItem(
-                essence = essence,
-                modifier = Modifier
-                    .clickable(onClick = { onEssenceClicked(essence) })
-            )
-        }
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextField(
-            label = { Text(text = "Type an essence name") },
-            value = state.filterTerm,
-            onValueChange = { onFilterTermChanged(it) },
-            trailingIcon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_x),
-                    contentDescription = stringResource(R.string.clear_search_accessibility),
-                    modifier = Modifier.clickable { onFilterTermChanged("") }
+    Column {
+        LazyColumn(
+            modifier = modifier
+                .weight(1f, fill = false)
+        ) {
+            items(state.essences, { it.hashCode() }) { essence ->
+                EssenceListItem(
+                    essence = essence,
+                    modifier = Modifier
+                        .clickable(onClick = { onEssenceClicked(essence) })
                 )
-            },
-            modifier = Modifier.weight(1f)
-        )
+            }
+        }
 
-        FilterDropDown(onFilterSelected, state.appliedFilters)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextField(
+                label = { Text(text = "Type an essence name") },
+                value = state.filterTerm,
+                onValueChange = { onFilterTermChanged(it) },
+                trailingIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_x),
+                        contentDescription = stringResource(R.string.clear_search_accessibility),
+                        modifier = Modifier.clickable { onFilterTermChanged("") }
+                    )
+                },
+                modifier = Modifier.weight(1f)
+            )
+
+            FilterDropDown(onFilterSelected, state.appliedFilters)
+        }
     }
 }
 
