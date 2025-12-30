@@ -4,8 +4,7 @@ sealed interface Ability : Entity {
     override val name: String
     val effects: List<Effect.AbilityEffect>
 
-    data class Acquired
-    internal constructor(
+    data class Acquired(
         override val name: String,
         override val effects: List<Effect.AbilityEffect>,
         val rank: Rank,

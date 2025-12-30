@@ -18,32 +18,32 @@ import com.mobile.wizardry.compendium.essences.model.Rank
 import com.mobile.wizardry.compendium.essences.model.Resource
 
 @Composable
-internal fun Ability.Report() {
-    when (this) {
-        is Ability.Acquired -> Report()
-        is Ability.Listing -> Report()
+internal fun Report(ability: Ability) {
+    when (ability) {
+        is Ability.Acquired -> Report(ability)
+        is Ability.Listing -> Report(ability)
     }
 }
 
 @Composable
-private fun Ability.Acquired.Report() {
-    Report(
-        titleSlot = { Text(text = "Ability: $name (${boundEssence.name})") },
+private fun Report(acquiredAbility: Ability.Acquired) {
+    acquiredAbility.Report(
+        titleSlot = { Text(text = "Ability: ${acquiredAbility.name} (${acquiredAbility.boundEssence.name})") },
         progressSlot = {
-            Text(text = "Current Rank: $rank ${tier}(${progress * 100}%)")
+            Text(text = "Current Rank: ${acquiredAbility.rank} ${acquiredAbility.tier}(${acquiredAbility.progress * 100}%)")
             Spacer(modifier = Modifier.height(12.dp))
         },
-        effectsSlot = { effects.Report(rank) },
+        effectsSlot = { acquiredAbility.effects.Report(acquiredAbility.rank) },
     )
 }
 
 @Composable
-private fun Ability.Listing.Report() {
-    Report(
+private fun Report(abilityListing: Ability.Listing) {
+    abilityListing.Report(
         titleSlot = {
-            Text(text = "Ability: $name")
+            Text(text = "Ability: ${abilityListing.name}")
         },
-        effectsSlot = { effects.Report() },
+        effectsSlot = { abilityListing.effects.Report() },
     )
 }
 
@@ -107,36 +107,38 @@ private fun Collection<Effect.AbilityEffect>.Report(rank: Rank = Rank.Diamond) {
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 private fun Foo() {
-    Ability.Listing(
-        "Cloak of Night",
-        listOf(
-            Effect.AbilityEffect(
-                Rank.Iron,
-                AbilityType.Conjuration,
-                listOf(Property.Darkness, Property.Light, Property.Dimension),
-                listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
-                0,
-                "Conjures a magical cloak that can alter the wearer. Offers limited physical protection. Can generate light or blend into shadows."
-            ),
-            Effect.AbilityEffect(
-                Rank.Iron,
-                AbilityType.Conjuration,
-                listOf(Property.Darkness, Property.Light, Property.Dimension),
-                listOf(Cost.Ongoing(Amount.Low, Resource.Mana)),
-                0,
-                "Cloak can reduce the weight of the wearer for a low mana-per-second cost, allowing reduced falling speed and water-walking."
-            ),
-            Effect.AbilityEffect(
-                Rank.Iron,
-                AbilityType.Conjuration,
-                listOf(Property.Darkness, Property.Light, Property.Dimension),
-                listOf(Cost.None),
-                0,
-                "Cannot be given or taken away, although effects can be extended to others in very close proximity."
+    Report(
+        Ability.Listing(
+            "Cloak of Night",
+            listOf(
+                Effect.AbilityEffect(
+                    Rank.Iron,
+                    AbilityType.Conjuration,
+                    listOf(Property.Darkness, Property.Light, Property.Dimension),
+                    listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
+                    0,
+                    "Conjures a magical cloak that can alter the wearer. Offers limited physical protection. Can generate light or blend into shadows."
+                ),
+                Effect.AbilityEffect(
+                    Rank.Iron,
+                    AbilityType.Conjuration,
+                    listOf(Property.Darkness, Property.Light, Property.Dimension),
+                    listOf(Cost.Ongoing(Amount.Low, Resource.Mana)),
+                    0,
+                    "Cloak can reduce the weight of the wearer for a low mana-per-second cost, allowing reduced falling speed and water-walking."
+                ),
+                Effect.AbilityEffect(
+                    Rank.Iron,
+                    AbilityType.Conjuration,
+                    listOf(Property.Darkness, Property.Light, Property.Dimension),
+                    listOf(Cost.None),
+                    0,
+                    "Cannot be given or taken away, although effects can be extended to others in very close proximity."
+                )
             )
         )
-    ).Report()
+    )
 }
