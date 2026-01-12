@@ -7,6 +7,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+/**
+ * Loads [Essence] data from CSV files provided by the [FileStreamSource].
+ * This implementation is responsible for parsing the raw CSV data from "essences.csv", "combinations.csv",
+ * and "restricted.csv" to construct the full list of essences.
+ *
+ * @param source The [FileStreamSource] providing access to the raw CSV data.
+ */
 class EssenceCsvLoader
 @Inject constructor(
     private val source: FileStreamSource,
