@@ -18,8 +18,11 @@ fun Project.findLibrary(key: String): MinimalExternalModuleDependency {
 
     fun Project.findVersion(key: String): String {
         val catalogsExtension = the<VersionCatalogsExtension>()
-        return catalogsExtension.catalogNames.firstNotNullOfOrNull {
-            catalogsExtension.named(it).findVersion(key).getOrNull()?.toString().orEmpty()
+        return catalogsExtension.catalogNames
+            .also { println("${it.count()} catalogs found") }
+            .firstNotNullOfOrNull {
+            println("catalog named: $it")
+            catalogsExtension.named(it).findVersion(key).getOrNull()?.toString()
         }
             .orEmpty()
     }

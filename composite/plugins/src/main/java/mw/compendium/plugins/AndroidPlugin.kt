@@ -1,6 +1,6 @@
 package mw.compendium.plugins
 
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.LibraryExtension
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -18,9 +18,11 @@ class AndroidPlugin : Plugin<Project> {
             compileSdk = findVersion("target_sdk").toInt()
             defaultConfig {
                 minSdk = findVersion("min_sdk").toInt()
-                @Suppress("DEPRECATION")
-                targetSdk = findVersion("target_sdk").toInt()
                 testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+            }
+
+            testOptions {
+                targetSdk = findVersion("target_sdk").toInt()
             }
 
             compileOptions {
