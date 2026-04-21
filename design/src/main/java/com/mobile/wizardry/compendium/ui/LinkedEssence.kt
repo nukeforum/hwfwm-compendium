@@ -8,8 +8,15 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mobile.wizardry.compendium.essences.model.AbilityType
+import com.mobile.wizardry.compendium.essences.model.Cost
+import com.mobile.wizardry.compendium.essences.model.Effect
 import com.mobile.wizardry.compendium.essences.model.Essence
+import com.mobile.wizardry.compendium.essences.model.Property
+import com.mobile.wizardry.compendium.essences.model.Rank
+import com.mobile.wizardry.compendium.essences.model.Rarity
 import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
@@ -26,5 +33,33 @@ fun LinkedEssence(
             .background(essenceHighlight(isRestricted = isRestricted))
             .border(1.dp, if (isLastViewed) Color.Cyan else Color.DarkGray)
             .padding(8.dp),
+    )
+}
+
+@Preview
+@Composable
+internal fun LinkedEssencePreview() {
+    LinkedEssence(
+        essence = Essence.Manifestation(
+            "Light",
+            Rank.Iron,
+            Rarity.Uncommon,
+            properties = listOf(Property.Light),
+            effects = listOf(
+                Effect.AbilityEffect(
+                    rank = Rank.Iron,
+                    type = AbilityType.SpecialAbility,
+                    properties = listOf(Property.Light, Property.Holy),
+                    cost = listOf(Cost.None),
+                    cooldown = 5,
+                    description = "a description"
+                )
+            ),
+            description = "a description",
+            isRestricted = false
+        ),
+        isLastViewed = true,
+        isRestricted = false,
+        onEssenceClick = {}
     )
 }

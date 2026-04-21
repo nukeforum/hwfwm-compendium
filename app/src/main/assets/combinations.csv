@@ -41,9 +41,10 @@ Death,Myriad,Void,Cataclysm
 Balance,Magic,Potent,Chaotic
 Adept,Magic,Trap,Charlatan
 Cat,Tentacle,Void,Chimera
-Snake,Spider,Venom,Chimera
 Earth,Pangolin,Shark,Chimera
 Lizard,Spider,Wolf,Chimera
+Rat,Skunk,Snake,Chimera
+Snake,Spider,Venom,Chimera
 Death,Iron,Life,Cyborg
 Flesh,Iron,Myriad,Cyborg
 Flesh,Myriad,Technology,Cyborg
@@ -52,6 +53,8 @@ Death,Flesh,Iron,Cyborg
 Flesh,Iron,Technology,Cyborg
 Flesh,Might,Technology,Cyborg
 Balance,Light,Renewal,Cycle
+Corrupt,Pure,Renewal,Cycle
+Moon,Renewal,Sun,Cycle
 Renewal,Sun,Water,Dawn
 Dark,Light,Sun,Dawn
 Fire,Omen,Sun,Dawn
@@ -122,6 +125,7 @@ Dimension,Magic,Rune,Gate
 Fire,Mirror,Venom,Glimeron
 Earth,Hair,Snake,Gorgon
 Bird,Cat,Might,Griffin
+Knowledge,Manatee,Sand,Guardian
 Magic,Shield,Void,Guardian
 Shield,Trap,Void,Guardian
 Claw,Malign,Song,Harpy
@@ -172,9 +176,10 @@ Adept,Magic,Potent,Master
 Life,Pure,Renewal,Ministration
 Cattle,Might,Trap,Minotaur
 Cattle,Hunt,Might,Minotaur
+Dimension,Shimmer,Vast,Mirage
 Fire,Light,Water,Mirage
-Sun,Vast,Water,Mirage
 Sand,Sun,Visage,Mirage
+Sun,Vast,Water,Mirage
 Earth,Growth,Might,Monolith
 Magic,Might,Staff,Mystic
 Magic,Omen,Vast,Mystic
@@ -191,6 +196,7 @@ Balance,Hand,Iron,Mystic
 Blood,Renewal,Sword,Mystic
 Cloud,Vast,Void,Nebula
 Balance,Mirror,Void,Nemesis
+Myriad,Technology,Vast,Network
 Earth,Sand,Water,Oasis
 Vast,Vehicle,Water,Ocean
 Bow,Gathering,Myriad,Onslaught
@@ -210,8 +216,9 @@ Myriad,Vast,Visage,Phantasmagoria
 Fire,Renewal,Wing,Phoenix
 Bow,Dark,Hunt,Predatory
 Bow,Hunt,Trap,Predatory
-Spear,Spider,Wing,Predatory
 Bow,Spider,Trap,Predatory
+Hunt,Myriad,Wolf,Predatory
+Spear,Spider,Wing,Predatory
 Chain,Iron,Myriad,Prison
 Shield,Trap,Vast,Prison
 Cage,Rune,Trap,Prison
@@ -285,7 +292,12 @@ Blood,Fire,Iron,Transfiguration
 Axe,Bear,Moon,Transfiguration
 Hunger,Moon,Wolf,Transfiguration
 Balance,Fire,Ice,Transfiguration
+Bird,Water,Wind,Transgression
+Corrupt,Pure,Sin,Transgression
+Death,Dimension,Life,Transgression
 Death,Dimension,Magic,Transgression
+Fish,Water,Wind,Transgression
+Moon,Myriad,Sun,Transgression
 Blood,Might,Renewal,Troll
 Moon,Omen,Wind,Twilight
 Dark,Light,Moon,Twilight

@@ -20,6 +20,7 @@ jetbrains-kotlin-jvm = "2.3.20"
 androidx-compose-ui-test-junit4 = "1.10.6"
 accompanist-flowlayout = "0.36.0"
 compose-runtime = "1.10.6"
+sqldelight = "2.3.2"
 
 [libraries]
 #kotlin
@@ -56,6 +57,12 @@ ksp = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin"
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "compose-runtime" }
 
+#sqldelight
+sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
+sqldelight-coroutines = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
+sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android-gradle" }
 android-library = { id = "com.android.library", version.ref = "android-gradle" }
@@ -64,3 +71,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrains-kotlin-jvm" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }

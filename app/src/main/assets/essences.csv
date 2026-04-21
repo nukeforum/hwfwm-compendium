@@ -11,6 +11,7 @@ Blight,Unknown
 Blood,Uncommon
 Bone,Uncommon
 Bow,Common
+Brush,Unknown
 Cage,Common
 Cat,Common
 Cattle,Common
@@ -72,7 +73,6 @@ Light,Uncommon
 Lightning,Uncommon
 Lizard,Common
 Locust,Common
-Lurker,Unknown
 Magic,Common
 Malign,Epic
 Manatee,Common
@@ -132,7 +132,6 @@ Vehicle,Common
 Venom,Uncommon
 Visage,Legendary
 Void,Legendary
-Wall,Unknown
 Wasp,Common
 Water,Common
 Whale,Common

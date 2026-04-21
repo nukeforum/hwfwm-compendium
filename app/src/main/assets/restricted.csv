@@ -1,8 +1,9 @@
 Fungus,Growth,Zeal,Animate
 Bone,Death,Magic,Animate
 Corrupt,Dimension,Magic,Avatar
-Corrupt,Dimension,Potent,Avatar
 Corrupt,Dimension,Might,Avatar
+Corrupt,Dimension,Potent,Avatar
+Corrupt,Magic,Void,Avatar
 Death,Myriad,Void,Cataclysm
 Flesh,Iron,Technology,Cyborg
 Flesh,Iron,Death,Cyborg
@@ -22,6 +23,7 @@ Death,Dimension,Zeal,Doom
 Corrupt,Feast,Growth,Doom
 Balance,Death,Life,Eclipse
 Blood,Dimension,Goat,Sacrifice
+Dimension,Knife,Sin,Sacrifice
 Hunger,Knife,Sun,Sacrifice
 Flesh,Sin,Visage,Succubus
 Hunger,Magic,Sin,Succubus
@@ -46,6 +48,7 @@ Blood,Dark,Death,Undeath
 Blood,Death,Sin,Undeath
 Blood,Death,Moon,Undeath
 Blood,Death,Hunt,Undeath
+Death,Vehicle,Water,Vessel
 Flesh,Hunger,Might,Wendigo
 Always Restricted,,,
 Sacrifice,,,

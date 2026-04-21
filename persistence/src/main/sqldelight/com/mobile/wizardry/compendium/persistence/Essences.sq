@@ -1,0 +1,48 @@
+CREATE TABLE manifestation (
+    name TEXT PRIMARY KEY NOT NULL,
+    rarity TEXT NOT NULL,
+    description TEXT NOT NULL,
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE confluence (
+    name TEXT PRIMARY KEY NOT NULL,
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE confluence_set (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    confluence_name TEXT NOT NULL REFERENCES confluence(name),
+    essence1 TEXT NOT NULL REFERENCES manifestation(name),
+    essence2 TEXT NOT NULL REFERENCES manifestation(name),
+    essence3 TEXT NOT NULL REFERENCES manifestation(name),
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+insertManifestation:
+INSERT OR REPLACE INTO manifestation(name, rarity, description, is_restricted) VALUES (?, ?, ?, ?);
+
+insertConfluence:
+INSERT OR REPLACE INTO confluence(name, is_restricted) VALUES (?, ?);
+
+insertConfluenceSet:
+INSERT INTO confluence_set(confluence_name, essence1, essence2, essence3, is_restricted)
+VALUES (?, ?, ?, ?, ?);
+
+selectAllManifestations:
+SELECT * FROM manifestation;
+
+selectAllConfluences:
+SELECT * FROM confluence;
+
+selectAllConfluenceSets:
+SELECT * FROM confluence_set;
+
+deleteAllConfluenceSets:
+DELETE FROM confluence_set;
+
+deleteAllConfluences:
+DELETE FROM confluence;
+
+deleteAllManifestations:
+DELETE FROM manifestation;
