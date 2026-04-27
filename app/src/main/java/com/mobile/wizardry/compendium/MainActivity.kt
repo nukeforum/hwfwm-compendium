@@ -9,6 +9,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,10 +18,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.mobile.wizardry.compendium.contributions.ContributionsScreen
 import com.mobile.wizardry.compendium.essenceinfo.EssenceDetails
 import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.randomizer.Randomizer
 import com.mobile.wizardry.compendium.search.EssenceSearch
+import com.mobile.wizardry.compendium.settings.SettingsScreen
 import com.mobile.wizardry.compendium.ui.theme.CompendiumTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -42,7 +45,6 @@ class MainActivity : ComponentActivity() {
                         TopAppBar(
                             title = { Text(text = title) },
                             navigationIcon = {
-
                                 if (currentRoute != Nav.EssenceSearch.route) {
                                     ReturnToSearchButton {
                                         navController.popBackStack(
@@ -56,7 +58,8 @@ class MainActivity : ComponentActivity() {
                                 if (currentRoute != Nav.EssenceRandomizer.route) {
                                     RandomizerButton { navController.navigate(Nav.EssenceRandomizer.route) }
                                 }
-                                CreateBuildButton { /*TODO*/ }
+                                ContributionsButton { navController.navigate(Nav.Contributions.route) }
+                                SettingsButton { navController.navigate(Nav.Settings.route) }
                             }
                         )
                     },
@@ -96,7 +99,18 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Nav.EssenceRandomizer.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
+                            title = "Randomizer"
                             Randomizer()
+                        }
+                        composable(Nav.Settings.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Settings"
+                            SettingsScreen()
+                        }
+                        composable(Nav.Contributions.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Add Contribution"
+                            ContributionsScreen()
                         }
                     }
                 }
@@ -108,14 +122,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun RandomizerButton(navigate: () -> Unit) {
     IconButton(onClick = navigate) {
-        Icon(Icons.Filled.Star, contentDescription = null)
+        Icon(Icons.Filled.Star, contentDescription = "Randomizer")
     }
 }
 
 @Composable
-private fun CreateBuildButton(navigate: () -> Unit) {
+private fun ContributionsButton(navigate: () -> Unit) {
     IconButton(onClick = navigate) {
-        Icon(Icons.Filled.Build, contentDescription = null)
+        Icon(Icons.Filled.Build, contentDescription = "Add contribution")
+    }
+}
+
+@Composable
+private fun SettingsButton(navigate: () -> Unit) {
+    IconButton(onClick = navigate) {
+        Icon(Icons.Filled.Settings, contentDescription = "Settings")
     }
 }
 

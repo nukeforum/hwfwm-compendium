@@ -21,6 +21,7 @@ androidx-compose-ui-test-junit4 = "1.10.6"
 accompanist-flowlayout = "0.36.0"
 compose-runtime = "1.10.6"
 sqldelight = "2.3.2"
+androidx-datastore = "1.1.1"
 
 [libraries]
 #kotlin
@@ -56,6 +57,8 @@ ksp = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin"
 #testing
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "compose-runtime" }
+
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }
 
 #sqldelight
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }

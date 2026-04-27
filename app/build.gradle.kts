@@ -53,6 +53,7 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation(project(":ability-preview"))
+    implementation(project(":contributions"))
     implementation(project(":dataloader"))
     implementation(project(":design"))
     implementation(project(":essence-details"))
@@ -73,6 +74,7 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.sqldelight.android.driver)
+    implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material)

@@ -2,26 +2,23 @@ package com.mobile.wizardry.compendium.randomizer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.wizardry.compendium.essences.ContributionsToggleFlow
 import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.model.ConfluenceSet
 import com.mobile.wizardry.compendium.essences.model.Essence
-import com.mobile.wizardry.compendium.model.core.UiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class RandomizerViewModel
 @Inject constructor(
-    private val essenceProvider: EssenceProvider
+    private val essenceProvider: EssenceProvider,
+    private val contributionsToggleFlow: ContributionsToggleFlow,
 ) : ViewModel() {
-    private val _essences = MutableStateFlow(emptyList<Essence>())
-    private val essences get() = _essences.value
     private val manifestations = MutableStateFlow(emptyList<Essence.Manifestation>())
     private val confluences = MutableStateFlow(emptyList<Essence.Confluence>())
 
@@ -29,19 +26,13 @@ class RandomizerViewModel
     val state get() = _state.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            _essences.emit(essenceProvider.getEssences())
-        }
-
         viewModelScope.launch(Dispatchers.IO) {
-            _essences
-                .filter { it.isNotEmpty() }
-                .take(1)
-                .collect {
-                    manifestations.emit(it.filterIsInstance<Essence.Manifestation>())
-                    confluences.emit(it.filterIsInstance<Essence.Confluence>())
-                    RandomizerUiState.Success(emptySet(), null).emit()
-                }
+            contributionsToggleFlow.contributionsEnabled.collect { _ ->
+                val essences = essenceProvider.getEssences()
+                manifestations.emit(essences.filterIsInstance<Essence.Manifestation>())
+                confluences.emit(essences.filterIsInstance<Essence.Confluence>())
+                RandomizerUiState.Success(emptySet(), null).emit()
+            }
         }
     }
 
@@ -49,7 +40,8 @@ class RandomizerViewModel
         viewModelScope.launch(Dispatchers.IO) {
             _state.emit(RandomizerUiState.Loading)
 
-            if (essences.isEmpty()) {
+            val currentManifestations = manifestations.value
+            if (currentManifestations.isEmpty()) {
                 _state.emit(
                     RandomizerUiState.Error(
                         IllegalStateException("No essences are available to randomize.")
@@ -60,7 +52,7 @@ class RandomizerViewModel
 
             val set = mutableSetOf<Essence.Manifestation>()
             while (set.size < 3) {
-                set.add(manifestations.value.random())
+                set.add(currentManifestations.random())
             }
 
             val confluence = confluences.value.find { it.confluenceSets.contains(ConfluenceSet(set)) }

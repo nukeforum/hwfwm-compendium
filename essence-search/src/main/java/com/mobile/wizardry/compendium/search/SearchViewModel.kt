@@ -3,10 +3,11 @@ package com.mobile.wizardry.compendium.search
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mobile.wizardry.compendium.essences.ContributionsToggleFlow
 import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.essences.model.Essence
-import com.mobile.wizardry.compendium.model.core.UiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -14,7 +15,8 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel
 @Inject constructor(
-    private val essenceProvider: EssenceProvider
+    private val essenceProvider: EssenceProvider,
+    private val contributionsToggleFlow: ContributionsToggleFlow,
 ) : ViewModel() {
     private val essencesFlow = MutableStateFlow(emptyList<Essence>())
     private val filtersFlow = MutableStateFlow(SearchFilter.options.associateBy { it.name })
@@ -42,8 +44,10 @@ class SearchViewModel
                 .collect()
         }
 
-        viewModelScope.launch {
-            essenceProvider.getEssences().emit()
+        viewModelScope.launch(Dispatchers.IO) {
+            contributionsToggleFlow.contributionsEnabled.collect {
+                essencesFlow.emit(essenceProvider.getEssences())
+            }
         }
     }
 
