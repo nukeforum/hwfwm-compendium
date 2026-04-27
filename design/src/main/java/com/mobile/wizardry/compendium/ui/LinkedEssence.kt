@@ -10,9 +10,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.mobile.wizardry.compendium.essences.model.AbilityType
-import com.mobile.wizardry.compendium.essences.model.Cost
-import com.mobile.wizardry.compendium.essences.model.Effect
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Property
 import com.mobile.wizardry.compendium.essences.model.Rank
@@ -45,16 +42,6 @@ internal fun LinkedEssencePreview() {
             Rank.Iron,
             Rarity.Uncommon,
             properties = listOf(Property.Light),
-            effects = listOf(
-                Effect.AbilityEffect(
-                    rank = Rank.Iron,
-                    type = AbilityType.SpecialAbility,
-                    properties = listOf(Property.Light, Property.Holy),
-                    cost = listOf(Cost.None),
-                    cooldown = 5,
-                    description = "a description"
-                )
-            ),
             description = "a description",
             isRestricted = false
         ),

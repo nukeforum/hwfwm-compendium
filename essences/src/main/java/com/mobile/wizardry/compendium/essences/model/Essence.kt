@@ -16,10 +16,19 @@ interface Essence : Entity {
         override val rank: Rank,
         override val rarity: Rarity,
         override val properties: List<Property>,
-        override val effects: List<Effect>,
         override val description: String,
         override val isRestricted: Boolean,
-    ) : Essence, Item
+    ) : Essence, Item {
+        override val effects: List<Effect> = listOf(
+            Effect.ItemEffect(
+                rank = Rank.Unranked,
+                properties = emptyList(),
+                cost = emptyList(),
+                cooldown = 0,
+                description = "Imbues 1 awakened ${name.lowercase()} essence ability and 4 unawakened ${name.lowercase()} essence abilities"
+            )
+        )
+    }
 
     companion object {
         fun of(
@@ -37,15 +46,6 @@ interface Essence : Entity {
                 Rank.Unranked,
                 rarity,
                 listOf(Property.Consumable, Property.Essence),
-                listOf(
-                    Effect.ItemEffect(
-                        rank = Rank.Unranked,
-                        properties = emptyList(),
-                        cost = emptyList(),
-                        cooldown = 0,
-                        description = "Imbues 1 awakened ${name.lowercase()} essence ability and 4 unawakened ${name.lowercase()} essence abilities"
-                    )
-                ),
                 description,
                 restricted,
             )
