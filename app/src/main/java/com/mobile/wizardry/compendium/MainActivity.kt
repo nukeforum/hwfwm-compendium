@@ -25,18 +25,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.mobile.wizardry.compendium.contributions.ContributionsScreen
 import com.mobile.wizardry.compendium.essenceinfo.EssenceDetails
-import com.mobile.wizardry.compendium.essences.EssenceProvider
 import com.mobile.wizardry.compendium.randomizer.Randomizer
 import com.mobile.wizardry.compendium.search.EssenceSearch
 import com.mobile.wizardry.compendium.settings.SettingsScreen
 import com.mobile.wizardry.compendium.ui.theme.CompendiumTheme
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    lateinit var essenceProvider: EssenceProvider
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,18 +84,14 @@ class MainActivity : ComponentActivity() {
                         composable(
                             Nav.EssenceDetail.route,
                             arguments = listOf(
-                                navArgument("essenceHash") { type = NavType.IntType }
+                                navArgument(Nav.EssenceDetail.ARG_NAME) { type = NavType.StringType }
                             )
                         ) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
-                            val essenceHash = backStackEntry.arguments!!.getInt("essenceHash")
-                            LaunchedEffect(Unit) {
-                                essenceProvider.getEssences()
-                                    .find { essence -> essence.hashCode() == essenceHash }
-                                    ?.also { title = it.name }
-                            }
+                            val essenceName = backStackEntry.arguments!!.getString(Nav.EssenceDetail.ARG_NAME)!!
+                            title = essenceName
                             EssenceDetails(
-                                essenceHash = essenceHash,
+                                essenceName = essenceName,
                                 onEssenceLoaded = { title = it.name }
                             )
                         }

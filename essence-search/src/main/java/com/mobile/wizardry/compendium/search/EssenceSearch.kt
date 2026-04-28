@@ -62,7 +62,7 @@ private fun Screen(
             modifier = modifier
                 .weight(1f, fill = false)
         ) {
-            items(state.essences, { it.hashCode() }) { essence ->
+            items(state.essences, { it.name }) { essence ->
                 EssenceListItem(
                     essence = essence,
                     modifier = Modifier

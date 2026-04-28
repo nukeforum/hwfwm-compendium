@@ -25,12 +25,12 @@ import java.security.InvalidParameterException
 
 @Composable
 fun EssenceDetails(
-    essenceHash: Int,
+    essenceName: String,
     onEssenceLoaded: (Essence) -> Unit,
     viewModel: EssenceDetailViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(Unit) {
-        viewModel.load(essenceHash)
+    LaunchedEffect(essenceName) {
+        viewModel.load(essenceName)
     }
 
     val state by viewModel.state.collectAsState()
@@ -40,12 +40,22 @@ fun EssenceDetails(
     ) { viewModel.goBack() }
 
     when (val details = state) {
-        is EssenceDetailUiState.Error -> TODO()
+        is EssenceDetailUiState.Error -> ErrorMessage(details.exception.message ?: "Unable to load essence")
         EssenceDetailUiState.Loading -> Loading()
         is EssenceDetailUiState.Success -> {
             onEssenceLoaded(details.essence)
             Details(state = details, onEssenceClick = { viewModel.load(it) })
         }
+    }
+}
+
+@Composable
+private fun ErrorMessage(message: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = message)
     }
 }
 

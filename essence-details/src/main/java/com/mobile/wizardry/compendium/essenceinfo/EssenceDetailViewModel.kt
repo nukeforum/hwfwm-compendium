@@ -38,14 +38,14 @@ class EssenceDetailViewModel
         }
     }
 
-    fun load(essenceHash: Int) {
+    fun load(essenceName: String) {
         currentlyLoadedEssence?.let { history.addFirst(it) }
         viewModelScope.launch(Dispatchers.IO) {
             _state.emit(EssenceDetailUiState.Loading)
 
-            essenceProvider.getEssences().find { it.hashCode() == essenceHash }
+            essenceProvider.getEssences().find { it.name == essenceName }
                 ?.let { essence -> buildState(essence) }
-                ?: _state.emit(EssenceDetailUiState.Error(IllegalArgumentException("no essence found with hash: $essenceHash")))
+                ?: _state.emit(EssenceDetailUiState.Error(IllegalArgumentException("no essence found with name: $essenceName")))
         }
     }
 
