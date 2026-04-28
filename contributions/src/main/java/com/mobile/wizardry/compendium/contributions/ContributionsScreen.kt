@@ -5,13 +5,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Rarity
 import kotlinx.coroutines.launch
@@ -117,7 +117,7 @@ private fun ManifestationForm(
     }
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConfluenceForm(
     availableManifestations: List<Essence.Manifestation>,
@@ -133,16 +133,14 @@ private fun ConfluenceForm(
 
     var activeSlot by remember { mutableIntStateOf(0) }
     var filterQuery by remember { mutableStateOf("") }
-    val sheetState = rememberModalBottomSheetState(
-        initialValue = ModalBottomSheetValue.Hidden,
-        skipHalfExpanded = true,
-    )
+    var showSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
     fun openSheet(slot: Int) {
         activeSlot = slot
         filterQuery = ""
-        scope.launch { sheetState.show() }
+        showSheet = true
     }
 
     fun selectManifestation(manifestation: Essence.Manifestation) {
@@ -151,75 +149,77 @@ private fun ConfluenceForm(
             2 -> manifestation2 = manifestation
             3 -> manifestation3 = manifestation
         }
-        scope.launch { sheetState.hide() }
+        scope.launch { sheetState.hide() }.invokeOnCompletion { showSheet = false }
     }
 
-    ModalBottomSheetLayout(
-        sheetState = sheetState,
-        sheetContent = {
+    if (showSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSheet = false },
+            sheetState = sheetState,
+        ) {
             ManifestationPickerSheet(
                 query = filterQuery,
                 onQueryChange = { filterQuery = it },
                 options = availableManifestations,
                 onSelected = { selectManifestation(it) },
             )
-        },
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = { Text("Confluence Name") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+
+        ManifestationButton(
+            label = "Essence 1",
+            selected = manifestation1,
+            onClick = { openSheet(1) },
+        )
+
+        ManifestationButton(
+            label = "Essence 2",
+            selected = manifestation2,
+            onClick = { openSheet(2) },
+        )
+
+        ManifestationButton(
+            label = "Essence 3",
+            selected = manifestation3,
+            onClick = { openSheet(3) },
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Confluence Name") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+            Text("Restricted")
+            Switch(checked = isRestricted, onCheckedChange = { isRestricted = it })
+        }
 
-            ManifestationButton(
-                label = "Essence 1",
-                selected = manifestation1,
-                onClick = { openSheet(1) },
-            )
+        SaveFeedback(saveState = saveState, onClearState = onClearState)
 
-            ManifestationButton(
-                label = "Essence 2",
-                selected = manifestation2,
-                onClick = { openSheet(2) },
-            )
-
-            ManifestationButton(
-                label = "Essence 3",
-                selected = manifestation3,
-                onClick = { openSheet(3) },
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text("Restricted")
-                Switch(checked = isRestricted, onCheckedChange = { isRestricted = it })
-            }
-
-            SaveFeedback(saveState = saveState, onClearState = onClearState)
-
-            val canSave = manifestation1 != null && manifestation2 != null && manifestation3 != null
-                    && saveState !is ContributionsViewModel.SaveState.Saving
-            Button(
-                onClick = {
-                    onSave(name, manifestation1!!, manifestation2!!, manifestation3!!, isRestricted)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = canSave,
-            ) {
-                Text("Save Confluence")
-            }
+        val canSave = manifestation1 != null && manifestation2 != null && manifestation3 != null
+                && saveState !is ContributionsViewModel.SaveState.Saving
+        Button(
+            onClick = {
+                onSave(name, manifestation1!!, manifestation2!!, manifestation3!!, isRestricted)
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = canSave,
+        ) {
+            Text("Save Confluence")
         }
     }
 }
@@ -260,9 +260,10 @@ private fun ManifestationPickerSheet(
         Spacer(modifier = Modifier.height(8.dp))
         LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
             items(filtered) { manifestation ->
-                DropdownMenuItem(onClick = { onSelected(manifestation) }) {
-                    Text(manifestation.name)
-                }
+                DropdownMenuItem(
+                    text = { Text(manifestation.name) },
+                    onClick = { onSelected(manifestation) },
+                )
             }
         }
     }
@@ -286,12 +287,13 @@ private fun RarityDropdown(
             onDismissRequest = { expanded = false },
         ) {
             Rarity.entries.forEach { rarity ->
-                DropdownMenuItem(onClick = {
-                    onSelected(rarity)
-                    expanded = false
-                }) {
-                    Text(rarity.name)
-                }
+                DropdownMenuItem(
+                    text = { Text(rarity.name) },
+                    onClick = {
+                        onSelected(rarity)
+                        expanded = false
+                    },
+                )
             }
         }
     }
@@ -310,15 +312,15 @@ private fun SaveFeedback(
             }
             Text(
                 text = "Saved successfully",
-                color = MaterialTheme.colors.primary,
-                style = MaterialTheme.typography.body2,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall,
             )
         }
         is ContributionsViewModel.SaveState.Error -> {
             Text(
                 text = saveState.message,
-                color = MaterialTheme.colors.error,
-                style = MaterialTheme.typography.body2,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
             )
         }
         else -> {}
