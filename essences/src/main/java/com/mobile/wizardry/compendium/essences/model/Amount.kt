@@ -5,6 +5,10 @@ sealed interface Amount {
         override fun toString(): String = "None"
     }
 
+    object VeryLow : Amount {
+        override fun toString(): String = "very low"
+    }
+
     object Low : Amount {
         override fun toString(): String = "low"
     }
@@ -23,5 +27,9 @@ sealed interface Amount {
 
     object Extreme : Amount {
         override fun toString(): String = "extreme"
+    }
+
+    object BeyondExtreme : Amount {
+        override fun toString(): String = "beyond extreme"
     }
 }

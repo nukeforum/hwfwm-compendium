@@ -29,6 +29,10 @@ sealed interface AbilityType {
         override fun toString(): String = "Special attack"
     }
 
+    object Summoning : AbilityType {
+        override fun toString(): String = "Special attack"
+    }
+
     /**
      * For item effects
      */

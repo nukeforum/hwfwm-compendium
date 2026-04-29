@@ -16,6 +16,7 @@ import com.mobile.wizardry.compendium.essences.model.Effect
 import com.mobile.wizardry.compendium.essences.model.Property
 import com.mobile.wizardry.compendium.essences.model.Rank
 import com.mobile.wizardry.compendium.essences.model.Resource
+import kotlin.time.Duration
 
 @Composable
 internal fun Report(ability: Ability) {
@@ -119,7 +120,7 @@ private fun Foo() {
                     AbilityType.Conjuration,
                     listOf(Property.Darkness, Property.Light, Property.Dimension),
                     listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
-                    0,
+                    Duration.ZERO,
                     "Conjures a magical cloak that can alter the wearer. Offers limited physical protection. Can generate light or blend into shadows."
                 ),
                 Effect.AbilityEffect(
@@ -127,7 +128,7 @@ private fun Foo() {
                     AbilityType.Conjuration,
                     listOf(Property.Darkness, Property.Light, Property.Dimension),
                     listOf(Cost.Ongoing(Amount.Low, Resource.Mana)),
-                    0,
+                    Duration.ZERO,
                     "Cloak can reduce the weight of the wearer for a low mana-per-second cost, allowing reduced falling speed and water-walking."
                 ),
                 Effect.AbilityEffect(
@@ -135,7 +136,7 @@ private fun Foo() {
                     AbilityType.Conjuration,
                     listOf(Property.Darkness, Property.Light, Property.Dimension),
                     listOf(Cost.None),
-                    0,
+                    Duration.ZERO,
                     "Cannot be given or taken away, although effects can be extended to others in very close proximity."
                 )
             )

@@ -1,6 +1,7 @@
 package com.mobile.wizardry.compendium.essences.model
 
 import java.util.*
+import kotlin.time.Duration
 
 interface Essence : Entity {
     val isRestricted: Boolean
@@ -24,7 +25,7 @@ interface Essence : Entity {
                 rank = Rank.Unranked,
                 properties = emptyList(),
                 cost = emptyList(),
-                cooldown = 0,
+                cooldown = Duration.ZERO,
                 description = "Imbues 1 awakened ${name.lowercase()} essence ability and 4 unawakened ${name.lowercase()} essence abilities"
             )
         )

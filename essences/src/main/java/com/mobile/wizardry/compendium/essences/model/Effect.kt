@@ -1,5 +1,7 @@
 package com.mobile.wizardry.compendium.essences.model
 
+import kotlin.time.Duration
+
 sealed interface Effect {
     val rank: Rank
     val properties: List<Property>
@@ -8,7 +10,7 @@ sealed interface Effect {
     /**
      * in seconds
      */
-    val cooldown: Int
+    val cooldown: Duration
     val description: String
 
     data class AbilityEffect(
@@ -16,8 +18,9 @@ sealed interface Effect {
         val type: AbilityType,
         override val properties: List<Property>,
         override val cost: List<Cost>,
-        override val cooldown: Int,
+        override val cooldown: Duration,
         override val description: String,
+        val replacementKey: String? = null,
     ) : Effect {
         override fun toString(): String = description
     }
@@ -27,7 +30,7 @@ sealed interface Effect {
         val type: StatusType,
         override val properties: List<Property>,
         override val cost: List<Cost>,
-        override val cooldown: Int,
+        override val cooldown: Duration,
         override val description: String,
     ) : Effect {
         override fun toString(): String = description
@@ -37,7 +40,7 @@ sealed interface Effect {
         override val rank: Rank,
         override val properties: List<Property>,
         override val cost: List<Cost>,
-        override val cooldown: Int,
+        override val cooldown: Duration,
         override val description: String,
     ) : Effect {
         override fun toString(): String = description
