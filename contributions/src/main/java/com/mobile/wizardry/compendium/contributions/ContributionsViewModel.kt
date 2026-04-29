@@ -17,7 +17,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ContributionsViewModel @Inject constructor(
-    @Contributions private val contributionsCache: EssenceCache,
+    @param:Contributions private val contributionsCache: EssenceCache,
     private val essenceProvider: EssenceProvider,
 ) : ViewModel() {
 

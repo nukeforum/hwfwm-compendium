@@ -6,8 +6,8 @@ import javax.inject.Singleton
 
 @Singleton
 class CompositeEssenceCache @Inject constructor(
-    @Canonical private val canonicalCache: EssenceCache,
-    @Contributions private val contributionsCache: EssenceCache,
+    @param:Canonical private val canonicalCache: EssenceCache,
+    @param:Contributions private val contributionsCache: EssenceCache,
     private val toggle: ContributionsToggle,
 ) : EssenceCache {
 

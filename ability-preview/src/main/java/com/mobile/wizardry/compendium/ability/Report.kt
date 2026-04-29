@@ -87,7 +87,7 @@ private fun Ability.reportCooldown(): String {
         .takeIf { it.size == 1 }
         ?.first()
         ?.let {
-            if (it == 0) {
+            if (it == Duration.ZERO) {
                 "None"
             } else {
                 it.toString()
