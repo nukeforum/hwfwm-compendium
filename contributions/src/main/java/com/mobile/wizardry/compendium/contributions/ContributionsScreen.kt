@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.mobile.wizardry.compendium.essences.model.ConfluenceSet
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.essences.model.Rarity
 import kotlinx.coroutines.launch
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun ContributionsScreen(viewModel: ContributionsViewModel = hiltViewModel()) {
     val availableManifestations by viewModel.availableManifestations.collectAsState()
+    val availableConfluences by viewModel.availableConfluences.collectAsState()
     val saveState by viewModel.saveState.collectAsState()
 
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -47,9 +49,13 @@ fun ContributionsScreen(viewModel: ContributionsViewModel = hiltViewModel()) {
             )
             1 -> ConfluenceForm(
                 availableManifestations = availableManifestations,
+                availableConfluences = availableConfluences,
                 saveState = saveState,
-                onSave = { name, m1, m2, m3, isRestricted ->
+                onSaveNew = { name, m1, m2, m3, isRestricted ->
                     viewModel.saveConfluence(name, m1, m2, m3, isRestricted)
+                },
+                onAddCombination = { target, m1, m2, m3, isRestricted ->
+                    viewModel.addCombinationToConfluence(target, m1, m2, m3, isRestricted)
                 },
                 onClearState = viewModel::clearSaveState,
             )
@@ -117,15 +123,21 @@ private fun ManifestationForm(
     }
 }
 
+private enum class ConfluenceMode { New, AddCombination }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConfluenceForm(
     availableManifestations: List<Essence.Manifestation>,
+    availableConfluences: List<Essence.Confluence>,
     saveState: ContributionsViewModel.SaveState,
-    onSave: (name: String, m1: Essence.Manifestation, m2: Essence.Manifestation, m3: Essence.Manifestation, isRestricted: Boolean) -> Unit,
+    onSaveNew: (name: String, m1: Essence.Manifestation, m2: Essence.Manifestation, m3: Essence.Manifestation, isRestricted: Boolean) -> Unit,
+    onAddCombination: (target: Essence.Confluence, m1: Essence.Manifestation, m2: Essence.Manifestation, m3: Essence.Manifestation, isRestricted: Boolean) -> Unit,
     onClearState: () -> Unit,
 ) {
+    var mode by remember { mutableStateOf(ConfluenceMode.New) }
     var name by remember { mutableStateOf("") }
+    var targetConfluence by remember { mutableStateOf<Essence.Confluence?>(null) }
     var isRestricted by remember { mutableStateOf(false) }
     var manifestation1 by remember { mutableStateOf<Essence.Manifestation?>(null) }
     var manifestation2 by remember { mutableStateOf<Essence.Manifestation?>(null) }
@@ -133,14 +145,21 @@ private fun ConfluenceForm(
 
     var activeSlot by remember { mutableIntStateOf(0) }
     var filterQuery by remember { mutableStateOf("") }
-    var showSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showManifestationSheet by remember { mutableStateOf(false) }
+    var showConfluenceSheet by remember { mutableStateOf(false) }
+    val manifestationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val confluenceSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
 
-    fun openSheet(slot: Int) {
+    fun openManifestationSheet(slot: Int) {
         activeSlot = slot
         filterQuery = ""
-        showSheet = true
+        showManifestationSheet = true
+    }
+
+    fun openConfluenceSheet() {
+        filterQuery = ""
+        showConfluenceSheet = true
     }
 
     fun selectManifestation(manifestation: Essence.Manifestation) {
@@ -149,19 +168,40 @@ private fun ConfluenceForm(
             2 -> manifestation2 = manifestation
             3 -> manifestation3 = manifestation
         }
-        scope.launch { sheetState.hide() }.invokeOnCompletion { showSheet = false }
+        scope.launch { manifestationSheetState.hide() }
+            .invokeOnCompletion { showManifestationSheet = false }
     }
 
-    if (showSheet) {
+    fun selectConfluence(confluence: Essence.Confluence) {
+        targetConfluence = confluence
+        scope.launch { confluenceSheetState.hide() }
+            .invokeOnCompletion { showConfluenceSheet = false }
+    }
+
+    if (showManifestationSheet) {
         ModalBottomSheet(
-            onDismissRequest = { showSheet = false },
-            sheetState = sheetState,
+            onDismissRequest = { showManifestationSheet = false },
+            sheetState = manifestationSheetState,
         ) {
             ManifestationPickerSheet(
                 query = filterQuery,
                 onQueryChange = { filterQuery = it },
                 options = availableManifestations,
                 onSelected = { selectManifestation(it) },
+            )
+        }
+    }
+
+    if (showConfluenceSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showConfluenceSheet = false },
+            sheetState = confluenceSheetState,
+        ) {
+            ConfluencePickerSheet(
+                query = filterQuery,
+                onQueryChange = { filterQuery = it },
+                options = availableConfluences,
+                onSelected = { selectConfluence(it) },
             )
         }
     }
@@ -173,30 +213,50 @@ private fun ConfluenceForm(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Confluence Name") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
+        ModeSelector(
+            mode = mode,
+            onModeChange = {
+                mode = it
+                onClearState()
+            },
         )
+
+        when (mode) {
+            ConfluenceMode.New -> {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Confluence Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+            }
+            ConfluenceMode.AddCombination -> {
+                OutlinedButton(
+                    onClick = { openConfluenceSheet() },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(targetConfluence?.name ?: "Select Confluence")
+                }
+            }
+        }
 
         ManifestationButton(
             label = "Essence 1",
             selected = manifestation1,
-            onClick = { openSheet(1) },
+            onClick = { openManifestationSheet(1) },
         )
 
         ManifestationButton(
             label = "Essence 2",
             selected = manifestation2,
-            onClick = { openSheet(2) },
+            onClick = { openManifestationSheet(2) },
         )
 
         ManifestationButton(
             label = "Essence 3",
             selected = manifestation3,
-            onClick = { openSheet(3) },
+            onClick = { openManifestationSheet(3) },
         )
 
         Row(
@@ -210,16 +270,63 @@ private fun ConfluenceForm(
 
         SaveFeedback(saveState = saveState, onClearState = onClearState)
 
-        val canSave = manifestation1 != null && manifestation2 != null && manifestation3 != null
-                && saveState !is ContributionsViewModel.SaveState.Saving
+        val manifestationsSelected = manifestation1 != null && manifestation2 != null && manifestation3 != null
+        val notSaving = saveState !is ContributionsViewModel.SaveState.Saving
+        val canSave = manifestationsSelected && notSaving && when (mode) {
+            ConfluenceMode.New -> true
+            ConfluenceMode.AddCombination -> targetConfluence != null
+        }
         Button(
             onClick = {
-                onSave(name, manifestation1!!, manifestation2!!, manifestation3!!, isRestricted)
+                when (mode) {
+                    ConfluenceMode.New -> onSaveNew(
+                        name,
+                        manifestation1!!,
+                        manifestation2!!,
+                        manifestation3!!,
+                        isRestricted,
+                    )
+                    ConfluenceMode.AddCombination -> onAddCombination(
+                        targetConfluence!!,
+                        manifestation1!!,
+                        manifestation2!!,
+                        manifestation3!!,
+                        isRestricted,
+                    )
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = canSave,
         ) {
-            Text("Save Confluence")
+            Text(
+                when (mode) {
+                    ConfluenceMode.New -> "Save Confluence"
+                    ConfluenceMode.AddCombination -> "Add Combination"
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ModeSelector(
+    mode: ConfluenceMode,
+    onModeChange: (ConfluenceMode) -> Unit,
+) {
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        SegmentedButton(
+            selected = mode == ConfluenceMode.New,
+            onClick = { onModeChange(ConfluenceMode.New) },
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+        ) {
+            Text("New Confluence")
+        }
+        SegmentedButton(
+            selected = mode == ConfluenceMode.AddCombination,
+            onClick = { onModeChange(ConfluenceMode.AddCombination) },
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+        ) {
+            Text("Add Combination")
         }
     }
 }
@@ -263,6 +370,37 @@ private fun ManifestationPickerSheet(
                 DropdownMenuItem(
                     text = { Text(manifestation.name) },
                     onClick = { onSelected(manifestation) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConfluencePickerSheet(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    options: List<Essence.Confluence>,
+    onSelected: (Essence.Confluence) -> Unit,
+) {
+    val filtered = remember(query, options) {
+        if (query.isBlank()) options
+        else options.filter { it.name.contains(query, ignoreCase = true) }
+    }
+    Column(modifier = Modifier.padding(16.dp)) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChange,
+            label = { Text("Filter") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+            items(filtered) { confluence ->
+                DropdownMenuItem(
+                    text = { Text(confluence.name) },
+                    onClick = { onSelected(confluence) },
                 )
             }
         }
@@ -336,6 +474,19 @@ private val previewManifestations = listOf(
     Essence.of("Dark", "A creeping, consuming darkness", Rarity.Rare, false),
 )
 
+private val previewConfluences = listOf(
+    Essence.of(
+        name = "Doom",
+        restricted = false,
+        ConfluenceSet(previewManifestations[1], previewManifestations[2], previewManifestations[3]),
+    ),
+    Essence.of(
+        name = "Tempest",
+        restricted = false,
+        ConfluenceSet(previewManifestations[0], previewManifestations[1], previewManifestations[3]),
+    ),
+)
+
 @Preview(showBackground = true)
 @Composable
 private fun ManifestationFormIdlePreview() {
@@ -368,22 +519,26 @@ private fun ManifestationFormErrorPreview() {
 
 @Preview(showBackground = true)
 @Composable
-private fun ConfluenceFormEmptyPreview() {
+private fun ConfluenceFormNewPreview() {
     ConfluenceForm(
         availableManifestations = previewManifestations,
+        availableConfluences = previewConfluences,
         saveState = ContributionsViewModel.SaveState.Idle,
-        onSave = { _, _, _, _, _ -> },
+        onSaveNew = { _, _, _, _, _ -> },
+        onAddCombination = { _, _, _, _, _ -> },
         onClearState = {},
     )
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun ConfluenceFormFilledPreview() {
+private fun ConfluenceFormDuplicateErrorPreview() {
     ConfluenceForm(
         availableManifestations = previewManifestations,
-        saveState = ContributionsViewModel.SaveState.Idle,
-        onSave = { _, _, _, _, _ -> },
+        availableConfluences = previewConfluences,
+        saveState = ContributionsViewModel.SaveState.Error("That combination already produces Doom"),
+        onSaveNew = { _, _, _, _, _ -> },
+        onAddCombination = { _, _, _, _, _ -> },
         onClearState = {},
     )
 }
