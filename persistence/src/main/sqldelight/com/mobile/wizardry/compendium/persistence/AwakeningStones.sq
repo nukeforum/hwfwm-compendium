@@ -1,0 +1,13 @@
+CREATE TABLE awakening_stone (
+    name TEXT PRIMARY KEY NOT NULL,
+    rarity TEXT NOT NULL
+);
+
+insertAwakeningStone:
+INSERT OR REPLACE INTO awakening_stone(name, rarity) VALUES (?, ?);
+
+selectAllAwakeningStones:
+SELECT * FROM awakening_stone;
+
+deleteAllAwakeningStones:
+DELETE FROM awakening_stone;

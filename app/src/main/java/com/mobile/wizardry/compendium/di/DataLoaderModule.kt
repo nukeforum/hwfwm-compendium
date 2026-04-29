@@ -1,6 +1,8 @@
 package com.mobile.wizardry.compendium.di
 
 import com.mobile.wizardry.compendium.AssetFileStreamSource
+import com.mobile.wizardry.compendium.essences.dataloader.AwakeningStoneCsvLoader
+import com.mobile.wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceCsvLoader
 import com.mobile.wizardry.compendium.essences.dataloader.EssenceDataLoader
 import com.mobile.wizardry.compendium.essences.dataloader.FileStreamSource
@@ -20,4 +22,8 @@ abstract class DataLoaderModule {
     @Singleton
     @Binds
     abstract fun getEssenceDataLoader(loader: EssenceCsvLoader): EssenceDataLoader
+
+    @Singleton
+    @Binds
+    abstract fun getAwakeningStoneDataLoader(loader: AwakeningStoneCsvLoader): AwakeningStoneDataLoader
 }

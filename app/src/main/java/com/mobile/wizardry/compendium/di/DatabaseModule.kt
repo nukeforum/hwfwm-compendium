@@ -2,11 +2,14 @@ package com.mobile.wizardry.compendium.di
 
 import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.mobile.wizardry.compendium.persistence.AwakeningStoneCache
+import com.mobile.wizardry.compendium.persistence.AwakeningStoneDatabase
 import com.mobile.wizardry.compendium.persistence.Canonical
 import com.mobile.wizardry.compendium.persistence.CompendiumDatabase
 import com.mobile.wizardry.compendium.persistence.CompositeEssenceCache
 import com.mobile.wizardry.compendium.persistence.Contributions
 import com.mobile.wizardry.compendium.persistence.ContributionsToggle
+import com.mobile.wizardry.compendium.persistence.DatabaseAwakeningStoneCache
 import com.mobile.wizardry.compendium.persistence.DatabaseEssenceCache
 import com.mobile.wizardry.compendium.persistence.EssenceCache
 import com.mobile.wizardry.compendium.persistence.EssenceDatabase
@@ -49,6 +52,15 @@ abstract class DatabaseModule {
             DatabaseEssenceCache(
                 EssenceDatabase(
                     AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
+                )
+            )
+
+        @Provides
+        @Singleton
+        fun provideAwakeningStoneCache(@ApplicationContext context: Context): AwakeningStoneCache =
+            DatabaseAwakeningStoneCache(
+                AwakeningStoneDatabase(
+                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
                 )
             )
     }
