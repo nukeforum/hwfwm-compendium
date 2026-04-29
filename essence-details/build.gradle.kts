@@ -34,8 +34,6 @@ dependencies {
     implementation(project(":design"))
     implementation(project(":essences"))
 
-    implementation(libs.accompanist.flowlayout)
-
     implementation(libs.androidx.core.ktx)
 
     implementation(libs.kotlin.coroutines)

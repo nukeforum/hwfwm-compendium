@@ -17,8 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.google.accompanist.flowlayout.FlowRow
-import com.google.accompanist.flowlayout.MainAxisAlignment
 import com.mobile.wizardry.compendium.essences.model.Essence
 import com.mobile.wizardry.compendium.ui.LinkedEssence
 import java.security.InvalidParameterException
@@ -131,9 +129,8 @@ private fun ManifestationDetails(
             .padding(vertical = 8.dp)
             .fillMaxWidth()
             .verticalScroll(ScrollState(0)),
-        mainAxisAlignment = MainAxisAlignment.Center,
-        mainAxisSpacing = 8.dp,
-        crossAxisSpacing = 8.dp,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         producedConfluences.forEach {
             LinkedEssence(
