@@ -3,6 +3,7 @@ package com.mobile.wizardry.compendium.search
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -127,9 +128,14 @@ private fun FilterDropDown(
             SearchFilter.options.forEach {
                 DropdownMenuItem(
                     text = {
-                        Text(text = it.name)
-                        if (appliedFilters.contains(it)) {
-                            Icon(imageVector = Icons.Filled.Check, contentDescription = null)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            if (appliedFilters.contains(it)) {
+                                Icon(imageVector = Icons.Filled.Check, contentDescription = null)
+                            }
+                            Text(text = it.name)
                         }
                     },
                     onClick = { onFilterSelected(it) },
