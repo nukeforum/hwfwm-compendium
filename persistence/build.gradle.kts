@@ -13,6 +13,7 @@ sqldelight {
 
 dependencies {
     implementation(project(":essences"))
+    implementation(libs.kotlin.reflect)
     implementation(libs.sqldelight.runtime)
     implementation(libs.sqldelight.coroutines)
     testImplementation(libs.sqldelight.sqlite.driver)

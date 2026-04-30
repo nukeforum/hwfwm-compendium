@@ -1,0 +1,24 @@
+CREATE TABLE ability_effect (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    listing_name TEXT NOT NULL REFERENCES ability_listing(name),
+    rank TEXT NOT NULL,
+    type TEXT NOT NULL,
+    cooldown_seconds INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    replacement_key TEXT,
+    ordinal INTEGER NOT NULL
+);
+
+CREATE TABLE effect_property (
+    effect_id INTEGER NOT NULL REFERENCES ability_effect(id),
+    property TEXT NOT NULL,
+    ordinal INTEGER NOT NULL
+);
+
+CREATE TABLE effect_cost (
+    effect_id INTEGER NOT NULL REFERENCES ability_effect(id),
+    kind TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    ordinal INTEGER NOT NULL
+);

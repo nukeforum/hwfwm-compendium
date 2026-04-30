@@ -2,11 +2,67 @@ CREATE TABLE ability_listing (
     name TEXT PRIMARY KEY NOT NULL
 );
 
+CREATE TABLE ability_effect (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    listing_name TEXT NOT NULL REFERENCES ability_listing(name),
+    rank TEXT NOT NULL,
+    type TEXT NOT NULL,
+    cooldown_seconds INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    replacement_key TEXT,
+    ordinal INTEGER NOT NULL
+);
+
+CREATE TABLE effect_property (
+    effect_id INTEGER NOT NULL REFERENCES ability_effect(id),
+    property TEXT NOT NULL,
+    ordinal INTEGER NOT NULL
+);
+
+CREATE TABLE effect_cost (
+    effect_id INTEGER NOT NULL REFERENCES ability_effect(id),
+    kind TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    ordinal INTEGER NOT NULL
+);
+
 insertAbilityListing:
 INSERT OR REPLACE INTO ability_listing(name) VALUES (?);
 
+insertAbilityEffect:
+INSERT INTO ability_effect(listing_name, rank, type, cooldown_seconds, description, replacement_key, ordinal)
+VALUES (?, ?, ?, ?, ?, ?, ?);
+
+lastInsertRowId:
+SELECT last_insert_rowid();
+
+insertEffectProperty:
+INSERT INTO effect_property(effect_id, property, ordinal) VALUES (?, ?, ?);
+
+insertEffectCost:
+INSERT INTO effect_cost(effect_id, kind, amount, resource, ordinal) VALUES (?, ?, ?, ?, ?);
+
 selectAllAbilityListings:
 SELECT * FROM ability_listing;
+
+selectAllAbilityEffects:
+SELECT * FROM ability_effect ORDER BY listing_name, ordinal;
+
+selectAllEffectProperties:
+SELECT * FROM effect_property ORDER BY effect_id, ordinal;
+
+selectAllEffectCosts:
+SELECT * FROM effect_cost ORDER BY effect_id, ordinal;
+
+deleteAllEffectCosts:
+DELETE FROM effect_cost;
+
+deleteAllEffectProperties:
+DELETE FROM effect_property;
+
+deleteAllAbilityEffects:
+DELETE FROM ability_effect;
 
 deleteAllAbilityListings:
 DELETE FROM ability_listing;

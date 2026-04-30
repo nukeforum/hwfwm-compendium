@@ -32,6 +32,7 @@ dependencies {
 
     implementation(project(":essences"))
 
+    implementation(libs.kotlin.reflect)
     implementation(libs.androidx.core.ktx)
 
     implementation(libs.androidx.compose.ui)
