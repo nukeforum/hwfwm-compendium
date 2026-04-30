@@ -30,6 +30,7 @@ import com.mobile.wizardry.compendium.ui.theme.essenceHighlight
 fun EssenceSearch(
     viewModel: SearchViewModel = hiltViewModel(),
     onEssenceClicked: (Essence) -> Unit,
+    onContributeClicked: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -46,6 +47,7 @@ fun EssenceSearch(
             onEssenceClicked = onEssenceClicked,
             onFilterTermChanged = viewModel::setFilterTerm,
             onFilterSelected = viewModel::applyFilter,
+            onContributeClicked = onContributeClicked,
         )
     }
 }
@@ -57,11 +59,11 @@ private fun Screen(
     onEssenceClicked: (Essence) -> Unit,
     onFilterTermChanged: (String) -> Unit,
     onFilterSelected: (SearchFilter) -> Unit,
+    onContributeClicked: () -> Unit,
 ) {
-    Column {
+    Column(modifier = modifier) {
         LazyColumn(
-            modifier = modifier
-                .weight(1f, fill = false)
+            modifier = Modifier.weight(1f, fill = false)
         ) {
             items(state.essences, { it.name }) { essence ->
                 EssenceListItem(
@@ -92,6 +94,15 @@ private fun Screen(
             )
 
             FilterDropDown(onFilterSelected, state.appliedFilters)
+        }
+
+        Button(
+            onClick = onContributeClicked,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+        ) {
+            Text("Contribute Essence")
         }
     }
 }

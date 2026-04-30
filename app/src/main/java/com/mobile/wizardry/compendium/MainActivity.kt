@@ -6,8 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +22,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.mobile.wizardry.compendium.awakeningstone.contributions.AwakeningStoneContributionsScreen
+import com.mobile.wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
 import com.mobile.wizardry.compendium.contributions.ContributionsScreen
 import com.mobile.wizardry.compendium.essenceinfo.EssenceDetails
 import com.mobile.wizardry.compendium.randomizer.Randomizer
@@ -47,20 +48,16 @@ class MainActivity : ComponentActivity() {
                         TopAppBar(
                             title = { Text(text = title) },
                             navigationIcon = {
-                                if (currentRoute != Nav.EssenceSearch.route) {
-                                    ReturnToSearchButton {
-                                        navController.popBackStack(
-                                            route = Nav.EssenceSearch.route,
-                                            inclusive = false,
-                                        )
-                                    }
+                                if (currentRoute != Nav.Landing.route) {
+                                    BackButton { navController.popBackStack() }
                                 }
                             },
                             actions = {
-                                if (currentRoute != Nav.EssenceRandomizer.route) {
-                                    RandomizerButton { navController.navigate(Nav.EssenceRandomizer.route) }
+                                if (currentRoute == Nav.EssenceSearch.route) {
+                                    RandomizerButton {
+                                        navController.navigate(Nav.EssenceRandomizer.route)
+                                    }
                                 }
-                                ContributionsButton { navController.navigate(Nav.Contributions.route) }
                                 SettingsButton { navController.navigate(Nav.Settings.route) }
                             }
                         )
@@ -70,15 +67,35 @@ class MainActivity : ComponentActivity() {
                     NavHost(
                         modifier = Modifier.padding(padding),
                         navController = navController,
-                        startDestination = Nav.EssenceSearch.route
+                        startDestination = Nav.Landing.route
                     ) {
+                        composable(Nav.Landing.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Magic Society Compendium"
+                            LandingScreen(
+                                onEssenceClicked = { navController.navigate(Nav.EssenceSearch.route) },
+                                onAwakeningStoneClicked = { navController.navigate(Nav.AwakeningStoneSearch.route) },
+                            )
+                        }
                         composable(Nav.EssenceSearch.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
                             title = "Essence Search"
                             EssenceSearch(
                                 onEssenceClicked = { essence ->
                                     navController.navigate(Nav.EssenceDetail.buildRoute(essence))
-                                }
+                                },
+                                onContributeClicked = {
+                                    navController.navigate(Nav.Contributions.route)
+                                },
+                            )
+                        }
+                        composable(Nav.AwakeningStoneSearch.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Awakening Stone Search"
+                            AwakeningStoneSearch(
+                                onContributeClicked = {
+                                    navController.navigate(Nav.AwakeningStoneContributions.route)
+                                },
                             )
                         }
                         composable(
@@ -110,6 +127,11 @@ class MainActivity : ComponentActivity() {
                             title = "Add Contribution"
                             ContributionsScreen()
                         }
+                        composable(Nav.AwakeningStoneContributions.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Add Awakening Stone"
+                            AwakeningStoneContributionsScreen()
+                        }
                     }
                 }
             }
@@ -125,13 +147,6 @@ private fun RandomizerButton(navigate: () -> Unit) {
 }
 
 @Composable
-private fun ContributionsButton(navigate: () -> Unit) {
-    IconButton(onClick = navigate) {
-        Icon(Icons.Filled.Build, contentDescription = "Add contribution")
-    }
-}
-
-@Composable
 private fun SettingsButton(navigate: () -> Unit) {
     IconButton(onClick = navigate) {
         Icon(Icons.Filled.Settings, contentDescription = "Settings")
@@ -139,8 +154,8 @@ private fun SettingsButton(navigate: () -> Unit) {
 }
 
 @Composable
-private fun ReturnToSearchButton(navigate: () -> Unit) {
+private fun BackButton(navigate: () -> Unit) {
     IconButton(onClick = navigate) {
-        Icon(Icons.Filled.Search, contentDescription = null)
+        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
     }
 }

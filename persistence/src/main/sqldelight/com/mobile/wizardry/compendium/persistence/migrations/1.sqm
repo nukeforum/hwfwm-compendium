@@ -1,0 +1,4 @@
+CREATE TABLE IF NOT EXISTS awakening_stone (
+    name TEXT PRIMARY KEY NOT NULL,
+    rarity TEXT NOT NULL
+);

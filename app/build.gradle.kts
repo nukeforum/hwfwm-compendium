@@ -52,6 +52,8 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation(project(":ability-preview"))
+    implementation(project(":awakening-stone-contributions"))
+    implementation(project(":awakening-stone-search"))
     implementation(project(":contributions"))
     implementation(project(":dataloader"))
     implementation(project(":design"))
