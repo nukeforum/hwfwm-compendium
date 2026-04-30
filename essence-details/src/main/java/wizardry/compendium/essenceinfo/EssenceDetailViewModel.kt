@@ -63,8 +63,10 @@ class EssenceDetailViewModel
 
     private suspend fun buildConfluenceState(essence: Essence.Confluence) {
         EssenceDetailUiState.Success.ConfluenceUiState(
-            essence,
-            history.firstOrNull() as? Essence.Manifestation).emit()
+            essence = essence,
+            previousEssence = history.firstOrNull() as? Essence.Manifestation,
+            isContribution = essenceRepository.isContribution(essence.name),
+        ).emit()
     }
 
     private suspend fun buildManifestationState(essence: Essence.Manifestation) {
@@ -73,9 +75,10 @@ class EssenceDetailViewModel
             .filter { it.isProducedBy(essence) }
 
         EssenceDetailUiState.Success.ManifestationUiState(
-            essence,
-            history.firstOrNull() as? Essence.Confluence,
-            confluences
+            essence = essence,
+            previousEssence = history.firstOrNull() as? Essence.Confluence,
+            isContribution = essenceRepository.isContribution(essence.name),
+            knownConfluences = confluences,
         ).emit()
     }
 

@@ -1,6 +1,7 @@
 package wizardry.compendium.abilitylisting.contributions
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenuItem
@@ -67,32 +69,89 @@ import wizardry.compendium.essences.model.Resource
 
 @Composable
 fun AbilityListingContributionsScreen(
+    onContributionDeleted: () -> Unit = {},
     viewModel: AbilityListingContributionsViewModel = hiltViewModel(),
 ) {
     val saveState by viewModel.saveState.collectAsState()
     val effects by viewModel.effects.collectAsState()
-    AbilityListingForm(
-        effects = effects,
-        saveState = saveState,
-        onUpdateEffect = viewModel::updateEffect,
-        onRemoveEffect = viewModel::removeEffect,
-        onAppendEffect = viewModel::appendEffect,
-        onSave = viewModel::saveAbilityListing,
-        onClearState = viewModel::clearSaveState,
-    )
+    val mode by viewModel.mode.collectAsState()
+
+    LaunchedEffect(saveState) {
+        if (saveState is AbilityListingContributionsViewModel.SaveState.Deleted) {
+            onContributionDeleted()
+        }
+    }
+
+    when (val current = mode) {
+        AbilityListingContributionsViewModel.Mode.Edit.Loading -> Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) { Text("Loading") }
+        AbilityListingContributionsViewModel.Mode.Edit.NotFound -> Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) { Text("This ability listing is not a user contribution and cannot be edited.") }
+        AbilityListingContributionsViewModel.Mode.Create -> AbilityListingForm(
+            initialName = null,
+            isEdit = false,
+            effects = effects,
+            saveState = saveState,
+            onUpdateEffect = viewModel::updateEffect,
+            onRemoveEffect = viewModel::removeEffect,
+            onAppendEffect = viewModel::appendEffect,
+            onSave = viewModel::saveAbilityListing,
+            onDelete = {},
+            onClearState = viewModel::clearSaveState,
+        )
+        is AbilityListingContributionsViewModel.Mode.Edit.Ready -> AbilityListingForm(
+            initialName = current.listing.name,
+            isEdit = true,
+            effects = effects,
+            saveState = saveState,
+            onUpdateEffect = viewModel::updateEffect,
+            onRemoveEffect = viewModel::removeEffect,
+            onAppendEffect = viewModel::appendEffect,
+            onSave = viewModel::saveAbilityListing,
+            onDelete = viewModel::deleteContribution,
+            onClearState = viewModel::clearSaveState,
+        )
+    }
 }
 
 @Composable
 private fun AbilityListingForm(
+    initialName: String?,
+    isEdit: Boolean,
     effects: List<EffectDraft>,
     saveState: AbilityListingContributionsViewModel.SaveState,
     onUpdateEffect: (Int, (EffectDraft) -> EffectDraft) -> Unit,
     onRemoveEffect: (Int) -> Unit,
     onAppendEffect: () -> Unit,
     onSave: (name: String) -> Unit,
+    onDelete: () -> Unit,
     onClearState: () -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
+    var name by remember(initialName) { mutableStateOf(initialName.orEmpty()) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete contribution?") },
+            text = { Text("Permanently delete \"$name\" from your contributions?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        onDelete()
+                    },
+                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -107,6 +166,7 @@ private fun AbilityListingForm(
             label = { Text("Name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            readOnly = isEdit,
         )
 
         effects.forEachIndexed { index, draft ->
@@ -127,7 +187,17 @@ private fun AbilityListingForm(
             modifier = Modifier.fillMaxWidth(),
             enabled = saveState !is AbilityListingContributionsViewModel.SaveState.Saving,
         ) {
-            Text("Save Ability Listing")
+            Text(if (isEdit) "Update Ability Listing" else "Save Ability Listing")
+        }
+
+        if (isEdit) {
+            androidx.compose.material3.OutlinedButton(
+                onClick = { showDeleteConfirm = true },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = saveState !is AbilityListingContributionsViewModel.SaveState.Saving,
+            ) {
+                Text("Delete Contribution", color = MaterialTheme.colorScheme.error)
+            }
         }
     }
 }
@@ -592,12 +662,15 @@ private fun resourceColor(resource: Resource): Color = when (resource) {
 @Composable
 private fun AbilityListingFormEmptyPreview() {
     AbilityListingForm(
+        initialName = null,
+        isEdit = false,
         effects = emptyList(),
         saveState = AbilityListingContributionsViewModel.SaveState.Idle,
         onUpdateEffect = { _, _ -> },
         onRemoveEffect = {},
         onAppendEffect = {},
         onSave = {},
+        onDelete = {},
         onClearState = {},
     )
 }
@@ -606,6 +679,8 @@ private fun AbilityListingFormEmptyPreview() {
 @Composable
 private fun AbilityListingFormPopulatedPreview() {
     AbilityListingForm(
+        initialName = null,
+        isEdit = false,
         effects = listOf(
             EffectDraft(
                 rank = Rank.Iron,
@@ -622,6 +697,7 @@ private fun AbilityListingFormPopulatedPreview() {
         onRemoveEffect = {},
         onAppendEffect = {},
         onSave = {},
+        onDelete = {},
         onClearState = {},
     )
 }
@@ -630,12 +706,15 @@ private fun AbilityListingFormPopulatedPreview() {
 @Composable
 private fun AbilityListingFormErrorPreview() {
     AbilityListingForm(
+        initialName = null,
+        isEdit = false,
         effects = emptyList(),
         saveState = AbilityListingContributionsViewModel.SaveState.Error("Name cannot be empty"),
         onUpdateEffect = { _, _ -> },
         onRemoveEffect = {},
         onAppendEffect = {},
         onSave = {},
+        onDelete = {},
         onClearState = {},
     )
 }

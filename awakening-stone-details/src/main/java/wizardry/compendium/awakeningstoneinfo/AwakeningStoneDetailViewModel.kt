@@ -25,7 +25,7 @@ class AwakeningStoneDetailViewModel
             awakeningStoneRepository.awakeningStones.drop(1).collect { stones ->
                 val current = currentlyLoadedStone ?: return@collect
                 val refreshed = stones.find { it.name == current.name } ?: return@collect
-                _state.emit(AwakeningStoneDetailUiState.Success(refreshed))
+                _state.emit(refreshed.toSuccess())
             }
         }
     }
@@ -35,7 +35,7 @@ class AwakeningStoneDetailViewModel
             _state.emit(AwakeningStoneDetailUiState.Loading)
 
             awakeningStoneRepository.getAwakeningStones().find { it.name == stoneName }
-                ?.let { _state.emit(AwakeningStoneDetailUiState.Success(it)) }
+                ?.let { _state.emit(it.toSuccess()) }
                 ?: _state.emit(
                     AwakeningStoneDetailUiState.Error(
                         IllegalArgumentException("no awakening stone found with name: $stoneName")
@@ -43,6 +43,12 @@ class AwakeningStoneDetailViewModel
                 )
         }
     }
+
+    private suspend fun AwakeningStone.toSuccess(): AwakeningStoneDetailUiState.Success =
+        AwakeningStoneDetailUiState.Success(
+            stone = this,
+            isContribution = awakeningStoneRepository.isContribution(name),
+        )
 
     private val currentlyLoadedStone: AwakeningStone?
         get() = (state.value as? AwakeningStoneDetailUiState.Success)?.stone

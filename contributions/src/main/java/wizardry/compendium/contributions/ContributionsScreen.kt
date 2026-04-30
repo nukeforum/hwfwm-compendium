@@ -18,11 +18,75 @@ import wizardry.compendium.essences.model.Rarity
 import kotlinx.coroutines.launch
 
 @Composable
-fun ContributionsScreen(viewModel: ContributionsViewModel = hiltViewModel()) {
+fun ContributionsScreen(
+    onContributionDeleted: () -> Unit = {},
+    viewModel: ContributionsViewModel = hiltViewModel(),
+) {
     val availableManifestations by viewModel.availableManifestations.collectAsState()
     val availableConfluences by viewModel.availableConfluences.collectAsState()
     val saveState by viewModel.saveState.collectAsState()
+    val mode by viewModel.mode.collectAsState()
 
+    LaunchedEffect(saveState) {
+        if (saveState is ContributionsViewModel.SaveState.Deleted) {
+            onContributionDeleted()
+        }
+    }
+
+    when (val current = mode) {
+        ContributionsViewModel.Mode.Edit.Loading -> Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) { Text("Loading") }
+        ContributionsViewModel.Mode.Edit.NotFound -> Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) { Text("This essence is not a user contribution and cannot be edited.") }
+        is ContributionsViewModel.Mode.Edit.ManifestationReady -> ManifestationForm(
+            initial = current.manifestation,
+            isEdit = true,
+            saveState = saveState,
+            onSave = { name, rarity, description, isRestricted ->
+                viewModel.saveManifestation(name, rarity, description, isRestricted)
+            },
+            onDelete = viewModel::deleteContribution,
+            onClearState = viewModel::clearSaveState,
+        )
+        is ContributionsViewModel.Mode.Edit.ConfluenceReady -> ConfluenceEditForm(
+            initial = current.confluence,
+            saveState = saveState,
+            onSave = { name, isRestricted -> viewModel.updateConfluence(name, isRestricted) },
+            onDelete = viewModel::deleteContribution,
+            onClearState = viewModel::clearSaveState,
+        )
+        ContributionsViewModel.Mode.Create -> CreateContributions(
+            availableManifestations = availableManifestations,
+            availableConfluences = availableConfluences,
+            saveState = saveState,
+            onSaveManifestation = { name, rarity, description, isRestricted ->
+                viewModel.saveManifestation(name, rarity, description, isRestricted)
+            },
+            onSaveNewConfluence = { name, m1, m2, m3, isRestricted ->
+                viewModel.saveConfluence(name, m1, m2, m3, isRestricted)
+            },
+            onAddCombination = { target, m1, m2, m3, isRestricted ->
+                viewModel.addCombinationToConfluence(target, m1, m2, m3, isRestricted)
+            },
+            onClearState = viewModel::clearSaveState,
+        )
+    }
+}
+
+@Composable
+private fun CreateContributions(
+    availableManifestations: List<Essence.Manifestation>,
+    availableConfluences: List<Essence.Confluence>,
+    saveState: ContributionsViewModel.SaveState,
+    onSaveManifestation: (String, Rarity, String, Boolean) -> Unit,
+    onSaveNewConfluence: (String, Essence.Manifestation, Essence.Manifestation, Essence.Manifestation, Boolean) -> Unit,
+    onAddCombination: (Essence.Confluence, Essence.Manifestation, Essence.Manifestation, Essence.Manifestation, Boolean) -> Unit,
+    onClearState: () -> Unit,
+) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -41,38 +105,131 @@ fun ContributionsScreen(viewModel: ContributionsViewModel = hiltViewModel()) {
 
         when (selectedTab) {
             0 -> ManifestationForm(
+                initial = null,
+                isEdit = false,
                 saveState = saveState,
-                onSave = { name, rarity, description, isRestricted ->
-                    viewModel.saveManifestation(name, rarity, description, isRestricted)
-                },
-                onClearState = viewModel::clearSaveState,
+                onSave = onSaveManifestation,
+                onDelete = {},
+                onClearState = onClearState,
             )
             1 -> ConfluenceForm(
                 availableManifestations = availableManifestations,
                 availableConfluences = availableConfluences,
                 saveState = saveState,
-                onSaveNew = { name, m1, m2, m3, isRestricted ->
-                    viewModel.saveConfluence(name, m1, m2, m3, isRestricted)
-                },
-                onAddCombination = { target, m1, m2, m3, isRestricted ->
-                    viewModel.addCombinationToConfluence(target, m1, m2, m3, isRestricted)
-                },
-                onClearState = viewModel::clearSaveState,
+                onSaveNew = onSaveNewConfluence,
+                onAddCombination = onAddCombination,
+                onClearState = onClearState,
             )
         }
     }
 }
 
 @Composable
-private fun ManifestationForm(
+private fun ConfluenceEditForm(
+    initial: Essence.Confluence,
     saveState: ContributionsViewModel.SaveState,
-    onSave: (name: String, rarity: Rarity, description: String, isRestricted: Boolean) -> Unit,
+    onSave: (name: String, isRestricted: Boolean) -> Unit,
+    onDelete: () -> Unit,
     onClearState: () -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var rarity by remember { mutableStateOf(Rarity.Common) }
-    var description by remember { mutableStateOf("") }
-    var isRestricted by remember { mutableStateOf(false) }
+    val name = initial.name
+    var isRestricted by remember(initial) { mutableStateOf(initial.isRestricted) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete contribution?") },
+            text = { Text("Permanently delete \"$name\" from your contributions?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        OutlinedTextField(
+            value = name,
+            onValueChange = {},
+            label = { Text("Name") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            readOnly = true,
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Restricted")
+            Switch(checked = isRestricted, onCheckedChange = { isRestricted = it })
+        }
+
+        Text("Combinations", style = MaterialTheme.typography.titleMedium)
+        initial.confluenceSets.forEach { set ->
+            Text("• ${set.set.joinToString(" + ") { it.name }}${if (set.isRestricted) " (restricted)" else ""}")
+        }
+
+        SaveFeedback(saveState = saveState, onClearState = onClearState)
+
+        Button(
+            onClick = { onSave(name, isRestricted) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = saveState !is ContributionsViewModel.SaveState.Saving,
+        ) { Text("Update Confluence") }
+
+        OutlinedButton(
+            onClick = { showDeleteConfirm = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = saveState !is ContributionsViewModel.SaveState.Saving,
+        ) { Text("Delete Contribution", color = MaterialTheme.colorScheme.error) }
+    }
+}
+
+@Composable
+private fun ManifestationForm(
+    initial: Essence.Manifestation?,
+    isEdit: Boolean,
+    saveState: ContributionsViewModel.SaveState,
+    onSave: (name: String, rarity: Rarity, description: String, isRestricted: Boolean) -> Unit,
+    onDelete: () -> Unit,
+    onClearState: () -> Unit,
+) {
+    var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
+    var rarity by remember(initial) { mutableStateOf(initial?.rarity ?: Rarity.Common) }
+    var description by remember(initial) { mutableStateOf(initial?.description.orEmpty()) }
+    var isRestricted by remember(initial) { mutableStateOf(initial?.isRestricted ?: false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Delete contribution?") },
+            text = { Text("Permanently delete \"$name\" from your contributions?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    onDelete()
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -87,6 +244,7 @@ private fun ManifestationForm(
             label = { Text("Name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            readOnly = isEdit,
         )
 
         RarityDropdown(
@@ -118,7 +276,17 @@ private fun ManifestationForm(
             modifier = Modifier.fillMaxWidth(),
             enabled = saveState !is ContributionsViewModel.SaveState.Saving,
         ) {
-            Text("Save Essence")
+            Text(if (isEdit) "Update Essence" else "Save Essence")
+        }
+
+        if (isEdit) {
+            OutlinedButton(
+                onClick = { showDeleteConfirm = true },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = saveState !is ContributionsViewModel.SaveState.Saving,
+            ) {
+                Text("Delete Contribution", color = MaterialTheme.colorScheme.error)
+            }
         }
     }
 }
@@ -491,8 +659,11 @@ private val previewConfluences = listOf(
 @Composable
 private fun ManifestationFormIdlePreview() {
     ManifestationForm(
+        initial = null,
+        isEdit = false,
         saveState = ContributionsViewModel.SaveState.Idle,
         onSave = { _, _, _, _ -> },
+        onDelete = {},
         onClearState = {},
     )
 }
@@ -501,8 +672,11 @@ private fun ManifestationFormIdlePreview() {
 @Composable
 private fun ManifestationFormSuccessPreview() {
     ManifestationForm(
+        initial = null,
+        isEdit = false,
         saveState = ContributionsViewModel.SaveState.Success,
         onSave = { _, _, _, _ -> },
+        onDelete = {},
         onClearState = {},
     )
 }
@@ -511,8 +685,11 @@ private fun ManifestationFormSuccessPreview() {
 @Composable
 private fun ManifestationFormErrorPreview() {
     ManifestationForm(
+        initial = null,
+        isEdit = false,
         saveState = ContributionsViewModel.SaveState.Error("Name cannot be empty"),
         onSave = { _, _, _, _ -> },
+        onDelete = {},
         onClearState = {},
     )
 }

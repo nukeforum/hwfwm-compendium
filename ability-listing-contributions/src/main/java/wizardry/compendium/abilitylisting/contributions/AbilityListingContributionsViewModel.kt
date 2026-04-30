@@ -1,5 +1,6 @@
 package wizardry.compendium.abilitylisting.contributions
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,14 +26,34 @@ import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
 class AbilityListingContributionsViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val abilityListingRepository: AbilityListingRepository,
 ) : ViewModel() {
+
+    private val editName: String? = savedStateHandle.get<String>("name")
 
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState = _saveState.asStateFlow()
 
     private val _effects = MutableStateFlow<List<EffectDraft>>(emptyList())
     val effects = _effects.asStateFlow()
+
+    private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
+    val mode = _mode.asStateFlow()
+
+    init {
+        if (editName != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val listing = abilityListingRepository.getAbilityListings().find { it.name == editName }
+                if (listing != null && abilityListingRepository.isContribution(listing.name)) {
+                    _effects.emit(listing.effects.map { it.toDraft() })
+                    _mode.emit(Mode.Edit.Ready(listing))
+                } else {
+                    _mode.emit(Mode.Edit.NotFound)
+                }
+            }
+        }
+    }
 
     fun appendEffect() {
         _effects.update { it + EffectDraft() }
@@ -71,8 +92,24 @@ class AbilityListingContributionsViewModel @Inject constructor(
             _saveState.emit(SaveState.Saving)
             val effects = drafts.map { it.toEffect() }
             val listing = Ability.Listing.of(name = name.trim()).copy(effects = effects)
-            when (val result = abilityListingRepository.saveAbilityListingContribution(listing)) {
+            val result = if (editName != null) {
+                abilityListingRepository.updateAbilityListingContribution(listing)
+            } else {
+                abilityListingRepository.saveAbilityListingContribution(listing)
+            }
+            when (result) {
                 is ContributionResult.Success -> _saveState.emit(SaveState.Success)
+                is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
+            }
+        }
+    }
+
+    fun deleteContribution() {
+        val target = (mode.value as? Mode.Edit.Ready)?.listing ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            _saveState.emit(SaveState.Saving)
+            when (val result = abilityListingRepository.deleteContribution(target.name)) {
+                is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)
                 is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
             }
         }
@@ -86,10 +123,20 @@ class AbilityListingContributionsViewModel @Inject constructor(
         viewModelScope.launch { _saveState.emit(SaveState.Error(message)) }
     }
 
+    sealed interface Mode {
+        data object Create : Mode
+        sealed interface Edit : Mode {
+            data object Loading : Edit
+            data object NotFound : Edit
+            data class Ready(val listing: Ability.Listing) : Edit
+        }
+    }
+
     sealed interface SaveState {
         data object Idle : SaveState
         data object Saving : SaveState
         data object Success : SaveState
+        data object Deleted : SaveState
         data class Error(val message: String) : SaveState
     }
 }
@@ -112,6 +159,16 @@ private fun EffectDraft.toEffect(): Effect.AbilityEffect = Effect.AbilityEffect(
     cooldown = parseCooldown(cooldown) ?: Duration.ZERO,
     description = description.trim(),
     replacementKey = replacementKey.trim().takeIf { it.isNotEmpty() },
+)
+
+private fun Effect.AbilityEffect.toDraft(): EffectDraft = EffectDraft(
+    rank = rank,
+    type = type,
+    properties = properties,
+    costs = cost.filterNot { it is Cost.None },
+    cooldown = if (cooldown == Duration.ZERO) "" else cooldown.toString(),
+    replacementKey = replacementKey.orEmpty(),
+    description = description,
 )
 
 private val COOLDOWN_REGEX = Regex("^\\s*(\\d+)\\s*([a-zA-Z]+)\\s*$")

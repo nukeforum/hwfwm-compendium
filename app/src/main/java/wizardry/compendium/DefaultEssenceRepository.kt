@@ -137,6 +137,72 @@ class DefaultEssenceRepository @Inject constructor(
         ContributionResult.Success
     }
 
+    override suspend fun isContribution(name: String): Boolean = writeMutex.withLock {
+        val key = name.normalized()
+        contributionsCache.contents.any { it.name.normalized() == key }
+    }
+
+    override suspend fun deleteContribution(name: String): ContributionResult = writeMutex.withLock {
+        val key = name.normalized()
+        val existing = contributionsCache.contents
+        val target = existing.firstOrNull { it.name.normalized() == key }
+            ?: return@withLock ContributionResult.Failure(
+                "No contribution exists for \"$name\""
+            )
+        val remaining = existing.filterNot { it.name.normalized() == key }
+        val isReferenced = remaining
+            .filterIsInstance<Essence.Confluence>()
+            .any { conf ->
+                conf.confluenceSets.any { set ->
+                    set.set.any { it.name.normalized() == key }
+                }
+            }
+        if (isReferenced && target is Essence.Manifestation) {
+            return@withLock ContributionResult.Failure(
+                "\"${target.name}\" is referenced by other contributed confluences"
+            )
+        }
+        contributionsCache.contents = remaining
+        invalidate()
+        ContributionResult.Success
+    }
+
+    override suspend fun updateManifestationContribution(
+        manifestation: Essence.Manifestation,
+    ): ContributionResult = writeMutex.withLock {
+        val key = manifestation.name.normalized()
+        val existing = contributionsCache.contents
+        val current = existing.firstOrNull { it.name.normalized() == key }
+        if (current !is Essence.Manifestation) {
+            return@withLock ContributionResult.Failure(
+                "No contributed essence named \"${manifestation.name}\""
+            )
+        }
+        contributionsCache.contents = existing.map {
+            if (it.name.normalized() == key) manifestation else it
+        }
+        invalidate()
+        ContributionResult.Success
+    }
+
+    override suspend fun updateConfluenceContribution(
+        confluence: Essence.Confluence,
+    ): ContributionResult = writeMutex.withLock {
+        val key = confluence.name.normalized()
+        val existing = contributionsCache.contents
+        val current = existing.firstOrNull { it.name.normalized() == key }
+        if (current !is Essence.Confluence) {
+            return@withLock ContributionResult.Failure(
+                "No contributed confluence named \"${confluence.name}\""
+            )
+        }
+        contributionsCache.contents = existing.map {
+            if (it.name.normalized() == key) confluence else it
+        }
+        invalidate()
+        ContributionResult.Success
+    }
+
     private fun invalidate() {
         invalidations.update { it + 1 }
     }

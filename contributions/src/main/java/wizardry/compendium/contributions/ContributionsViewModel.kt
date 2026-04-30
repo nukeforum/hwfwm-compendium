@@ -1,5 +1,6 @@
 package wizardry.compendium.contributions
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import wizardry.compendium.essences.ContributionResult
@@ -16,8 +17,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ContributionsViewModel @Inject constructor(
+    savedStateHandle: SavedStateHandle,
     private val essenceRepository: EssenceRepository,
 ) : ViewModel() {
+
+    private val editName: String? = savedStateHandle.get<String>("name")
 
     private val _availableManifestations = MutableStateFlow<List<Essence.Manifestation>>(emptyList())
     val availableManifestations = _availableManifestations.asStateFlow()
@@ -28,11 +32,26 @@ class ContributionsViewModel @Inject constructor(
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState = _saveState.asStateFlow()
 
+    private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
+    val mode = _mode.asStateFlow()
+
     init {
         viewModelScope.launch(Dispatchers.IO) {
             essenceRepository.essences.collect { essences ->
                 _availableManifestations.emit(essences.filterIsInstance<Essence.Manifestation>())
                 _availableConfluences.emit(essences.filterIsInstance<Essence.Confluence>())
+            }
+        }
+        if (editName != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val essence = essenceRepository.getEssences().find { it.name == editName }
+                val isContribution = essence != null && essenceRepository.isContribution(essence.name)
+                if (essence == null || !isContribution) {
+                    _mode.emit(Mode.Edit.NotFound)
+                } else when (essence) {
+                    is Essence.Manifestation -> _mode.emit(Mode.Edit.ManifestationReady(essence))
+                    is Essence.Confluence -> _mode.emit(Mode.Edit.ConfluenceReady(essence))
+                }
             }
         }
     }
@@ -55,7 +74,24 @@ class ContributionsViewModel @Inject constructor(
                 rarity = rarity,
                 restricted = isRestricted,
             )
-            essenceRepository.saveManifestationContribution(manifestation).emit()
+            val result = if (editName != null) {
+                essenceRepository.updateManifestationContribution(manifestation)
+            } else {
+                essenceRepository.saveManifestationContribution(manifestation)
+            }
+            result.emit()
+        }
+    }
+
+    fun updateConfluence(
+        name: String,
+        isRestricted: Boolean,
+    ) {
+        val source = (mode.value as? Mode.Edit.ConfluenceReady)?.confluence ?: return
+        viewModelScope.launch(Dispatchers.IO) {
+            _saveState.emit(SaveState.Saving)
+            val updated = source.copy(name = name.trim(), isRestricted = isRestricted)
+            essenceRepository.updateConfluenceContribution(updated).emit()
         }
     }
 
@@ -106,6 +142,21 @@ class ContributionsViewModel @Inject constructor(
         }
     }
 
+    fun deleteContribution() {
+        val name = when (val m = mode.value) {
+            is Mode.Edit.ManifestationReady -> m.manifestation.name
+            is Mode.Edit.ConfluenceReady -> m.confluence.name
+            else -> return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            _saveState.emit(SaveState.Saving)
+            when (val result = essenceRepository.deleteContribution(name)) {
+                is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)
+                is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
+            }
+        }
+    }
+
     fun clearSaveState() {
         viewModelScope.launch { _saveState.emit(SaveState.Idle) }
     }
@@ -123,10 +174,21 @@ class ContributionsViewModel @Inject constructor(
         m3: Essence.Manifestation,
     ): Boolean = m1.name != m2.name && m1.name != m3.name && m2.name != m3.name
 
+    sealed interface Mode {
+        data object Create : Mode
+        sealed interface Edit : Mode {
+            data object Loading : Edit
+            data object NotFound : Edit
+            data class ManifestationReady(val manifestation: Essence.Manifestation) : Edit
+            data class ConfluenceReady(val confluence: Essence.Confluence) : Edit
+        }
+    }
+
     sealed interface SaveState {
         data object Idle : SaveState
         data object Saving : SaveState
         data object Success : SaveState
+        data object Deleted : SaveState
         data class Error(val message: String) : SaveState
     }
 }

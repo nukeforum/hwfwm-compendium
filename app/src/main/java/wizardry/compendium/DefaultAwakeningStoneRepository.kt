@@ -64,6 +64,41 @@ class DefaultAwakeningStoneRepository @Inject constructor(
         ContributionResult.Success
     }
 
+    override suspend fun isContribution(name: String): Boolean = writeMutex.withLock {
+        val key = name.normalized()
+        contributionsCache.contents.any { it.name.normalized() == key }
+    }
+
+    override suspend fun deleteContribution(name: String): ContributionResult = writeMutex.withLock {
+        val key = name.normalized()
+        val existing = contributionsCache.contents
+        if (existing.none { it.name.normalized() == key }) {
+            return@withLock ContributionResult.Failure(
+                "No contribution exists for \"$name\""
+            )
+        }
+        contributionsCache.contents = existing.filterNot { it.name.normalized() == key }
+        invalidations.update { it + 1 }
+        ContributionResult.Success
+    }
+
+    override suspend fun updateAwakeningStoneContribution(
+        stone: AwakeningStone,
+    ): ContributionResult = writeMutex.withLock {
+        val key = stone.name.normalized()
+        val existing = contributionsCache.contents
+        if (existing.none { it.name.normalized() == key }) {
+            return@withLock ContributionResult.Failure(
+                "No contributed awakening stone named \"${stone.name}\""
+            )
+        }
+        contributionsCache.contents = existing.map {
+            if (it.name.normalized() == key) stone else it
+        }
+        invalidations.update { it + 1 }
+        ContributionResult.Success
+    }
+
     private suspend fun ensureCanonicalLoaded(): List<AwakeningStone> {
         val current = canonicalCache.contents
         if (current.isNotEmpty()) return current

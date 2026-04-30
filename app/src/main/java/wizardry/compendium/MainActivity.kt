@@ -63,17 +63,17 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(Nav.EssenceRandomizer.route)
                                     }
                                     ContributeButton {
-                                        navController.navigate(Nav.Contributions.route)
+                                        navController.navigate(Nav.Contributions.newRoute)
                                     }
                                 }
                                 if (currentRoute == Nav.AwakeningStoneSearch.route) {
                                     ContributeButton {
-                                        navController.navigate(Nav.AwakeningStoneContributions.route)
+                                        navController.navigate(Nav.AwakeningStoneContributions.newRoute)
                                     }
                                 }
                                 if (currentRoute == Nav.AbilityListingSearch.route) {
                                     ContributeButton {
-                                        navController.navigate(Nav.AbilityListingContributions.route)
+                                        navController.navigate(Nav.AbilityListingContributions.newRoute)
                                     }
                                 }
                                 SettingsButton { navController.navigate(Nav.Settings.route) }
@@ -125,7 +125,10 @@ class MainActivity : ComponentActivity() {
                             title = essenceName
                             EssenceDetails(
                                 essenceName = essenceName,
-                                onEssenceLoaded = { title = it.name }
+                                onEssenceLoaded = { title = it.name },
+                                onEditContribution = { essence ->
+                                    navController.navigate(Nav.Contributions.buildEditRoute(essence))
+                                },
                             )
                         }
                         composable(
@@ -139,7 +142,10 @@ class MainActivity : ComponentActivity() {
                             title = stoneName
                             AwakeningStoneDetails(
                                 stoneName = stoneName,
-                                onStoneLoaded = { title = it.name }
+                                onStoneLoaded = { title = it.name },
+                                onEditContribution = { stone ->
+                                    navController.navigate(Nav.AwakeningStoneContributions.buildEditRoute(stone))
+                                },
                             )
                         }
                         composable(Nav.EssenceRandomizer.route) { backStackEntry ->
@@ -152,15 +158,39 @@ class MainActivity : ComponentActivity() {
                             title = "Settings"
                             SettingsScreen()
                         }
-                        composable(Nav.Contributions.route) { backStackEntry ->
+                        composable(
+                            Nav.Contributions.route,
+                            arguments = listOf(
+                                navArgument(Nav.Contributions.ARG_NAME) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            ),
+                        ) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
-                            title = "Add Contribution"
-                            ContributionsScreen()
+                            val editName = backStackEntry.arguments?.getString(Nav.Contributions.ARG_NAME)
+                            title = if (editName != null) "Edit Contribution" else "Add Contribution"
+                            ContributionsScreen(
+                                onContributionDeleted = { navController.popBackStack(Nav.EssenceSearch.route, false) },
+                            )
                         }
-                        composable(Nav.AwakeningStoneContributions.route) { backStackEntry ->
+                        composable(
+                            Nav.AwakeningStoneContributions.route,
+                            arguments = listOf(
+                                navArgument(Nav.AwakeningStoneContributions.ARG_NAME) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            ),
+                        ) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
-                            title = "Add Awakening Stone"
-                            AwakeningStoneContributionsScreen()
+                            val editName = backStackEntry.arguments?.getString(Nav.AwakeningStoneContributions.ARG_NAME)
+                            title = if (editName != null) "Edit Awakening Stone" else "Add Awakening Stone"
+                            AwakeningStoneContributionsScreen(
+                                onContributionDeleted = { navController.popBackStack(Nav.AwakeningStoneSearch.route, false) },
+                            )
                         }
                         composable(Nav.AbilityListingSearch.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
@@ -182,13 +212,28 @@ class MainActivity : ComponentActivity() {
                             title = listingName
                             AbilityListingDetails(
                                 listingName = listingName,
-                                onListingLoaded = { title = it.name }
+                                onListingLoaded = { title = it.name },
+                                onEditContribution = { listing ->
+                                    navController.navigate(Nav.AbilityListingContributions.buildEditRoute(listing))
+                                },
                             )
                         }
-                        composable(Nav.AbilityListingContributions.route) { backStackEntry ->
+                        composable(
+                            Nav.AbilityListingContributions.route,
+                            arguments = listOf(
+                                navArgument(Nav.AbilityListingContributions.ARG_NAME) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            ),
+                        ) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
-                            title = "Add Ability Listing"
-                            AbilityListingContributionsScreen()
+                            val editName = backStackEntry.arguments?.getString(Nav.AbilityListingContributions.ARG_NAME)
+                            title = if (editName != null) "Edit Ability Listing" else "Add Ability Listing"
+                            AbilityListingContributionsScreen(
+                                onContributionDeleted = { navController.popBackStack(Nav.AbilityListingSearch.route, false) },
+                            )
                         }
                     }
                 }

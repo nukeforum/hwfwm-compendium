@@ -25,7 +25,7 @@ class AbilityListingDetailViewModel
             abilityListingRepository.abilityListings.drop(1).collect { listings ->
                 val current = currentlyLoadedListing ?: return@collect
                 val refreshed = listings.find { it.name == current.name } ?: return@collect
-                _state.emit(AbilityListingDetailUiState.Success(refreshed))
+                _state.emit(refreshed.toSuccess())
             }
         }
     }
@@ -35,7 +35,7 @@ class AbilityListingDetailViewModel
             _state.emit(AbilityListingDetailUiState.Loading)
 
             abilityListingRepository.getAbilityListings().find { it.name == listingName }
-                ?.let { _state.emit(AbilityListingDetailUiState.Success(it)) }
+                ?.let { _state.emit(it.toSuccess()) }
                 ?: _state.emit(
                     AbilityListingDetailUiState.Error(
                         IllegalArgumentException("no ability listing found with name: $listingName")
@@ -43,6 +43,12 @@ class AbilityListingDetailViewModel
                 )
         }
     }
+
+    private suspend fun Ability.Listing.toSuccess(): AbilityListingDetailUiState.Success =
+        AbilityListingDetailUiState.Success(
+            listing = this,
+            isContribution = abilityListingRepository.isContribution(name),
+        )
 
     private val currentlyLoadedListing: Ability.Listing?
         get() = (state.value as? AbilityListingDetailUiState.Success)?.listing

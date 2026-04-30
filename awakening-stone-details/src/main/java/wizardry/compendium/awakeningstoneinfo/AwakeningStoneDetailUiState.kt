@@ -7,5 +7,8 @@ sealed interface AwakeningStoneDetailUiState {
 
     data class Error(val exception: Exception) : AwakeningStoneDetailUiState
 
-    data class Success(val stone: AwakeningStone) : AwakeningStoneDetailUiState
+    data class Success(
+        val stone: AwakeningStone,
+        val isContribution: Boolean,
+    ) : AwakeningStoneDetailUiState
 }

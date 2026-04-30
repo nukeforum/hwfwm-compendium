@@ -1,11 +1,18 @@
 package wizardry.compendium.awakeningstoneinfo
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +30,7 @@ import wizardry.compendium.essences.model.AwakeningStone
 fun AwakeningStoneDetails(
     stoneName: String,
     onStoneLoaded: (AwakeningStone) -> Unit,
+    onEditContribution: (AwakeningStone) -> Unit = {},
     viewModel: AwakeningStoneDetailViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(stoneName) {
@@ -36,7 +44,7 @@ fun AwakeningStoneDetails(
         AwakeningStoneDetailUiState.Loading -> Loading()
         is AwakeningStoneDetailUiState.Success -> {
             onStoneLoaded(details.stone)
-            Details(state = details)
+            Details(state = details, onEdit = { onEditContribution(details.stone) })
         }
     }
 }
@@ -62,12 +70,25 @@ private fun Loading() {
 }
 
 @Composable
-private fun Details(state: AwakeningStoneDetailUiState.Success) {
+private fun Details(state: AwakeningStoneDetailUiState.Success, onEdit: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
     ) {
+        if (state.isContribution) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                OutlinedButton(onClick = onEdit) {
+                    Icon(Icons.Filled.Edit, contentDescription = null)
+                    Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))
+                }
+            }
+        }
         Box(
             modifier = Modifier
                 .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)

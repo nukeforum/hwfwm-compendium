@@ -22,4 +22,16 @@ interface EssenceRepository {
         target: Essence.Confluence,
         combination: ConfluenceSet,
     ): ContributionResult
+
+    suspend fun isContribution(name: String): Boolean
+
+    suspend fun deleteContribution(name: String): ContributionResult
+
+    suspend fun updateManifestationContribution(
+        manifestation: Essence.Manifestation,
+    ): ContributionResult
+
+    suspend fun updateConfluenceContribution(
+        confluence: Essence.Confluence,
+    ): ContributionResult
 }

@@ -7,5 +7,8 @@ sealed interface AbilityListingDetailUiState {
 
     data class Error(val exception: Exception) : AbilityListingDetailUiState
 
-    data class Success(val listing: Ability.Listing) : AbilityListingDetailUiState
+    data class Success(
+        val listing: Ability.Listing,
+        val isContribution: Boolean,
+    ) : AbilityListingDetailUiState
 }

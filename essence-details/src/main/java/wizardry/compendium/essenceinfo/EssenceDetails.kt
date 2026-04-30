@@ -6,6 +6,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +29,7 @@ import java.security.InvalidParameterException
 fun EssenceDetails(
     essenceName: String,
     onEssenceLoaded: (Essence) -> Unit,
+    onEditContribution: (Essence) -> Unit = {},
     viewModel: EssenceDetailViewModel = hiltViewModel()
 ) {
     LaunchedEffect(essenceName) {
@@ -42,7 +47,11 @@ fun EssenceDetails(
         EssenceDetailUiState.Loading -> Loading()
         is EssenceDetailUiState.Success -> {
             onEssenceLoaded(details.essence)
-            Details(state = details, onEssenceClick = { viewModel.load(it) })
+            Details(
+                state = details,
+                onEssenceClick = { viewModel.load(it) },
+                onEdit = { onEditContribution(details.essence) },
+            )
         }
     }
 }
@@ -71,12 +80,26 @@ private fun Loading() {
 private fun Details(
     state: EssenceDetailUiState.Success,
     onEssenceClick: (Essence) -> Unit,
+    onEdit: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
     ) {
+        if (state.isContribution) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                OutlinedButton(onClick = onEdit) {
+                    Icon(Icons.Filled.Edit, contentDescription = null)
+                    Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))
+                }
+            }
+        }
         Box(
             modifier = Modifier
                 .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)

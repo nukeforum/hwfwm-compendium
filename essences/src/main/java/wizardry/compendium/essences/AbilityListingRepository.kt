@@ -9,4 +9,10 @@ interface AbilityListingRepository {
     suspend fun getAbilityListings(): List<Ability.Listing>
 
     suspend fun saveAbilityListingContribution(listing: Ability.Listing): ContributionResult
+
+    suspend fun isContribution(name: String): Boolean
+
+    suspend fun deleteContribution(name: String): ContributionResult
+
+    suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult
 }
