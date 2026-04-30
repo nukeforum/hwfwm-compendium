@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -33,7 +32,6 @@ import wizardry.compendium.ui.theme.essenceHighlight
 @Composable
 fun AwakeningStoneSearch(
     viewModel: AwakeningStoneSearchViewModel = hiltViewModel(),
-    onContributeClicked: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -48,7 +46,6 @@ fun AwakeningStoneSearch(
             modifier = Modifier.fillMaxSize(),
             state = result,
             onFilterTermChanged = viewModel::setFilterTerm,
-            onContributeClicked = onContributeClicked,
         )
     }
 }
@@ -58,7 +55,6 @@ private fun Screen(
     modifier: Modifier,
     state: AwakeningStoneSearchUiState.Success,
     onFilterTermChanged: (String) -> Unit,
-    onContributeClicked: () -> Unit,
 ) {
     Column(modifier = modifier) {
         LazyColumn(
@@ -86,15 +82,6 @@ private fun Screen(
                 },
                 modifier = Modifier.weight(1f)
             )
-        }
-
-        Button(
-            onClick = onContributeClicked,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-        ) {
-            Text("Contribute Awakening Stone")
         }
     }
 }

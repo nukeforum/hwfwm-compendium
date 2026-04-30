@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,6 +58,14 @@ class MainActivity : ComponentActivity() {
                                     RandomizerButton {
                                         navController.navigate(Nav.EssenceRandomizer.route)
                                     }
+                                    ContributeButton {
+                                        navController.navigate(Nav.Contributions.route)
+                                    }
+                                }
+                                if (currentRoute == Nav.AwakeningStoneSearch.route) {
+                                    ContributeButton {
+                                        navController.navigate(Nav.AwakeningStoneContributions.route)
+                                    }
                                 }
                                 SettingsButton { navController.navigate(Nav.Settings.route) }
                             }
@@ -84,19 +93,12 @@ class MainActivity : ComponentActivity() {
                                 onEssenceClicked = { essence ->
                                     navController.navigate(Nav.EssenceDetail.buildRoute(essence))
                                 },
-                                onContributeClicked = {
-                                    navController.navigate(Nav.Contributions.route)
-                                },
                             )
                         }
                         composable(Nav.AwakeningStoneSearch.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
                             title = "Awakening Stone Search"
-                            AwakeningStoneSearch(
-                                onContributeClicked = {
-                                    navController.navigate(Nav.AwakeningStoneContributions.route)
-                                },
-                            )
+                            AwakeningStoneSearch()
                         }
                         composable(
                             Nav.EssenceDetail.route,
@@ -143,6 +145,13 @@ class MainActivity : ComponentActivity() {
 private fun RandomizerButton(navigate: () -> Unit) {
     IconButton(onClick = navigate) {
         Icon(Icons.Filled.Star, contentDescription = "Randomizer")
+    }
+}
+
+@Composable
+private fun ContributeButton(navigate: () -> Unit) {
+    IconButton(onClick = navigate) {
+        Icon(Icons.Filled.Build, contentDescription = "Contribute")
     }
 }
 
