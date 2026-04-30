@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import wizardry.compendium.awakeningstone.contributions.AwakeningStoneContributionsScreen
 import wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
+import wizardry.compendium.awakeningstoneinfo.AwakeningStoneDetails
 import wizardry.compendium.contributions.ContributionsScreen
 import wizardry.compendium.essenceinfo.EssenceDetails
 import wizardry.compendium.randomizer.Randomizer
@@ -98,7 +99,11 @@ class MainActivity : ComponentActivity() {
                         composable(Nav.AwakeningStoneSearch.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
                             title = "Awakening Stone Search"
-                            AwakeningStoneSearch()
+                            AwakeningStoneSearch(
+                                onStoneClicked = { stone ->
+                                    navController.navigate(Nav.AwakeningStoneDetail.buildRoute(stone))
+                                },
+                            )
                         }
                         composable(
                             Nav.EssenceDetail.route,
@@ -112,6 +117,20 @@ class MainActivity : ComponentActivity() {
                             EssenceDetails(
                                 essenceName = essenceName,
                                 onEssenceLoaded = { title = it.name }
+                            )
+                        }
+                        composable(
+                            Nav.AwakeningStoneDetail.route,
+                            arguments = listOf(
+                                navArgument(Nav.AwakeningStoneDetail.ARG_NAME) { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            val stoneName = backStackEntry.arguments!!.getString(Nav.AwakeningStoneDetail.ARG_NAME)!!
+                            title = stoneName
+                            AwakeningStoneDetails(
+                                stoneName = stoneName,
+                                onStoneLoaded = { title = it.name }
                             )
                         }
                         composable(Nav.EssenceRandomizer.route) { backStackEntry ->

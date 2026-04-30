@@ -43,6 +43,7 @@ import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
 fun AwakeningStoneSearch(
+    onStoneClicked: (AwakeningStone) -> Unit,
     viewModel: AwakeningStoneSearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -59,6 +60,7 @@ fun AwakeningStoneSearch(
             state = result,
             onFilterTermChanged = viewModel::setFilterTerm,
             onFilterSelected = viewModel::applyFilter,
+            onStoneClicked = onStoneClicked,
         )
     }
 }
@@ -69,13 +71,17 @@ private fun Screen(
     state: AwakeningStoneSearchUiState.Success,
     onFilterTermChanged: (String) -> Unit,
     onFilterSelected: (AwakeningStoneSearchFilter) -> Unit,
+    onStoneClicked: (AwakeningStone) -> Unit,
 ) {
     Column(modifier = modifier) {
         LazyColumn(
             modifier = Modifier.weight(1f, fill = false)
         ) {
             items(state.stones, { it.name }) { stone ->
-                AwakeningStoneListItem(stone = stone)
+                AwakeningStoneListItem(
+                    stone = stone,
+                    modifier = Modifier.clickable { onStoneClicked(stone) },
+                )
             }
         }
 

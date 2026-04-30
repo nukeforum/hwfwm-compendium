@@ -1,6 +1,7 @@
 package wizardry.compendium
 
 import android.net.Uri
+import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
 
 sealed class Nav(val route: String) {
@@ -14,5 +15,9 @@ sealed class Nav(val route: String) {
     object EssenceDetail : Nav("detail/{essenceName}") {
         const val ARG_NAME = "essenceName"
         fun buildRoute(essence: Essence) = "detail/${Uri.encode(essence.name)}"
+    }
+    object AwakeningStoneDetail : Nav("stoneDetail/{stoneName}") {
+        const val ARG_NAME = "stoneName"
+        fun buildRoute(stone: AwakeningStone) = "stoneDetail/${Uri.encode(stone.name)}"
     }
 }

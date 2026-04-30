@@ -23,6 +23,7 @@ rootProject.name = "Compendium"
 include(":ability-preview")
 include(":app")
 include(":awakening-stone-contributions")
+include(":awakening-stone-details")
 include(":awakening-stone-search")
 include(":dataloader")
 include(":design")
