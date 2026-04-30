@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -21,16 +22,24 @@ class AwakeningStoneSearchViewModel
 ) : ViewModel() {
     private val stonesFlow = MutableStateFlow(emptyList<AwakeningStone>())
     private val filterTermFlow = MutableStateFlow("")
+    private val filtersFlow = MutableStateFlow(
+        AwakeningStoneSearchFilter.options.associateBy { it.name }
+    )
 
     private val _state = MutableStateFlow<AwakeningStoneSearchUiState>(AwakeningStoneSearchUiState.Loading)
     val state = _state.asStateFlow()
 
     init {
         viewModelScope.launch {
-            combine(stonesFlow, filterTermFlow) { stones, filterTerm ->
+            combine(
+                stonesFlow,
+                filterTermFlow,
+                filtersFlow.map { it.values }
+            ) { stones, filterTerm, filters ->
                 AwakeningStoneSearchUiState.Success(
-                    stones = stones.filterWith(filterTerm),
+                    stones = stones.filterWith(filterTerm, filters),
                     filterTerm = filterTerm,
+                    appliedFilters = filters,
                 )
             }
                 .onEach { _state.emit(it) }
@@ -46,6 +55,22 @@ class AwakeningStoneSearchViewModel
         viewModelScope.launch { filterTermFlow.emit(term) }
     }
 
-    private fun List<AwakeningStone>.filterWith(term: String): List<AwakeningStone> =
-        filter { it.name.contains(term, ignoreCase = true) }
+    fun applyFilter(filter: AwakeningStoneSearchFilter) {
+        viewModelScope.launch {
+            filtersFlow.emit(
+                filtersFlow.value.toMutableMap().apply {
+                    if (containsKey(filter.name)) remove(filter.name)
+                    else set(filter.name, filter)
+                }
+            )
+        }
+    }
+
+    private fun List<AwakeningStone>.filterWith(
+        term: String,
+        filters: Collection<AwakeningStoneSearchFilter>,
+    ): List<AwakeningStone> = filter { stone ->
+        stone.name.contains(term, ignoreCase = true)
+                && filters.any { it.predicate(stone) }
+    }
 }

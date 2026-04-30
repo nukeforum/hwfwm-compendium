@@ -11,18 +11,30 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Rarity
@@ -46,6 +58,7 @@ fun AwakeningStoneSearch(
             modifier = Modifier.fillMaxSize(),
             state = result,
             onFilterTermChanged = viewModel::setFilterTerm,
+            onFilterSelected = viewModel::applyFilter,
         )
     }
 }
@@ -55,6 +68,7 @@ private fun Screen(
     modifier: Modifier,
     state: AwakeningStoneSearchUiState.Success,
     onFilterTermChanged: (String) -> Unit,
+    onFilterSelected: (AwakeningStoneSearchFilter) -> Unit,
 ) {
     Column(modifier = modifier) {
         LazyColumn(
@@ -82,6 +96,57 @@ private fun Screen(
                 },
                 modifier = Modifier.weight(1f)
             )
+
+            FilterDropDown(onFilterSelected, state.appliedFilters)
+        }
+    }
+}
+
+@Composable
+private fun FilterDropDown(
+    onFilterSelected: (AwakeningStoneSearchFilter) -> Unit,
+    appliedFilters: Collection<AwakeningStoneSearchFilter>,
+) {
+    var dropdownExpanded by remember { mutableStateOf(false) }
+    Box(
+        modifier = Modifier
+            .padding(horizontal = 8.dp)
+            .background(
+                color = MaterialTheme.colorScheme.surfaceVariant,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        TextButton(
+            onClick = { dropdownExpanded = true }
+        ) {
+            Text(
+                text = "Rarity",
+                textAlign = TextAlign.Center,
+                fontSize = 16.sp,
+            )
+        }
+        DropdownMenu(
+            expanded = dropdownExpanded,
+            onDismissRequest = { dropdownExpanded = false },
+        ) {
+            AwakeningStoneSearchFilter.options.forEach {
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            if (appliedFilters.contains(it)) {
+                                Icon(imageVector = Icons.Filled.Check, contentDescription = null)
+                            }
+                            Text(text = it.name)
+                        }
+                    },
+                    onClick = { onFilterSelected(it) },
+                )
+            }
         }
     }
 }

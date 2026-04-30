@@ -10,5 +10,6 @@ sealed interface AwakeningStoneSearchUiState {
     data class Success(
         val stones: List<AwakeningStone>,
         val filterTerm: String,
+        val appliedFilters: Collection<AwakeningStoneSearchFilter>,
     ) : AwakeningStoneSearchUiState
 }
