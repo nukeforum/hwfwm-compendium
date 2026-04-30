@@ -1,0 +1,12 @@
+CREATE TABLE ability_listing (
+    name TEXT PRIMARY KEY NOT NULL
+);
+
+insertAbilityListing:
+INSERT OR REPLACE INTO ability_listing(name) VALUES (?);
+
+selectAllAbilityListings:
+SELECT * FROM ability_listing;
+
+deleteAllAbilityListings:
+DELETE FROM ability_listing;

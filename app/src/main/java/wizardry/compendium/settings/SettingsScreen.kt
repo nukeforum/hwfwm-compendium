@@ -22,11 +22,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val essenceContributionsEnabled by viewModel.essenceContributionsEnabled.collectAsState(initial = false)
     val awakeningStoneContributionsEnabled by viewModel.awakeningStoneContributionsEnabled.collectAsState(initial = false)
+    val abilityListingContributionsEnabled by viewModel.abilityListingContributionsEnabled.collectAsState(initial = false)
     SettingsContent(
         essenceContributionsEnabled = essenceContributionsEnabled,
         onEssenceContributionsToggled = viewModel::setEssenceContributionsEnabled,
         awakeningStoneContributionsEnabled = awakeningStoneContributionsEnabled,
         onAwakeningStoneContributionsToggled = viewModel::setAwakeningStoneContributionsEnabled,
+        abilityListingContributionsEnabled = abilityListingContributionsEnabled,
+        onAbilityListingContributionsToggled = viewModel::setAbilityListingContributionsEnabled,
     )
 }
 
@@ -36,6 +39,8 @@ fun SettingsContent(
     onEssenceContributionsToggled: (Boolean) -> Unit,
     awakeningStoneContributionsEnabled: Boolean,
     onAwakeningStoneContributionsToggled: (Boolean) -> Unit,
+    abilityListingContributionsEnabled: Boolean,
+    onAbilityListingContributionsToggled: (Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -54,6 +59,12 @@ fun SettingsContent(
             subtitle = "Include your submitted awakening stones",
             checked = awakeningStoneContributionsEnabled,
             onCheckedChange = onAwakeningStoneContributionsToggled,
+        )
+        ToggleRow(
+            title = "My Ability Listings",
+            subtitle = "Include your submitted ability listings",
+            checked = abilityListingContributionsEnabled,
+            onCheckedChange = onAbilityListingContributionsToggled,
         )
     }
 }
@@ -86,6 +97,8 @@ private fun SettingsContentOffPreview() {
         onEssenceContributionsToggled = {},
         awakeningStoneContributionsEnabled = false,
         onAwakeningStoneContributionsToggled = {},
+        abilityListingContributionsEnabled = false,
+        onAbilityListingContributionsToggled = {},
     )
 }
 
@@ -97,5 +110,7 @@ private fun SettingsContentMixedPreview() {
         onEssenceContributionsToggled = {},
         awakeningStoneContributionsEnabled = false,
         onAwakeningStoneContributionsToggled = {},
+        abilityListingContributionsEnabled = true,
+        onAbilityListingContributionsToggled = {},
     )
 }

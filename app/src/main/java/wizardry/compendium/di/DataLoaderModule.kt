@@ -1,6 +1,8 @@
 package wizardry.compendium.di
 
 import wizardry.compendium.AssetFileStreamSource
+import wizardry.compendium.essences.dataloader.AbilityListingCsvLoader
+import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.essences.dataloader.AwakeningStoneCsvLoader
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.essences.dataloader.EssenceCsvLoader
@@ -26,4 +28,8 @@ abstract class DataLoaderModule {
     @Singleton
     @Binds
     abstract fun getAwakeningStoneDataLoader(loader: AwakeningStoneCsvLoader): AwakeningStoneDataLoader
+
+    @Singleton
+    @Binds
+    abstract fun getAbilityListingDataLoader(loader: AbilityListingCsvLoader): AbilityListingDataLoader
 }

@@ -11,6 +11,7 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
     val essenceContributionsEnabled = preferencesRepository.essenceContributionsEnabled
     val awakeningStoneContributionsEnabled = preferencesRepository.awakeningStoneContributionsEnabled
+    val abilityListingContributionsEnabled = preferencesRepository.abilityListingContributionsEnabled
 
     fun setEssenceContributionsEnabled(enabled: Boolean) {
         preferencesRepository.setEssenceContributionsEnabled(enabled)
@@ -18,5 +19,9 @@ class SettingsViewModel @Inject constructor(
 
     fun setAwakeningStoneContributionsEnabled(enabled: Boolean) {
         preferencesRepository.setAwakeningStoneContributionsEnabled(enabled)
+    }
+
+    fun setAbilityListingContributionsEnabled(enabled: Boolean) {
+        preferencesRepository.setAbilityListingContributionsEnabled(enabled)
     }
 }

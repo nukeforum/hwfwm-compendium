@@ -23,6 +23,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import wizardry.compendium.abilitylisting.contributions.AbilityListingContributionsScreen
+import wizardry.compendium.abilitylisting.search.AbilityListingSearch
+import wizardry.compendium.abilitylistinginfo.AbilityListingDetails
 import wizardry.compendium.awakeningstone.contributions.AwakeningStoneContributionsScreen
 import wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
 import wizardry.compendium.awakeningstoneinfo.AwakeningStoneDetails
@@ -68,6 +71,11 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(Nav.AwakeningStoneContributions.route)
                                     }
                                 }
+                                if (currentRoute == Nav.AbilityListingSearch.route) {
+                                    ContributeButton {
+                                        navController.navigate(Nav.AbilityListingContributions.route)
+                                    }
+                                }
                                 SettingsButton { navController.navigate(Nav.Settings.route) }
                             }
                         )
@@ -85,6 +93,7 @@ class MainActivity : ComponentActivity() {
                             LandingScreen(
                                 onEssenceClicked = { navController.navigate(Nav.EssenceSearch.route) },
                                 onAwakeningStoneClicked = { navController.navigate(Nav.AwakeningStoneSearch.route) },
+                                onAbilityListingClicked = { navController.navigate(Nav.AbilityListingSearch.route) },
                             )
                         }
                         composable(Nav.EssenceSearch.route) { backStackEntry ->
@@ -152,6 +161,34 @@ class MainActivity : ComponentActivity() {
                             currentRoute = backStackEntry.destination.route
                             title = "Add Awakening Stone"
                             AwakeningStoneContributionsScreen()
+                        }
+                        composable(Nav.AbilityListingSearch.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Ability Listing Search"
+                            AbilityListingSearch(
+                                onListingClicked = { listing ->
+                                    navController.navigate(Nav.AbilityListingDetail.buildRoute(listing))
+                                },
+                            )
+                        }
+                        composable(
+                            Nav.AbilityListingDetail.route,
+                            arguments = listOf(
+                                navArgument(Nav.AbilityListingDetail.ARG_NAME) { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            val listingName = backStackEntry.arguments!!.getString(Nav.AbilityListingDetail.ARG_NAME)!!
+                            title = listingName
+                            AbilityListingDetails(
+                                listingName = listingName,
+                                onListingLoaded = { title = it.name }
+                            )
+                        }
+                        composable(Nav.AbilityListingContributions.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Add Ability Listing"
+                            AbilityListingContributionsScreen()
                         }
                     }
                 }

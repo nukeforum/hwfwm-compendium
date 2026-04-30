@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 fun LandingScreen(
     onEssenceClicked: () -> Unit,
     onAwakeningStoneClicked: () -> Unit,
+    onAbilityListingClicked: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -50,6 +51,22 @@ fun LandingScreen(
                     .weight(1f)
                     .fillMaxSize(),
                 onClick = onAwakeningStoneClicked,
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PanelButton(
+                label = "Ability Listings",
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize(),
+                onClick = onAbilityListingClicked,
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
@@ -87,5 +104,9 @@ private fun PanelButton(
 @Preview(showBackground = true)
 @Composable
 private fun LandingScreenPreview() {
-    LandingScreen(onEssenceClicked = {}, onAwakeningStoneClicked = {})
+    LandingScreen(
+        onEssenceClicked = {},
+        onAwakeningStoneClicked = {},
+        onAbilityListingClicked = {},
+    )
 }

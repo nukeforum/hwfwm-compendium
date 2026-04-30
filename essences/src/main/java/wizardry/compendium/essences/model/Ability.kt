@@ -1,5 +1,7 @@
 package wizardry.compendium.essences.model
 
+import java.util.Locale
+
 sealed interface Ability : Entity {
     override val name: String
     val effects: List<Effect.AbilityEffect>
@@ -37,6 +39,15 @@ sealed interface Ability : Entity {
                 boundEssence = essence,
                 listing = this,
             )
+        }
+
+        companion object {
+            fun of(name: String): Listing {
+                val titleCaseName = name.replaceFirstChar {
+                    if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
+                }
+                return Listing(name = titleCaseName, effects = emptyList())
+            }
         }
     }
 }

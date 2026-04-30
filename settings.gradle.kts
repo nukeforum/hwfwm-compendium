@@ -20,6 +20,9 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Compendium"
+include(":ability-listing-contributions")
+include(":ability-listing-details")
+include(":ability-listing-search")
 include(":ability-preview")
 include(":app")
 include(":awakening-stone-contributions")

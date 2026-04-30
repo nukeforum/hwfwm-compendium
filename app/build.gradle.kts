@@ -51,6 +51,9 @@ dependencies {
     testImplementation(composeBom)
     androidTestImplementation(composeBom)
 
+    implementation(project(":ability-listing-contributions"))
+    implementation(project(":ability-listing-details"))
+    implementation(project(":ability-listing-search"))
     implementation(project(":ability-preview"))
     implementation(project(":awakening-stone-contributions"))
     implementation(project(":awakening-stone-details"))
