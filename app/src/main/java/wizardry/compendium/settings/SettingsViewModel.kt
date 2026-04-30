@@ -9,9 +9,14 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
 ) : ViewModel() {
-    val contributionsEnabled = preferencesRepository.contributionsEnabled
+    val essenceContributionsEnabled = preferencesRepository.essenceContributionsEnabled
+    val awakeningStoneContributionsEnabled = preferencesRepository.awakeningStoneContributionsEnabled
 
-    fun setContributionsEnabled(enabled: Boolean) {
-        preferencesRepository.setContributionsEnabled(enabled)
+    fun setEssenceContributionsEnabled(enabled: Boolean) {
+        preferencesRepository.setEssenceContributionsEnabled(enabled)
+    }
+
+    fun setAwakeningStoneContributionsEnabled(enabled: Boolean) {
+        preferencesRepository.setAwakeningStoneContributionsEnabled(enabled)
     }
 }

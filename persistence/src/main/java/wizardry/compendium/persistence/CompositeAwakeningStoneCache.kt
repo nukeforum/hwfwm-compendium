@@ -1,20 +1,20 @@
 package wizardry.compendium.persistence
 
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.AwakeningStone
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class CompositeEssenceCache @Inject constructor(
-    @param:Canonical private val canonicalCache: EssenceCache,
-    @param:Contributions private val contributionsCache: EssenceCache,
-    private val toggle: EssenceContributionsToggle,
-) : EssenceCache {
+class CompositeAwakeningStoneCache @Inject constructor(
+    @param:Canonical private val canonicalCache: AwakeningStoneCache,
+    @param:Contributions private val contributionsCache: AwakeningStoneCache,
+    private val toggle: AwakeningStoneContributionsToggle,
+) : AwakeningStoneCache {
 
-    override var contents: List<Essence>
+    override var contents: List<AwakeningStone>
         get() {
             val canonical = canonicalCache.contents
-            if (!toggle.isEssenceContributionsEnabled) return canonical
+            if (!toggle.isAwakeningStoneContributionsEnabled) return canonical
 
             val contributions = contributionsCache.contents
             if (contributions.isEmpty()) return canonical

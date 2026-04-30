@@ -20,54 +20,82 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
-    val contributionsEnabled by viewModel.contributionsEnabled.collectAsState(initial = false)
+    val essenceContributionsEnabled by viewModel.essenceContributionsEnabled.collectAsState(initial = false)
+    val awakeningStoneContributionsEnabled by viewModel.awakeningStoneContributionsEnabled.collectAsState(initial = false)
     SettingsContent(
-        contributionsEnabled = contributionsEnabled,
-        onContributionsToggled = viewModel::setContributionsEnabled,
+        essenceContributionsEnabled = essenceContributionsEnabled,
+        onEssenceContributionsToggled = viewModel::setEssenceContributionsEnabled,
+        awakeningStoneContributionsEnabled = awakeningStoneContributionsEnabled,
+        onAwakeningStoneContributionsToggled = viewModel::setAwakeningStoneContributionsEnabled,
     )
 }
 
 @Composable
 fun SettingsContent(
-    contributionsEnabled: Boolean,
-    onContributionsToggled: (Boolean) -> Unit,
+    essenceContributionsEnabled: Boolean,
+    onEssenceContributionsToggled: (Boolean) -> Unit,
+    awakeningStoneContributionsEnabled: Boolean,
+    onAwakeningStoneContributionsToggled: (Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "My Contributions",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = "Include your submitted essences",
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            Switch(
-                checked = contributionsEnabled,
-                onCheckedChange = onContributionsToggled,
-            )
+        ToggleRow(
+            title = "My Essences",
+            subtitle = "Include your submitted essences",
+            checked = essenceContributionsEnabled,
+            onCheckedChange = onEssenceContributionsToggled,
+        )
+        ToggleRow(
+            title = "My Awakening Stones",
+            subtitle = "Include your submitted awakening stones",
+            checked = awakeningStoneContributionsEnabled,
+            onCheckedChange = onAwakeningStoneContributionsToggled,
+        )
+    }
+}
+
+@Composable
+private fun ToggleRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = title, style = MaterialTheme.typography.titleMedium)
+            Text(text = subtitle, style = MaterialTheme.typography.bodySmall)
         }
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 private fun SettingsContentOffPreview() {
-    SettingsContent(contributionsEnabled = false, onContributionsToggled = {})
+    SettingsContent(
+        essenceContributionsEnabled = false,
+        onEssenceContributionsToggled = {},
+        awakeningStoneContributionsEnabled = false,
+        onAwakeningStoneContributionsToggled = {},
+    )
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun SettingsContentOnPreview() {
-    SettingsContent(contributionsEnabled = true, onContributionsToggled = {})
+private fun SettingsContentMixedPreview() {
+    SettingsContent(
+        essenceContributionsEnabled = true,
+        onEssenceContributionsToggled = {},
+        awakeningStoneContributionsEnabled = false,
+        onAwakeningStoneContributionsToggled = {},
+    )
 }

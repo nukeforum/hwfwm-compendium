@@ -2,7 +2,7 @@ package wizardry.compendium.essenceinfo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import wizardry.compendium.essences.ContributionsToggleFlow
+import wizardry.compendium.essences.EssenceContributionsToggleFlow
 import wizardry.compendium.essences.EssenceProvider
 import wizardry.compendium.essences.model.Essence
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -17,7 +17,7 @@ import javax.inject.Inject
 class EssenceDetailViewModel
 @Inject constructor(
     private val essenceProvider: EssenceProvider,
-    private val contributionsToggleFlow: ContributionsToggleFlow,
+    private val contributionsToggleFlow: EssenceContributionsToggleFlow,
 ) : ViewModel() {
     private val history = ArrayDeque<Essence>()
     private val _state = MutableStateFlow<EssenceDetailUiState>(EssenceDetailUiState.Loading)
@@ -28,7 +28,7 @@ class EssenceDetailViewModel
             // Re-resolve the current essence by name when the toggle changes.
             // drop(1) avoids double-loading on first composition since load() is called
             // by the composable via LaunchedEffect.
-            contributionsToggleFlow.contributionsEnabled.drop(1).collect {
+            contributionsToggleFlow.essenceContributionsEnabled.drop(1).collect {
                 val currentEssence = currentlyLoadedEssence ?: return@collect
                 val refreshed = essenceProvider.getEssences()
                     .find { it.name == currentEssence.name }

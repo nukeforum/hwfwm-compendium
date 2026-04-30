@@ -2,10 +2,11 @@ package wizardry.compendium.awakeningstone.contributions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import wizardry.compendium.essences.AwakeningStoneProvider
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.persistence.AwakeningStoneCache
+import wizardry.compendium.persistence.Canonical
+import wizardry.compendium.persistence.Contributions
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,8 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AwakeningStoneContributionsViewModel @Inject constructor(
-    private val cache: AwakeningStoneCache,
-    private val provider: AwakeningStoneProvider,
+    @param:Canonical private val canonicalCache: AwakeningStoneCache,
+    @param:Contributions private val contributionsCache: AwakeningStoneCache,
 ) : ViewModel() {
 
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
@@ -30,13 +31,17 @@ class AwakeningStoneContributionsViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             _saveState.emit(SaveState.Saving)
             val trimmedName = name.trim()
-            val existing = provider.getAwakeningStones()
-            if (existing.any { it.name.equals(trimmedName, ignoreCase = true) }) {
+            val existingContributions = contributionsCache.contents
+            val collidesWithCanonical = canonicalCache.contents
+                .any { it.name.equals(trimmedName, ignoreCase = true) }
+            val collidesWithContribution = existingContributions
+                .any { it.name.equals(trimmedName, ignoreCase = true) }
+            if (collidesWithCanonical || collidesWithContribution) {
                 _saveState.emit(SaveState.Error("An awakening stone named \"$trimmedName\" already exists"))
                 return@launch
             }
             val newStone = AwakeningStone.of(name = trimmedName, rarity = rarity)
-            cache.contents = existing + newStone
+            contributionsCache.contents = existingContributions + newStone
             _saveState.emit(SaveState.Success)
         }
     }

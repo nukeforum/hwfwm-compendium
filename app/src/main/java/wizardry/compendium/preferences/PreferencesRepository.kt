@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
-import wizardry.compendium.essences.ContributionsToggleFlow
-import wizardry.compendium.persistence.ContributionsToggle
+import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
+import wizardry.compendium.essences.EssenceContributionsToggleFlow
+import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
+import wizardry.compendium.persistence.EssenceContributionsToggle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,29 +26,55 @@ private val Context.dataStore by preferencesDataStore(name = "compendium_prefs")
 @Singleton
 class PreferencesRepository @Inject constructor(
     @param:ApplicationContext private val context: Context,
-) : ContributionsToggle, ContributionsToggleFlow {
+) : EssenceContributionsToggle,
+    EssenceContributionsToggleFlow,
+    AwakeningStoneContributionsToggle,
+    AwakeningStoneContributionsToggleFlow {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val contributionsKey = booleanPreferencesKey("contributions_enabled")
+    private val essenceContributionsKey = booleanPreferencesKey("contributions_enabled")
+    private val awakeningStoneContributionsKey = booleanPreferencesKey("awakening_stone_contributions_enabled")
 
-    private val contributionsEnabledState: StateFlow<Boolean> = context.dataStore.data
-        .map { prefs -> prefs[contributionsKey] ?: false }
+    private val essenceContributionsState: StateFlow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[essenceContributionsKey] ?: false }
         .stateIn(
             scope = scope,
             started = SharingStarted.Eagerly,
             initialValue = false,
         )
 
-    override val isContributionsEnabled: Boolean
-        get() = contributionsEnabledState.value
+    private val awakeningStoneContributionsState: StateFlow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[awakeningStoneContributionsKey] ?: false }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = false,
+        )
 
-    override val contributionsEnabled: Flow<Boolean>
-        get() = contributionsEnabledState
+    override val isEssenceContributionsEnabled: Boolean
+        get() = essenceContributionsState.value
 
-    fun setContributionsEnabled(enabled: Boolean) {
+    override val essenceContributionsEnabled: Flow<Boolean>
+        get() = essenceContributionsState
+
+    override val isAwakeningStoneContributionsEnabled: Boolean
+        get() = awakeningStoneContributionsState.value
+
+    override val awakeningStoneContributionsEnabled: Flow<Boolean>
+        get() = awakeningStoneContributionsState
+
+    fun setEssenceContributionsEnabled(enabled: Boolean) {
         scope.launch {
             context.dataStore.edit { prefs ->
-                prefs[contributionsKey] = enabled
+                prefs[essenceContributionsKey] = enabled
+            }
+        }
+    }
+
+    fun setAwakeningStoneContributionsEnabled(enabled: Boolean) {
+        scope.launch {
+            context.dataStore.edit { prefs ->
+                prefs[awakeningStoneContributionsKey] = enabled
             }
         }
     }

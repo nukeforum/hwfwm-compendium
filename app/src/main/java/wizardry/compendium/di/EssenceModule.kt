@@ -2,8 +2,9 @@ package wizardry.compendium.di
 
 import wizardry.compendium.AwakeningStoneRepository
 import wizardry.compendium.EssenceRepository
+import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.AwakeningStoneProvider
-import wizardry.compendium.essences.ContributionsToggleFlow
+import wizardry.compendium.essences.EssenceContributionsToggleFlow
 import wizardry.compendium.essences.EssenceProvider
 import wizardry.compendium.preferences.PreferencesRepository
 import dagger.Binds
@@ -21,7 +22,11 @@ interface EssenceModule {
 
     @Singleton
     @Binds
-    fun bindContributionsToggleFlow(impl: PreferencesRepository): ContributionsToggleFlow
+    fun bindEssenceContributionsToggleFlow(impl: PreferencesRepository): EssenceContributionsToggleFlow
+
+    @Singleton
+    @Binds
+    fun bindAwakeningStoneContributionsToggleFlow(impl: PreferencesRepository): AwakeningStoneContributionsToggleFlow
 
     @Singleton
     @Binds

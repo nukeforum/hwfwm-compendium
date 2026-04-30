@@ -2,7 +2,7 @@ package wizardry.compendium.randomizer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import wizardry.compendium.essences.ContributionsToggleFlow
+import wizardry.compendium.essences.EssenceContributionsToggleFlow
 import wizardry.compendium.essences.EssenceProvider
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
@@ -17,7 +17,7 @@ import javax.inject.Inject
 class RandomizerViewModel
 @Inject constructor(
     private val essenceProvider: EssenceProvider,
-    private val contributionsToggleFlow: ContributionsToggleFlow,
+    private val contributionsToggleFlow: EssenceContributionsToggleFlow,
 ) : ViewModel() {
     private val manifestations = MutableStateFlow(emptyList<Essence.Manifestation>())
     private val confluences = MutableStateFlow(emptyList<Essence.Confluence>())
@@ -27,7 +27,7 @@ class RandomizerViewModel
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            contributionsToggleFlow.contributionsEnabled.collect { _ ->
+            contributionsToggleFlow.essenceContributionsEnabled.collect { _ ->
                 val essences = essenceProvider.getEssences()
                 manifestations.emit(essences.filterIsInstance<Essence.Manifestation>())
                 confluences.emit(essences.filterIsInstance<Essence.Confluence>())
