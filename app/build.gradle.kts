@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.mobile.wizardry.compendium"
+    namespace = "wizardry.compendium"
     compileSdk = libs.versions.target.sdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.mobile.wizardry.compendium"
+        applicationId = "wizardry.compendium"
         minSdk = libs.versions.min.sdk.get().toInt()
         versionCode = 1
         versionName = "1.0"

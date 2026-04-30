@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mobile.wizardry.compendium.randomizer"
+    namespace = "wizardry.compendium.randomizer"
 
     buildTypes {
         getByName("release") {

@@ -6,7 +6,7 @@ plugins {
 sqldelight {
     databases {
         create("CompendiumDatabase") {
-            packageName.set("com.mobile.wizardry.compendium.persistence")
+            packageName.set("wizardry.compendium.persistence")
         }
     }
 }

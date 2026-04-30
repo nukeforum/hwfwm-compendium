@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mobile.wizardry.compendium.awakeningstone.contributions"
+    namespace = "wizardry.compendium.awakeningstone.contributions"
 
     buildTypes {
         getByName("release") {

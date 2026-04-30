@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mobile.wizardry.compendium.ability.preview"
+    namespace = "wizardry.compendium.ability.preview"
 
     buildTypes {
         getByName("release") {

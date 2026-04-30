@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mobile.wizardry.compendium.ui"
+    namespace = "wizardry.compendium.ui"
 
     buildTypes {
         getByName("release") {
