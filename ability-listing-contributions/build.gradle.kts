@@ -31,6 +31,7 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation(project(":essences"))
+    implementation(project(":ability-preview"))
 
     implementation(libs.kotlin.reflect)
     implementation(libs.androidx.core.ktx)

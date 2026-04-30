@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":model-core"))
     implementation(project(":design"))
     implementation(project(":essences"))
+    implementation(project(":ability-preview"))
 
     implementation(libs.androidx.core.ktx)
 

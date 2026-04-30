@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import wizardry.compendium.ability.preview.AbilityPreview
 import wizardry.compendium.essences.model.Ability
 
 @Composable
@@ -95,25 +96,7 @@ private fun Details(state: AbilityListingDetailUiState.Success, onEdit: () -> Un
                 .border(1.dp, Color.DarkGray)
                 .padding(8.dp)
         ) {
-            Text(
-                modifier = Modifier.align(Alignment.Center),
-                text = state.listing.report()
-            )
+            AbilityPreview(ability = state.listing)
         }
     }
-}
-
-private fun Ability.Listing.report(): String {
-    val effectsLine = if (effects.isEmpty()) {
-        "No effects recorded."
-    } else {
-        effects.joinToString(separator = "\n") {
-            "Effect (${it.rank}): ${it.description}"
-        }
-    }
-    return """
-        Ability Listing: $name
-
-        $effectsLine
-    """.trimIndent()
 }

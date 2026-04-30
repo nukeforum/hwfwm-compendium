@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -18,6 +19,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -54,20 +57,34 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
+import wizardry.compendium.ability.preview.AbilityPreview
+import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AbilityType
 import wizardry.compendium.essences.model.Amount
 import wizardry.compendium.essences.model.Cost
+import wizardry.compendium.essences.model.DescriptionSegment
+import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Resource
+import wizardry.compendium.essences.model.parseDescription
+import kotlin.time.Duration
 
 @Composable
 fun AbilityListingContributionsScreen(
@@ -135,6 +152,7 @@ private fun AbilityListingForm(
 ) {
     var name by remember(initialName) { mutableStateOf(initialName.orEmpty()) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var preview by rememberSaveable { mutableStateOf(false) }
 
     if (showDeleteConfirm) {
         AlertDialog(
@@ -158,29 +176,52 @@ private fun AbilityListingForm(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            readOnly = isEdit,
-        )
-
-        effects.forEachIndexed { index, draft ->
-            AbilityEffectContribution(
-                index = index,
-                draft = draft,
-                onUpdate = { transform -> onUpdateEffect(index, transform) },
-                onRemove = { onRemoveEffect(index) },
-            )
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            SegmentedButton(
+                selected = !preview,
+                onClick = { preview = false },
+                shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+            ) { Text("Edit") }
+            SegmentedButton(
+                selected = preview,
+                onClick = { preview = true },
+                shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+            ) { Text("Preview") }
         }
 
-        AppendEffectButton(onClick = onAppendEffect)
+        if (!preview) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                readOnly = isEdit,
+            )
+
+            effects.forEachIndexed { index, draft ->
+                AbilityEffectContribution(
+                    index = index,
+                    draft = draft,
+                    onUpdate = { transform -> onUpdateEffect(index, transform) },
+                    onRemove = { onRemoveEffect(index) },
+                )
+            }
+
+            AppendEffectButton(onClick = onAppendEffect)
+        } else {
+            AbilityPreview(
+                ability = Ability.Listing(
+                    name = name.ifBlank { "(unnamed)" },
+                    effects = effects.toPreviewEffects(),
+                ),
+            )
+        }
 
         SaveFeedback(saveState = saveState, onClearState = onClearState)
 
@@ -262,6 +303,8 @@ private fun AbilityEffectContribution(
         }
     }
 
+    var expanded by rememberSaveable(index) { mutableStateOf(true) }
+
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -276,69 +319,225 @@ private fun AbilityEffectContribution(
                     text = "Effect ${index + 1}",
                     style = MaterialTheme.typography.titleMedium,
                 )
-                IconButton(onClick = onRemove) {
-                    Icon(Icons.Default.Delete, contentDescription = "Remove effect")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { expanded = !expanded }) {
+                        Icon(
+                            imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (expanded) "Collapse effect" else "Expand effect",
+                        )
+                    }
+                    IconButton(onClick = onRemove) {
+                        Icon(Icons.Default.Delete, contentDescription = "Remove effect")
+                    }
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                EnumDropdown(
-                    label = "Rank *",
-                    options = Rank.entries,
-                    selected = draft.rank,
-                    optionLabel = { it.name },
-                    onSelected = { onUpdate { d -> d.copy(rank = it) } },
-                    modifier = Modifier.weight(1f),
+            if (expanded) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    EnumDropdown(
+                        label = "Rank *",
+                        options = Rank.entries,
+                        selected = draft.rank,
+                        optionLabel = { it.name },
+                        onSelected = { onUpdate { d -> d.copy(rank = it) } },
+                        modifier = Modifier.weight(1f),
+                    )
+
+                    EnumDropdown(
+                        label = "Type *",
+                        options = AbilityTypeOptions,
+                        selected = draft.type,
+                        optionLabel = { it.toString() },
+                        onSelected = { onUpdate { d -> d.copy(type = it) } },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                PropertiesField(
+                    properties = draft.properties,
+                    onAddClick = { showPropertySheet = true },
+                    onRemove = { property ->
+                        onUpdate { d -> d.copy(properties = d.properties - property) }
+                    },
                 )
 
-                EnumDropdown(
-                    label = "Type *",
-                    options = AbilityTypeOptions,
-                    selected = draft.type,
-                    optionLabel = { it.toString() },
-                    onSelected = { onUpdate { d -> d.copy(type = it) } },
-                    modifier = Modifier.weight(1f),
+                CostsField(
+                    costs = draft.costs,
+                    onAddClick = { showCostSheet = true },
+                    onRemove = { cost ->
+                        onUpdate { d -> d.copy(costs = d.costs - cost) }
+                    },
+                )
+
+                CooldownField(
+                    value = draft.cooldown,
+                    onValueChange = { onUpdate { d -> d.copy(cooldown = it) } },
+                )
+
+                ReplacementKeyField(
+                    value = draft.replacementKey,
+                    onValueChange = { onUpdate { d -> d.copy(replacementKey = it) } },
+                )
+
+                DescriptionField(
+                    description = draft.description,
+                    costs = draft.costs,
+                    cooldown = draft.cooldown,
+                    onValueChange = { onUpdate { d -> d.copy(description = it) } },
+                )
+            } else {
+                CollapsedEffectSummary(
+                    description = draft.description,
+                    costs = draft.costs,
+                    cooldown = draft.cooldown,
                 )
             }
+        }
+    }
+}
 
-            PropertiesField(
-                properties = draft.properties,
-                onAddClick = { showPropertySheet = true },
-                onRemove = { property ->
-                    onUpdate { d -> d.copy(properties = d.properties - property) }
-                },
+@Composable
+private fun CollapsedEffectSummary(
+    description: String,
+    costs: List<Cost>,
+    cooldown: String,
+) {
+    val resolvedCooldown = remember(cooldown) {
+        parseCooldown(cooldown)?.let { if (it == Duration.ZERO) "" else it.toString() }.orEmpty()
+    }
+    Text(
+        text = descriptionAnnotated(
+            description = description,
+            costs = costs,
+            cooldown = resolvedCooldown,
+            resolvedColor = MaterialTheme.colorScheme.primary,
+            errorColor = MaterialTheme.colorScheme.error,
+            emptyPlaceholder = "(empty)",
+        ),
+    )
+}
+
+@Composable
+private fun descriptionAnnotated(
+    description: String,
+    costs: List<Cost>,
+    cooldown: String,
+    resolvedColor: Color,
+    errorColor: Color,
+    emptyPlaceholder: String,
+): AnnotatedString = remember(description, costs, cooldown, resolvedColor, errorColor, emptyPlaceholder) {
+    if (description.isBlank()) {
+        AnnotatedString(emptyPlaceholder)
+    } else {
+        buildAnnotatedString {
+            for (segment in parseDescription(description, costs, cooldown)) {
+                when (segment) {
+                    is DescriptionSegment.Literal -> append(segment.text)
+                    is DescriptionSegment.Resolved ->
+                        withStyle(SpanStyle(color = resolvedColor, fontWeight = FontWeight.Medium)) {
+                            append(segment.value)
+                        }
+                    is DescriptionSegment.Unresolved ->
+                        withStyle(SpanStyle(color = errorColor, fontWeight = FontWeight.Medium)) {
+                            append(segment.token)
+                        }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DescriptionField(
+    description: String,
+    costs: List<Cost>,
+    cooldown: String,
+    onValueChange: (String) -> Unit,
+) {
+    var fieldValue by remember {
+        mutableStateOf(TextFieldValue(text = description, selection = TextRange(description.length)))
+    }
+    LaunchedEffect(description) {
+        if (fieldValue.text != description) {
+            fieldValue = fieldValue.copy(text = description, selection = TextRange(description.length))
+        }
+    }
+
+    val resolvedCooldown = remember(cooldown) {
+        parseCooldown(cooldown)?.let { if (it == Duration.ZERO) "" else it.toString() }.orEmpty()
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        TokenChipRow(
+            costs = costs,
+            hasCooldown = resolvedCooldown.isNotBlank(),
+            onInsert = { token ->
+                val start = fieldValue.selection.start.coerceIn(0, fieldValue.text.length)
+                val end = fieldValue.selection.end.coerceIn(0, fieldValue.text.length)
+                val before = fieldValue.text.substring(0, start)
+                val after = fieldValue.text.substring(end)
+                val newText = before + token + after
+                val cursor = before.length + token.length
+                fieldValue = TextFieldValue(text = newText, selection = TextRange(cursor))
+                onValueChange(newText)
+            },
+        )
+        OutlinedTextField(
+            value = fieldValue,
+            onValueChange = {
+                fieldValue = it
+                if (it.text != description) onValueChange(it.text)
+            },
+            label = { Text("Description *") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3,
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TokenChipRow(
+    costs: List<Cost>,
+    hasCooldown: Boolean,
+    onInsert: (String) -> Unit,
+) {
+    if (costs.isEmpty() && !hasCooldown) return
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        if (hasCooldown) {
+            AssistChip(
+                onClick = { onInsert("{cooldown}") },
+                label = { Text("{cooldown}") },
             )
-
-            CostsField(
-                costs = draft.costs,
-                onAddClick = { showCostSheet = true },
-                onRemove = { cost ->
-                    onUpdate { d -> d.copy(costs = d.costs - cost) }
-                },
-            )
-
-            CooldownField(
-                value = draft.cooldown,
-                onValueChange = { onUpdate { d -> d.copy(cooldown = it) } },
-            )
-
-            ReplacementKeyField(
-                value = draft.replacementKey,
-                onValueChange = { onUpdate { d -> d.copy(replacementKey = it) } },
-            )
-
-            OutlinedTextField(
-                value = draft.description,
-                onValueChange = { onUpdate { d -> d.copy(description = it) } },
-                label = { Text("Description *") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
+        }
+        costs.forEachIndexed { i, _ ->
+            val token = if (i == 0) "{cost}" else "{cost${i + 1}}"
+            AssistChip(
+                onClick = { onInsert(token) },
+                label = { Text(token) },
             )
         }
     }
+}
+
+private fun List<EffectDraft>.toPreviewEffects(): List<Effect.AbilityEffect> = map { draft ->
+    Effect.AbilityEffect(
+        rank = draft.rank ?: Rank.Iron,
+        type = draft.type ?: AbilityType.Spell,
+        properties = draft.properties,
+        cost = draft.costs.ifEmpty { listOf(Cost.None) },
+        cooldown = parseCooldown(draft.cooldown) ?: Duration.ZERO,
+        description = draft.description,
+        replacementKey = draft.replacementKey.trim().takeIf { it.isNotEmpty() },
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

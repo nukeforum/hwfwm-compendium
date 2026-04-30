@@ -16,6 +16,7 @@ import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Resource
+import wizardry.compendium.essences.model.resolveDescription
 import kotlin.time.Duration
 
 @Composable
@@ -103,7 +104,7 @@ private fun Collection<Effect.AbilityEffect>.Report(rank: Rank = Rank.Diamond) {
         val currentRank = Rank.entries[r]
         val effectsOfRank = effectsByRank.getOrDefault(currentRank, emptyList())
         if (effectsOfRank.isNotEmpty()) {
-            Text(text = "Effect (${currentRank.name}): ${effectsOfRank.joinToString(" ") { it.description }}")
+            Text(text = "Effect (${currentRank.name}): ${effectsOfRank.joinToString(" ") { it.resolveDescription() }}")
         }
     }
 }
