@@ -2,8 +2,7 @@ package wizardry.compendium.essenceinfo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import wizardry.compendium.essences.EssenceContributionsToggleFlow
-import wizardry.compendium.essences.EssenceProvider
+import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.model.Essence
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -16,8 +15,7 @@ import javax.inject.Inject
 @HiltViewModel
 class EssenceDetailViewModel
 @Inject constructor(
-    private val essenceProvider: EssenceProvider,
-    private val contributionsToggleFlow: EssenceContributionsToggleFlow,
+    private val essenceRepository: EssenceRepository,
 ) : ViewModel() {
     private val history = ArrayDeque<Essence>()
     private val _state = MutableStateFlow<EssenceDetailUiState>(EssenceDetailUiState.Loading)
@@ -25,14 +23,12 @@ class EssenceDetailViewModel
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            // Re-resolve the current essence by name when the toggle changes.
+            // Re-resolve the current essence by name when the data set changes.
             // drop(1) avoids double-loading on first composition since load() is called
             // by the composable via LaunchedEffect.
-            contributionsToggleFlow.essenceContributionsEnabled.drop(1).collect {
+            essenceRepository.essences.drop(1).collect { essences ->
                 val currentEssence = currentlyLoadedEssence ?: return@collect
-                val refreshed = essenceProvider.getEssences()
-                    .find { it.name == currentEssence.name }
-                    ?: return@collect
+                val refreshed = essences.find { it.name == currentEssence.name } ?: return@collect
                 buildState(refreshed)
             }
         }
@@ -43,7 +39,7 @@ class EssenceDetailViewModel
         viewModelScope.launch(Dispatchers.IO) {
             _state.emit(EssenceDetailUiState.Loading)
 
-            essenceProvider.getEssences().find { it.name == essenceName }
+            essenceRepository.getEssences().find { it.name == essenceName }
                 ?.let { essence -> buildState(essence) }
                 ?: _state.emit(EssenceDetailUiState.Error(IllegalArgumentException("no essence found with name: $essenceName")))
         }
@@ -72,7 +68,7 @@ class EssenceDetailViewModel
     }
 
     private suspend fun buildManifestationState(essence: Essence.Manifestation) {
-        val confluences = essenceProvider.getEssences()
+        val confluences = essenceRepository.getEssences()
             .filterIsInstance<Essence.Confluence>()
             .filter { it.isProducedBy(essence) }
 

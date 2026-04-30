@@ -1,11 +1,11 @@
 package wizardry.compendium.di
 
-import wizardry.compendium.AwakeningStoneRepository
-import wizardry.compendium.EssenceRepository
+import wizardry.compendium.DefaultAwakeningStoneRepository
+import wizardry.compendium.DefaultEssenceRepository
 import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
-import wizardry.compendium.essences.AwakeningStoneProvider
+import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceContributionsToggleFlow
-import wizardry.compendium.essences.EssenceProvider
+import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.preferences.PreferencesRepository
 import dagger.Binds
 import dagger.Module
@@ -18,7 +18,11 @@ import javax.inject.Singleton
 interface EssenceModule {
     @Singleton
     @Binds
-    fun getEssenceProvider(provider: EssenceRepository): EssenceProvider
+    fun bindEssenceRepository(impl: DefaultEssenceRepository): EssenceRepository
+
+    @Singleton
+    @Binds
+    fun bindAwakeningStoneRepository(impl: DefaultAwakeningStoneRepository): AwakeningStoneRepository
 
     @Singleton
     @Binds
@@ -27,8 +31,4 @@ interface EssenceModule {
     @Singleton
     @Binds
     fun bindAwakeningStoneContributionsToggleFlow(impl: PreferencesRepository): AwakeningStoneContributionsToggleFlow
-
-    @Singleton
-    @Binds
-    fun getAwakeningStoneProvider(provider: AwakeningStoneRepository): AwakeningStoneProvider
 }

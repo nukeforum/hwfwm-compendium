@@ -2,8 +2,7 @@ package wizardry.compendium.awakeningstone.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
-import wizardry.compendium.essences.AwakeningStoneProvider
+import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.model.AwakeningStone
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -19,8 +18,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AwakeningStoneSearchViewModel
 @Inject constructor(
-    private val provider: AwakeningStoneProvider,
-    private val contributionsToggleFlow: AwakeningStoneContributionsToggleFlow,
+    awakeningStoneRepository: AwakeningStoneRepository,
 ) : ViewModel() {
     private val stonesFlow = MutableStateFlow(emptyList<AwakeningStone>())
     private val filterTermFlow = MutableStateFlow("")
@@ -49,9 +47,7 @@ class AwakeningStoneSearchViewModel
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            contributionsToggleFlow.awakeningStoneContributionsEnabled.collect {
-                stonesFlow.emit(provider.getAwakeningStones())
-            }
+            awakeningStoneRepository.awakeningStones.collect { stonesFlow.emit(it) }
         }
     }
 

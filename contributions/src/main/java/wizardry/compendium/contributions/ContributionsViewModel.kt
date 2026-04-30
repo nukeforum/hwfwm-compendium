@@ -2,12 +2,11 @@ package wizardry.compendium.contributions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import wizardry.compendium.essences.EssenceProvider
+import wizardry.compendium.essences.ContributionResult
+import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
-import wizardry.compendium.persistence.Contributions
-import wizardry.compendium.persistence.EssenceCache
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,8 +16,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ContributionsViewModel @Inject constructor(
-    @param:Contributions private val contributionsCache: EssenceCache,
-    private val essenceProvider: EssenceProvider,
+    private val essenceRepository: EssenceRepository,
 ) : ViewModel() {
 
     private val _availableManifestations = MutableStateFlow<List<Essence.Manifestation>>(emptyList())
@@ -31,14 +29,11 @@ class ContributionsViewModel @Inject constructor(
     val saveState = _saveState.asStateFlow()
 
     init {
-        refreshAvailable()
-    }
-
-    private fun refreshAvailable() {
         viewModelScope.launch(Dispatchers.IO) {
-            val essences = essenceProvider.getEssences()
-            _availableManifestations.emit(essences.filterIsInstance<Essence.Manifestation>())
-            _availableConfluences.emit(essences.filterIsInstance<Essence.Confluence>())
+            essenceRepository.essences.collect { essences ->
+                _availableManifestations.emit(essences.filterIsInstance<Essence.Manifestation>())
+                _availableConfluences.emit(essences.filterIsInstance<Essence.Confluence>())
+            }
         }
     }
 
@@ -54,25 +49,13 @@ class ContributionsViewModel @Inject constructor(
         }
         viewModelScope.launch(Dispatchers.IO) {
             _saveState.emit(SaveState.Saving)
-            val trimmedName = name.trim()
-            val existingNames = essenceProvider.getEssences()
-                .filterIsInstance<Essence.Manifestation>()
-                .map { it.name }
-                .toSet()
-            if (existingNames.any { it.equals(trimmedName, ignoreCase = true) }) {
-                _saveState.emit(SaveState.Error("An essence named \"$trimmedName\" already exists"))
-                return@launch
-            }
-            val newEssence = Essence.of(
-                name = trimmedName,
+            val manifestation = Essence.of(
+                name = name.trim(),
                 description = description.trim(),
                 rarity = rarity,
                 restricted = isRestricted,
             )
-            val existing = contributionsCache.contents
-            contributionsCache.contents = existing + newEssence
-            _saveState.emit(SaveState.Success)
-            refreshAvailable()
+            essenceRepository.saveManifestationContribution(manifestation).emit()
         }
     }
 
@@ -93,19 +76,15 @@ class ContributionsViewModel @Inject constructor(
         }
         viewModelScope.launch(Dispatchers.IO) {
             _saveState.emit(SaveState.Saving)
-            val newConfluence = Essence.of(
+            val confluence = Essence.of(
                 name = name.trim(),
                 restricted = isRestricted,
                 ConfluenceSet(manifestation1, manifestation2, manifestation3),
             )
-            val existing = contributionsCache.contents
-            // Ensure the 3 referenced manifestations exist in contributions.db for FK constraints.
-            val existingNames = existing.map { it.name }.toSet()
-            val referencedManifestations = listOf(manifestation1, manifestation2, manifestation3)
-                .filter { it.name !in existingNames }
-            contributionsCache.contents = existing + referencedManifestations + newConfluence
-            _saveState.emit(SaveState.Success)
-            refreshAvailable()
+            essenceRepository.saveConfluenceContribution(
+                confluence = confluence,
+                referencedManifestations = listOf(manifestation1, manifestation2, manifestation3),
+            ).emit()
         }
     }
 
@@ -122,40 +101,20 @@ class ContributionsViewModel @Inject constructor(
         }
         viewModelScope.launch(Dispatchers.IO) {
             _saveState.emit(SaveState.Saving)
-
-            val newCombinationNames = setOf(manifestation1.name, manifestation2.name, manifestation3.name)
-            val allConfluences = essenceProvider.getEssences().filterIsInstance<Essence.Confluence>()
-            val duplicateOwner = allConfluences.firstOrNull { conf ->
-                conf.confluenceSets.any { it.set.map { m -> m.name }.toSet() == newCombinationNames }
-            }
-            if (duplicateOwner != null) {
-                _saveState.emit(SaveState.Error("That combination already produces ${duplicateOwner.name}"))
-                return@launch
-            }
-
-            val existing = contributionsCache.contents
-            val withoutTarget = existing.filterNot { it.name == target.name }
-            val sourceConfluence = (existing.firstOrNull { it.name == target.name } as? Essence.Confluence)
-                ?: target
-            val newSet = ConfluenceSet(manifestation1, manifestation2, manifestation3, isRestricted)
-            val updatedConfluence = sourceConfluence.copy(
-                confluenceSets = sourceConfluence.confluenceSets + newSet,
-            )
-
-            val existingNames = withoutTarget.map { it.name }.toSet()
-            val manifestationsToAdd = updatedConfluence.confluenceSets
-                .flatMap { it.set }
-                .distinctBy { it.name }
-                .filter { it.name !in existingNames }
-
-            contributionsCache.contents = withoutTarget + manifestationsToAdd + updatedConfluence
-            _saveState.emit(SaveState.Success)
-            refreshAvailable()
+            val combination = ConfluenceSet(manifestation1, manifestation2, manifestation3, isRestricted)
+            essenceRepository.addCombinationToConfluence(target, combination).emit()
         }
     }
 
     fun clearSaveState() {
         viewModelScope.launch { _saveState.emit(SaveState.Idle) }
+    }
+
+    private suspend fun ContributionResult.emit() {
+        when (this) {
+            is ContributionResult.Success -> _saveState.emit(SaveState.Success)
+            is ContributionResult.Failure -> _saveState.emit(SaveState.Error(message))
+        }
     }
 
     private fun areAllDifferent(

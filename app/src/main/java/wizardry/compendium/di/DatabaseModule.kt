@@ -7,13 +7,11 @@ import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
 import wizardry.compendium.persistence.AwakeningStoneDatabase
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.CompendiumDatabase
-import wizardry.compendium.persistence.CompositeAwakeningStoneCache
-import wizardry.compendium.persistence.CompositeEssenceCache
 import wizardry.compendium.persistence.Contributions
-import wizardry.compendium.persistence.EssenceContributionsToggle
 import wizardry.compendium.persistence.DatabaseAwakeningStoneCache
 import wizardry.compendium.persistence.DatabaseEssenceCache
 import wizardry.compendium.persistence.EssenceCache
+import wizardry.compendium.persistence.EssenceContributionsToggle
 import wizardry.compendium.persistence.EssenceDatabase
 import wizardry.compendium.preferences.PreferencesRepository
 import dagger.Binds
@@ -27,14 +25,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DatabaseModule {
-
-    @Binds
-    @Singleton
-    abstract fun bindEssenceCache(impl: CompositeEssenceCache): EssenceCache
-
-    @Binds
-    @Singleton
-    abstract fun bindAwakeningStoneCache(impl: CompositeAwakeningStoneCache): AwakeningStoneCache
 
     @Binds
     @Singleton

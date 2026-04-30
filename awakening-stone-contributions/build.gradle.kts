@@ -31,7 +31,6 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation(project(":essences"))
-    implementation(project(":persistence"))
 
     implementation(libs.androidx.core.ktx)
 

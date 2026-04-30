@@ -3,8 +3,7 @@ package wizardry.compendium.search
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import wizardry.compendium.essences.EssenceContributionsToggleFlow
-import wizardry.compendium.essences.EssenceProvider
+import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.model.Essence
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -15,8 +14,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SearchViewModel
 @Inject constructor(
-    private val essenceProvider: EssenceProvider,
-    private val contributionsToggleFlow: EssenceContributionsToggleFlow,
+    essenceRepository: EssenceRepository,
 ) : ViewModel() {
     private val essencesFlow = MutableStateFlow(emptyList<Essence>())
     private val filtersFlow = MutableStateFlow(SearchFilter.options.associateBy { it.name })
@@ -38,16 +36,12 @@ class SearchViewModel
                     filters
                 )
             }
-                .onEach {
-                    it.emit()
-                }
+                .onEach { _state.emit(it) }
                 .collect()
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            contributionsToggleFlow.essenceContributionsEnabled.collect {
-                essencesFlow.emit(essenceProvider.getEssences())
-            }
+            essenceRepository.essences.collect { essencesFlow.emit(it) }
         }
     }
 
@@ -66,7 +60,7 @@ class SearchViewModel
                     }
                 }
                 .also { Log.d("chaser", it.values.joinToString { it.name }) }
-                .emit()
+                .also { filtersFlow.emit(it) }
         }
     }
 
@@ -78,17 +72,5 @@ class SearchViewModel
             essence.name.lowercase().contains(term.lowercase())
                     && filters.any { filter -> filter.predicate(essence) }
         }
-    }
-
-    private suspend fun List<Essence>.emit() {
-        essencesFlow.emit(this)
-    }
-
-    private suspend fun Map<String, SearchFilter>.emit() {
-        filtersFlow.emit(this)
-    }
-
-    private suspend fun SearchUiState.emit() {
-        _state.emit(this)
     }
 }
