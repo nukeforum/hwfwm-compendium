@@ -33,8 +33,10 @@ import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -279,21 +281,28 @@ private fun AbilityEffectContribution(
                 }
             }
 
-            EnumDropdown(
-                label = "Rank *",
-                options = Rank.entries,
-                selected = draft.rank,
-                optionLabel = { it.name },
-                onSelected = { onUpdate { d -> d.copy(rank = it) } },
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                EnumDropdown(
+                    label = "Rank *",
+                    options = Rank.entries,
+                    selected = draft.rank,
+                    optionLabel = { it.name },
+                    onSelected = { onUpdate { d -> d.copy(rank = it) } },
+                    modifier = Modifier.weight(1f),
+                )
 
-            EnumDropdown(
-                label = "Type *",
-                options = AbilityTypeOptions,
-                selected = draft.type,
-                optionLabel = { it.toString() },
-                onSelected = { onUpdate { d -> d.copy(type = it) } },
-            )
+                EnumDropdown(
+                    label = "Type *",
+                    options = AbilityTypeOptions,
+                    selected = draft.type,
+                    optionLabel = { it.toString() },
+                    onSelected = { onUpdate { d -> d.copy(type = it) } },
+                    modifier = Modifier.weight(1f),
+                )
+            }
 
             PropertiesField(
                 properties = draft.properties,
@@ -316,12 +325,9 @@ private fun AbilityEffectContribution(
                 onValueChange = { onUpdate { d -> d.copy(cooldown = it) } },
             )
 
-            OutlinedTextField(
+            ReplacementKeyField(
                 value = draft.replacementKey,
                 onValueChange = { onUpdate { d -> d.copy(replacementKey = it) } },
-                label = { Text("Replacement Key") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
             )
 
             OutlinedTextField(
@@ -343,18 +349,27 @@ private fun <T : Any> EnumDropdown(
     selected: T?,
     optionLabel: (T) -> String,
     onSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },
+        modifier = modifier,
     ) {
         OutlinedTextField(
             value = selected?.let(optionLabel).orEmpty(),
             onValueChange = {},
             readOnly = true,
+            enabled = false,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            colors = OutlinedTextFieldDefaults.colors(
+                disabledTextColor = LocalContentColor.current,
+                disabledBorderColor = MaterialTheme.colorScheme.outline,
+                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
             modifier = Modifier
                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth(),
@@ -444,6 +459,47 @@ private fun CostsField(
                 label = { Text("Add") },
                 leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReplacementKeyField(
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    val tooltipState = rememberTooltipState(isPersistent = true)
+    val scope = rememberCoroutineScope()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text("Replacement Key") },
+            modifier = Modifier.weight(1f),
+            singleLine = true,
+        )
+        TooltipBox(
+            positionProvider = TooltipDefaults.rememberTooltipPositionProvider(),
+            tooltip = {
+                RichTooltip(
+                    title = { Text("Replacement Key") },
+                ) {
+                    Text(
+                        "Used to supplant an effect with a higher-rank version when the ability ranks up. " +
+                            "Effects sharing the same key replace earlier ones as the ability progresses."
+                    )
+                }
+            },
+            state = tooltipState,
+        ) {
+            IconButton(onClick = { scope.launch { tooltipState.show() } }) {
+                Text("?", style = MaterialTheme.typography.titleLarge)
+            }
         }
     }
 }
