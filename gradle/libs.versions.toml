@@ -21,6 +21,7 @@ androidx-compose-ui-test-junit4 = "1.11.0"
 compose-runtime = "1.11.0"
 sqldelight = "2.3.2"
 androidx-datastore = "1.2.1"
+kotlinx-serialization = "1.9.0"
 
 [libraries]
 #kotlin
@@ -52,6 +53,8 @@ dagger = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 
 ksp = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
+ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 
 #testing
 junit4 = { module = "junit:junit", version.ref = "junit4" }
@@ -68,6 +71,7 @@ sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", versi
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "android-gradle" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 android-library = { id = "com.android.library", version.ref = "android-gradle" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

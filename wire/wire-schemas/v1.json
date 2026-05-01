@@ -1,0 +1,83 @@
+{
+    "version": 1,
+    "envelope": "wizardry.compendium.wire.Envelope",
+    "types": [
+        {
+            "fqn": "wizardry.compendium.wire.Envelope",
+            "typeAlias": "envelope",
+            "fields": [
+                {
+                    "name": "manifestations",
+                    "alias": "e",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<wizardry.compendium.wire.Manifestation>",
+                    "omitOnDefault": true,
+                    "hasDefault": true
+                },
+                {
+                    "name": "version",
+                    "alias": "v",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "omitOnDefault": true,
+                    "hasDefault": false
+                }
+            ]
+        },
+        {
+            "fqn": "wizardry.compendium.wire.Manifestation",
+            "typeAlias": "manifestation",
+            "fields": [
+                {
+                    "name": "description",
+                    "alias": "d",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "omitOnDefault": true,
+                    "hasDefault": true
+                },
+                {
+                    "name": "isRestricted",
+                    "alias": "x",
+                    "previousAlias": "",
+                    "type": "kotlin.Boolean",
+                    "omitOnDefault": true,
+                    "hasDefault": true
+                },
+                {
+                    "name": "name",
+                    "alias": "n",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "omitOnDefault": true,
+                    "hasDefault": false
+                },
+                {
+                    "name": "propertyIndices",
+                    "alias": "p",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<kotlin.Int>",
+                    "omitOnDefault": true,
+                    "hasDefault": true
+                },
+                {
+                    "name": "rankIndex",
+                    "alias": "k",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "omitOnDefault": true,
+                    "hasDefault": false
+                },
+                {
+                    "name": "rarityIndex",
+                    "alias": "r",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "omitOnDefault": true,
+                    "hasDefault": false
+                }
+            ]
+        }
+    ],
+    "enums": []
+}
