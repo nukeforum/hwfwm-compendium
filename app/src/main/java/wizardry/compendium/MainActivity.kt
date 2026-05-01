@@ -10,6 +10,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +32,8 @@ import wizardry.compendium.abilitylisting.contributions.AbilityListingContributi
 import wizardry.compendium.abilitylisting.search.AbilityListingSearch
 import wizardry.compendium.abilitylistinginfo.AbilityListingDetails
 import wizardry.compendium.awakeningstone.contributions.AwakeningStoneContributionsScreen
+import wizardry.compendium.conflicts.ConflictsScreen
+import wizardry.compendium.conflicts.ConflictsViewModel
 import wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
 import wizardry.compendium.awakeningstoneinfo.AwakeningStoneDetails
 import wizardry.compendium.essence.contributions.EssenceContributionsScreen
@@ -76,6 +83,7 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(Nav.AbilityListingContributions.newRoute)
                                     }
                                 }
+                                ConflictsBadge(navigate = { navController.navigate(Nav.Conflicts.route) })
                                 SettingsButton { navController.navigate(Nav.Settings.route) }
                             }
                         )
@@ -157,6 +165,21 @@ class MainActivity : ComponentActivity() {
                             currentRoute = backStackEntry.destination.route
                             title = "Settings"
                             SettingsScreen()
+                        }
+                        composable(Nav.Conflicts.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Resolve Conflicts"
+                            ConflictsScreen(
+                                onEditEssenceContribution = { name ->
+                                    navController.navigate("contributions?name=${android.net.Uri.encode(name)}")
+                                },
+                                onEditAwakeningStoneContribution = { name ->
+                                    navController.navigate("stoneContributions?name=${android.net.Uri.encode(name)}")
+                                },
+                                onEditAbilityListingContribution = { name ->
+                                    navController.navigate("abilityListingContributions?name=${android.net.Uri.encode(name)}")
+                                },
+                            )
                         }
                         composable(
                             Nav.Contributions.route,
@@ -263,6 +286,22 @@ private fun ContributeButton(navigate: () -> Unit) {
 private fun SettingsButton(navigate: () -> Unit) {
     IconButton(onClick = navigate) {
         Icon(Icons.Filled.Settings, contentDescription = "Settings")
+    }
+}
+
+@Composable
+private fun ConflictsBadge(
+    navigate: () -> Unit,
+    viewModel: ConflictsViewModel = hiltViewModel(),
+) {
+    val state by viewModel.state.collectAsState()
+    if (state.total == 0) return
+    IconButton(onClick = navigate) {
+        Icon(
+            imageVector = Icons.Filled.Warning,
+            contentDescription = "${state.total} contribution conflict(s)",
+            tint = Color(0xFFD32F2F),
+        )
     }
 }
 

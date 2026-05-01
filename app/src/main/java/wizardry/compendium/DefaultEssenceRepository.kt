@@ -1,9 +1,11 @@
 package wizardry.compendium
 
 import wizardry.compendium.essences.ContributionResult
+import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceContributionsToggleFlow
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.dataloader.EssenceDataLoader
+import wizardry.compendium.essences.detectEssenceConflicts
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.persistence.Canonical
@@ -36,10 +38,22 @@ class DefaultEssenceRepository @Inject constructor(
         invalidations,
     ) { _, _ -> getEssences() }
 
+    override val conflicts: Flow<List<EssenceConflict>> = combine(
+        toggleFlow.essenceContributionsEnabled,
+        invalidations,
+    ) { _, _ -> getConflicts() }
+
     override suspend fun getEssences(): List<Essence> {
         val canonical = ensureCanonicalLoaded()
         if (!toggle.isEssenceContributionsEnabled) return canonical
-        return merge(canonical, contributionsCache.contents)
+        val contributions = contributionsCache.contents
+        if (detectEssenceConflicts(canonical, contributions).isNotEmpty()) return canonical
+        return merge(canonical, contributions)
+    }
+
+    override suspend fun getConflicts(): List<EssenceConflict> {
+        val canonical = ensureCanonicalLoaded()
+        return detectEssenceConflicts(canonical, contributionsCache.contents)
     }
 
     override suspend fun saveManifestationContribution(

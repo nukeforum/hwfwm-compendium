@@ -7,7 +7,11 @@ import wizardry.compendium.essences.model.Essence
 interface EssenceRepository {
     val essences: Flow<List<Essence>>
 
+    val conflicts: Flow<List<EssenceConflict>>
+
     suspend fun getEssences(): List<Essence>
+
+    suspend fun getConflicts(): List<EssenceConflict>
 
     suspend fun saveManifestationContribution(
         manifestation: Essence.Manifestation,

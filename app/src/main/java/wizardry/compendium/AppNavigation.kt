@@ -12,6 +12,7 @@ sealed class Nav(val route: String) {
     object AbilityListingSearch : Nav("abilityListingSearch")
     object EssenceRandomizer : Nav("randomizer")
     object Settings : Nav("settings")
+    object Conflicts : Nav("conflicts")
     object Contributions : Nav("contributions?name={name}") {
         const val ARG_NAME = "name"
         const val newRoute = "contributions"

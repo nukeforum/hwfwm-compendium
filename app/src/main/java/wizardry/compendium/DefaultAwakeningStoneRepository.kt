@@ -1,9 +1,11 @@
 package wizardry.compendium
 
+import wizardry.compendium.essences.AwakeningStoneConflict
 import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
+import wizardry.compendium.essences.detectAwakeningStoneConflicts
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.persistence.AwakeningStoneCache
 import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
@@ -35,15 +37,26 @@ class DefaultAwakeningStoneRepository @Inject constructor(
         invalidations,
     ) { _, _ -> getAwakeningStones() }
 
+    override val conflicts: Flow<List<AwakeningStoneConflict>> = combine(
+        toggleFlow.awakeningStoneContributionsEnabled,
+        invalidations,
+    ) { _, _ -> getConflicts() }
+
     override suspend fun getAwakeningStones(): List<AwakeningStone> {
         val canonical = ensureCanonicalLoaded()
         if (!toggle.isAwakeningStoneContributionsEnabled) return canonical
         val contributions = contributionsCache.contents
         if (contributions.isEmpty()) return canonical
+        if (detectAwakeningStoneConflicts(canonical, contributions).isNotEmpty()) return canonical
         val byName = contributions.associateBy { it.name }
         val merged = canonical.map { byName[it.name] ?: it }
         val newOnes = contributions.filter { c -> canonical.none { it.name == c.name } }
         return (merged + newOnes).sortedBy { it.name }
+    }
+
+    override suspend fun getConflicts(): List<AwakeningStoneConflict> {
+        val canonical = ensureCanonicalLoaded()
+        return detectAwakeningStoneConflicts(canonical, contributionsCache.contents)
     }
 
     override suspend fun saveAwakeningStoneContribution(

@@ -6,10 +6,12 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import wizardry.compendium.essences.AbilityListingConflict
 import wizardry.compendium.essences.AbilityListingContributionsToggleFlow
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
+import wizardry.compendium.essences.detectAbilityListingConflicts
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.persistence.AbilityListingCache
 import wizardry.compendium.persistence.AbilityListingContributionsToggle
@@ -35,15 +37,26 @@ class DefaultAbilityListingRepository @Inject constructor(
         invalidations,
     ) { _, _ -> getAbilityListings() }
 
+    override val conflicts: Flow<List<AbilityListingConflict>> = combine(
+        toggleFlow.abilityListingContributionsEnabled,
+        invalidations,
+    ) { _, _ -> getConflicts() }
+
     override suspend fun getAbilityListings(): List<Ability.Listing> {
         val canonical = ensureCanonicalLoaded()
         if (!toggle.isAbilityListingContributionsEnabled) return canonical
         val contributions = contributionsCache.contents
         if (contributions.isEmpty()) return canonical
+        if (detectAbilityListingConflicts(canonical, contributions).isNotEmpty()) return canonical
         val byName = contributions.associateBy { it.name }
         val merged = canonical.map { byName[it.name] ?: it }
         val newOnes = contributions.filter { c -> canonical.none { it.name == c.name } }
         return (merged + newOnes).sortedBy { it.name }
+    }
+
+    override suspend fun getConflicts(): List<AbilityListingConflict> {
+        val canonical = ensureCanonicalLoaded()
+        return detectAbilityListingConflicts(canonical, contributionsCache.contents)
     }
 
     override suspend fun saveAbilityListingContribution(

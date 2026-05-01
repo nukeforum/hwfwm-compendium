@@ -6,7 +6,11 @@ import wizardry.compendium.essences.model.Ability
 interface AbilityListingRepository {
     val abilityListings: Flow<List<Ability.Listing>>
 
+    val conflicts: Flow<List<AbilityListingConflict>>
+
     suspend fun getAbilityListings(): List<Ability.Listing>
+
+    suspend fun getConflicts(): List<AbilityListingConflict>
 
     suspend fun saveAbilityListingContribution(listing: Ability.Listing): ContributionResult
 
