@@ -1,4 +1,4 @@
-package wizardry.compendium.contributions
+package wizardry.compendium.essence.contributions
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,9 +18,9 @@ import wizardry.compendium.essences.model.Rarity
 import kotlinx.coroutines.launch
 
 @Composable
-fun ContributionsScreen(
+fun EssenceContributionsScreen(
     onContributionDeleted: () -> Unit = {},
-    viewModel: ContributionsViewModel = hiltViewModel(),
+    viewModel: EssenceContributionsViewModel = hiltViewModel(),
 ) {
     val availableManifestations by viewModel.availableManifestations.collectAsState()
     val availableConfluences by viewModel.availableConfluences.collectAsState()
@@ -28,21 +28,21 @@ fun ContributionsScreen(
     val mode by viewModel.mode.collectAsState()
 
     LaunchedEffect(saveState) {
-        if (saveState is ContributionsViewModel.SaveState.Deleted) {
+        if (saveState is EssenceContributionsViewModel.SaveState.Deleted) {
             onContributionDeleted()
         }
     }
 
     when (val current = mode) {
-        ContributionsViewModel.Mode.Edit.Loading -> Box(
+        EssenceContributionsViewModel.Mode.Edit.Loading -> Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) { Text("Loading") }
-        ContributionsViewModel.Mode.Edit.NotFound -> Box(
+        EssenceContributionsViewModel.Mode.Edit.NotFound -> Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) { Text("This essence is not a user contribution and cannot be edited.") }
-        is ContributionsViewModel.Mode.Edit.ManifestationReady -> ManifestationForm(
+        is EssenceContributionsViewModel.Mode.Edit.ManifestationReady -> ManifestationForm(
             initial = current.manifestation,
             isEdit = true,
             saveState = saveState,
@@ -52,14 +52,14 @@ fun ContributionsScreen(
             onDelete = viewModel::deleteContribution,
             onClearState = viewModel::clearSaveState,
         )
-        is ContributionsViewModel.Mode.Edit.ConfluenceReady -> ConfluenceEditForm(
+        is EssenceContributionsViewModel.Mode.Edit.ConfluenceReady -> ConfluenceEditForm(
             initial = current.confluence,
             saveState = saveState,
             onSave = { name, isRestricted -> viewModel.updateConfluence(name, isRestricted) },
             onDelete = viewModel::deleteContribution,
             onClearState = viewModel::clearSaveState,
         )
-        ContributionsViewModel.Mode.Create -> CreateContributions(
+        EssenceContributionsViewModel.Mode.Create -> CreateContributions(
             availableManifestations = availableManifestations,
             availableConfluences = availableConfluences,
             saveState = saveState,
@@ -81,7 +81,7 @@ fun ContributionsScreen(
 private fun CreateContributions(
     availableManifestations: List<Essence.Manifestation>,
     availableConfluences: List<Essence.Confluence>,
-    saveState: ContributionsViewModel.SaveState,
+    saveState: EssenceContributionsViewModel.SaveState,
     onSaveManifestation: (String, Rarity, String, Boolean) -> Unit,
     onSaveNewConfluence: (String, Essence.Manifestation, Essence.Manifestation, Essence.Manifestation, Boolean) -> Unit,
     onAddCombination: (Essence.Confluence, Essence.Manifestation, Essence.Manifestation, Essence.Manifestation, Boolean) -> Unit,
@@ -127,7 +127,7 @@ private fun CreateContributions(
 @Composable
 private fun ConfluenceEditForm(
     initial: Essence.Confluence,
-    saveState: ContributionsViewModel.SaveState,
+    saveState: EssenceContributionsViewModel.SaveState,
     onSave: (name: String, isRestricted: Boolean) -> Unit,
     onDelete: () -> Unit,
     onClearState: () -> Unit,
@@ -188,13 +188,13 @@ private fun ConfluenceEditForm(
         Button(
             onClick = { onSave(name, isRestricted) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = saveState !is ContributionsViewModel.SaveState.Saving,
+            enabled = saveState !is EssenceContributionsViewModel.SaveState.Saving,
         ) { Text("Update Confluence") }
 
         OutlinedButton(
             onClick = { showDeleteConfirm = true },
             modifier = Modifier.fillMaxWidth(),
-            enabled = saveState !is ContributionsViewModel.SaveState.Saving,
+            enabled = saveState !is EssenceContributionsViewModel.SaveState.Saving,
         ) { Text("Delete Contribution", color = MaterialTheme.colorScheme.error) }
     }
 }
@@ -203,7 +203,7 @@ private fun ConfluenceEditForm(
 private fun ManifestationForm(
     initial: Essence.Manifestation?,
     isEdit: Boolean,
-    saveState: ContributionsViewModel.SaveState,
+    saveState: EssenceContributionsViewModel.SaveState,
     onSave: (name: String, rarity: Rarity, description: String, isRestricted: Boolean) -> Unit,
     onDelete: () -> Unit,
     onClearState: () -> Unit,
@@ -274,7 +274,7 @@ private fun ManifestationForm(
         Button(
             onClick = { onSave(name, rarity, description, isRestricted) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = saveState !is ContributionsViewModel.SaveState.Saving,
+            enabled = saveState !is EssenceContributionsViewModel.SaveState.Saving,
         ) {
             Text(if (isEdit) "Update Essence" else "Save Essence")
         }
@@ -283,7 +283,7 @@ private fun ManifestationForm(
             OutlinedButton(
                 onClick = { showDeleteConfirm = true },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = saveState !is ContributionsViewModel.SaveState.Saving,
+                enabled = saveState !is EssenceContributionsViewModel.SaveState.Saving,
             ) {
                 Text("Delete Contribution", color = MaterialTheme.colorScheme.error)
             }
@@ -298,7 +298,7 @@ private enum class ConfluenceMode { New, AddCombination }
 private fun ConfluenceForm(
     availableManifestations: List<Essence.Manifestation>,
     availableConfluences: List<Essence.Confluence>,
-    saveState: ContributionsViewModel.SaveState,
+    saveState: EssenceContributionsViewModel.SaveState,
     onSaveNew: (name: String, m1: Essence.Manifestation, m2: Essence.Manifestation, m3: Essence.Manifestation, isRestricted: Boolean) -> Unit,
     onAddCombination: (target: Essence.Confluence, m1: Essence.Manifestation, m2: Essence.Manifestation, m3: Essence.Manifestation, isRestricted: Boolean) -> Unit,
     onClearState: () -> Unit,
@@ -439,7 +439,7 @@ private fun ConfluenceForm(
         SaveFeedback(saveState = saveState, onClearState = onClearState)
 
         val manifestationsSelected = manifestation1 != null && manifestation2 != null && manifestation3 != null
-        val notSaving = saveState !is ContributionsViewModel.SaveState.Saving
+        val notSaving = saveState !is EssenceContributionsViewModel.SaveState.Saving
         val canSave = manifestationsSelected && notSaving && when (mode) {
             ConfluenceMode.New -> true
             ConfluenceMode.AddCombination -> targetConfluence != null
@@ -607,11 +607,11 @@ private fun RarityDropdown(
 
 @Composable
 private fun SaveFeedback(
-    saveState: ContributionsViewModel.SaveState,
+    saveState: EssenceContributionsViewModel.SaveState,
     onClearState: () -> Unit,
 ) {
     when (saveState) {
-        is ContributionsViewModel.SaveState.Success -> {
+        is EssenceContributionsViewModel.SaveState.Success -> {
             LaunchedEffect(saveState) {
                 kotlinx.coroutines.delay(2000)
                 onClearState()
@@ -622,7 +622,7 @@ private fun SaveFeedback(
                 style = MaterialTheme.typography.bodySmall,
             )
         }
-        is ContributionsViewModel.SaveState.Error -> {
+        is EssenceContributionsViewModel.SaveState.Error -> {
             Text(
                 text = saveState.message,
                 color = MaterialTheme.colorScheme.error,
@@ -661,7 +661,7 @@ private fun ManifestationFormIdlePreview() {
     ManifestationForm(
         initial = null,
         isEdit = false,
-        saveState = ContributionsViewModel.SaveState.Idle,
+        saveState = EssenceContributionsViewModel.SaveState.Idle,
         onSave = { _, _, _, _ -> },
         onDelete = {},
         onClearState = {},
@@ -674,7 +674,7 @@ private fun ManifestationFormSuccessPreview() {
     ManifestationForm(
         initial = null,
         isEdit = false,
-        saveState = ContributionsViewModel.SaveState.Success,
+        saveState = EssenceContributionsViewModel.SaveState.Success,
         onSave = { _, _, _, _ -> },
         onDelete = {},
         onClearState = {},
@@ -687,7 +687,7 @@ private fun ManifestationFormErrorPreview() {
     ManifestationForm(
         initial = null,
         isEdit = false,
-        saveState = ContributionsViewModel.SaveState.Error("Name cannot be empty"),
+        saveState = EssenceContributionsViewModel.SaveState.Error("Name cannot be empty"),
         onSave = { _, _, _, _ -> },
         onDelete = {},
         onClearState = {},
@@ -700,7 +700,7 @@ private fun ConfluenceFormNewPreview() {
     ConfluenceForm(
         availableManifestations = previewManifestations,
         availableConfluences = previewConfluences,
-        saveState = ContributionsViewModel.SaveState.Idle,
+        saveState = EssenceContributionsViewModel.SaveState.Idle,
         onSaveNew = { _, _, _, _, _ -> },
         onAddCombination = { _, _, _, _, _ -> },
         onClearState = {},
@@ -713,7 +713,7 @@ private fun ConfluenceFormDuplicateErrorPreview() {
     ConfluenceForm(
         availableManifestations = previewManifestations,
         availableConfluences = previewConfluences,
-        saveState = ContributionsViewModel.SaveState.Error("That combination already produces Doom"),
+        saveState = EssenceContributionsViewModel.SaveState.Error("That combination already produces Doom"),
         onSaveNew = { _, _, _, _, _ -> },
         onAddCombination = { _, _, _, _, _ -> },
         onClearState = {},

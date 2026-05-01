@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "wizardry.compendium.contributions"
+    namespace = "wizardry.compendium.essence.contributions"
 
     buildTypes {
         getByName("release") {

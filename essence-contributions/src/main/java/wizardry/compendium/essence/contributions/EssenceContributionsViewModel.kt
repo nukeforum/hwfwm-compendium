@@ -1,4 +1,4 @@
-package wizardry.compendium.contributions
+package wizardry.compendium.essence.contributions
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class ContributionsViewModel @Inject constructor(
+class EssenceContributionsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val essenceRepository: EssenceRepository,
 ) : ViewModel() {

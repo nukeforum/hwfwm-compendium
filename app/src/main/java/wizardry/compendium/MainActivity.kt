@@ -29,7 +29,7 @@ import wizardry.compendium.abilitylistinginfo.AbilityListingDetails
 import wizardry.compendium.awakeningstone.contributions.AwakeningStoneContributionsScreen
 import wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
 import wizardry.compendium.awakeningstoneinfo.AwakeningStoneDetails
-import wizardry.compendium.contributions.ContributionsScreen
+import wizardry.compendium.essence.contributions.EssenceContributionsScreen
 import wizardry.compendium.essenceinfo.EssenceDetails
 import wizardry.compendium.randomizer.Randomizer
 import wizardry.compendium.search.EssenceSearch
@@ -171,7 +171,7 @@ class MainActivity : ComponentActivity() {
                             currentRoute = backStackEntry.destination.route
                             val editName = backStackEntry.arguments?.getString(Nav.Contributions.ARG_NAME)
                             title = if (editName != null) "Edit Contribution" else "Add Contribution"
-                            ContributionsScreen(
+                            EssenceContributionsScreen(
                                 onContributionDeleted = { navController.popBackStack(Nav.EssenceSearch.route, false) },
                             )
                         }
