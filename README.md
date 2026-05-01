@@ -34,4 +34,6 @@ Requires JDK 21 and the Android SDK. `local.properties` should point `sdk.dir` a
 
 ## License
 
-The source code in this repository is the author's own. The underlying setting, characters, and magical system belong to Shirtaloon — this project distributes data describing that system for fan reference only.
+The source code in this repository is released under the [MIT License](LICENSE).
+
+The underlying setting, characters, and magical system belong to Shirtaloon — this project distributes data describing that system for fan reference only. The MIT License covers the code and the compilation of data in this repository, not the underlying *He Who Fights With Monsters* intellectual property.
