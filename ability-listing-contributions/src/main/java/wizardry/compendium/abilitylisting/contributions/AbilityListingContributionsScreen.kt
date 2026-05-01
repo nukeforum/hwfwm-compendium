@@ -21,25 +21,18 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.InputChip
 import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RichTooltip
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -84,10 +77,14 @@ import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Resource
 import wizardry.compendium.essences.model.parseDescription
+import wizardry.compendium.ui.ContributionDropdown
+import wizardry.compendium.ui.ContributionErrorFeedback
+import wizardry.compendium.ui.DeleteContributionButton
 import kotlin.time.Duration
 
 @Composable
 fun AbilityListingContributionsScreen(
+    onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
     viewModel: AbilityListingContributionsViewModel = hiltViewModel(),
 ) {
@@ -96,8 +93,10 @@ fun AbilityListingContributionsScreen(
     val mode by viewModel.mode.collectAsState()
 
     LaunchedEffect(saveState) {
-        if (saveState is AbilityListingContributionsViewModel.SaveState.Deleted) {
-            onContributionDeleted()
+        when (saveState) {
+            is AbilityListingContributionsViewModel.SaveState.Deleted -> onContributionDeleted()
+            is AbilityListingContributionsViewModel.SaveState.Success -> onContributionSaved()
+            else -> {}
         }
     }
 
@@ -120,7 +119,6 @@ fun AbilityListingContributionsScreen(
             onAppendEffect = viewModel::appendEffect,
             onSave = viewModel::saveAbilityListing,
             onDelete = {},
-            onClearState = viewModel::clearSaveState,
         )
         is AbilityListingContributionsViewModel.Mode.Edit.Ready -> AbilityListingForm(
             initialName = current.listing.name,
@@ -132,7 +130,6 @@ fun AbilityListingContributionsScreen(
             onAppendEffect = viewModel::appendEffect,
             onSave = viewModel::saveAbilityListing,
             onDelete = viewModel::deleteContribution,
-            onClearState = viewModel::clearSaveState,
         )
     }
 }
@@ -148,30 +145,15 @@ private fun AbilityListingForm(
     onAppendEffect: () -> Unit,
     onSave: (name: String) -> Unit,
     onDelete: () -> Unit,
-    onClearState: () -> Unit,
 ) {
     var name by remember(initialName) { mutableStateOf(initialName.orEmpty()) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
     var preview by rememberSaveable { mutableStateOf(false) }
 
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete contribution?") },
-            text = { Text("Permanently delete \"$name\" from your contributions?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteConfirm = false
-                        onDelete()
-                    },
-                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
-            },
-        )
+    val saving = saveState is AbilityListingContributionsViewModel.SaveState.Saving
+    val effectsValid = effects.isNotEmpty() && effects.all {
+        it.rank != null && it.type != null && it.properties.isNotEmpty() && it.description.isNotBlank()
     }
+    val canSave = name.isNotBlank() && effectsValid && !saving
 
     Column(
         modifier = Modifier
@@ -198,7 +180,7 @@ private fun AbilityListingForm(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Name") },
+                label = { Text("Name *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 readOnly = isEdit,
@@ -223,24 +205,24 @@ private fun AbilityListingForm(
             )
         }
 
-        SaveFeedback(saveState = saveState, onClearState = onClearState)
+        ContributionErrorFeedback(
+            error = (saveState as? AbilityListingContributionsViewModel.SaveState.Error)?.message,
+        )
 
         Button(
             onClick = { onSave(name) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = saveState !is AbilityListingContributionsViewModel.SaveState.Saving,
+            enabled = canSave,
         ) {
             Text(if (isEdit) "Update Ability Listing" else "Save Ability Listing")
         }
 
         if (isEdit) {
-            androidx.compose.material3.OutlinedButton(
-                onClick = { showDeleteConfirm = true },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = saveState !is AbilityListingContributionsViewModel.SaveState.Saving,
-            ) {
-                Text("Delete Contribution", color = MaterialTheme.colorScheme.error)
-            }
+            DeleteContributionButton(
+                name = name,
+                enabled = !saving,
+                onDelete = onDelete,
+            )
         }
     }
 }
@@ -337,7 +319,7 @@ private fun AbilityEffectContribution(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    EnumDropdown(
+                    ContributionDropdown(
                         label = "Rank *",
                         options = Rank.entries,
                         selected = draft.rank,
@@ -346,7 +328,7 @@ private fun AbilityEffectContribution(
                         modifier = Modifier.weight(1f),
                     )
 
-                    EnumDropdown(
+                    ContributionDropdown(
                         label = "Type *",
                         options = AbilityTypeOptions,
                         selected = draft.type,
@@ -538,56 +520,6 @@ private fun List<EffectDraft>.toPreviewEffects(): List<Effect.AbilityEffect> = m
         description = draft.description,
         replacementKey = draft.replacementKey.trim().takeIf { it.isNotEmpty() },
     )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun <T : Any> EnumDropdown(
-    label: String,
-    options: List<T>,
-    selected: T?,
-    optionLabel: (T) -> String,
-    onSelected: (T) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = modifier,
-    ) {
-        OutlinedTextField(
-            value = selected?.let(optionLabel).orEmpty(),
-            onValueChange = {},
-            readOnly = true,
-            enabled = false,
-            label = { Text(label) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            colors = OutlinedTextFieldDefaults.colors(
-                disabledTextColor = LocalContentColor.current,
-                disabledBorderColor = MaterialTheme.colorScheme.outline,
-                disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            ),
-            modifier = Modifier
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth(),
-        )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            options.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(optionLabel(option)) },
-                    onClick = {
-                        onSelected(option)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -866,34 +798,6 @@ private fun CostPickerSheet(
     }
 }
 
-@Composable
-private fun SaveFeedback(
-    saveState: AbilityListingContributionsViewModel.SaveState,
-    onClearState: () -> Unit,
-) {
-    when (saveState) {
-        is AbilityListingContributionsViewModel.SaveState.Success -> {
-            LaunchedEffect(saveState) {
-                kotlinx.coroutines.delay(2000)
-                onClearState()
-            }
-            Text(
-                text = "Saved successfully",
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        is AbilityListingContributionsViewModel.SaveState.Error -> {
-            Text(
-                text = saveState.message,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        else -> {}
-    }
-}
-
 private inline fun <reified T : Any> sealedObjects(): List<T> =
     T::class.sealedSubclasses.mapNotNull { it.objectInstance }
 
@@ -926,7 +830,6 @@ private fun AbilityListingFormEmptyPreview() {
         onAppendEffect = {},
         onSave = {},
         onDelete = {},
-        onClearState = {},
     )
 }
 
@@ -953,7 +856,6 @@ private fun AbilityListingFormPopulatedPreview() {
         onAppendEffect = {},
         onSave = {},
         onDelete = {},
-        onClearState = {},
     )
 }
 
@@ -970,6 +872,5 @@ private fun AbilityListingFormErrorPreview() {
         onAppendEffect = {},
         onSave = {},
         onDelete = {},
-        onClearState = {},
     )
 }

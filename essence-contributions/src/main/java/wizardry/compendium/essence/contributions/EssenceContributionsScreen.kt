@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -15,10 +16,16 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.ui.ContributionDropdown
+import wizardry.compendium.ui.ContributionErrorFeedback
+import wizardry.compendium.ui.ContributionReportCard
+import wizardry.compendium.ui.DeleteContributionButton
+import wizardry.compendium.ui.EditPreviewToggle
 import kotlinx.coroutines.launch
 
 @Composable
 fun EssenceContributionsScreen(
+    onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
     viewModel: EssenceContributionsViewModel = hiltViewModel(),
 ) {
@@ -28,8 +35,10 @@ fun EssenceContributionsScreen(
     val mode by viewModel.mode.collectAsState()
 
     LaunchedEffect(saveState) {
-        if (saveState is EssenceContributionsViewModel.SaveState.Deleted) {
-            onContributionDeleted()
+        when (saveState) {
+            is EssenceContributionsViewModel.SaveState.Deleted -> onContributionDeleted()
+            is EssenceContributionsViewModel.SaveState.Success -> onContributionSaved()
+            else -> {}
         }
     }
 
@@ -50,14 +59,12 @@ fun EssenceContributionsScreen(
                 viewModel.saveManifestation(name, rarity, description, isRestricted)
             },
             onDelete = viewModel::deleteContribution,
-            onClearState = viewModel::clearSaveState,
         )
         is EssenceContributionsViewModel.Mode.Edit.ConfluenceReady -> ConfluenceEditForm(
             initial = current.confluence,
             saveState = saveState,
             onSave = { name, isRestricted -> viewModel.updateConfluence(name, isRestricted) },
             onDelete = viewModel::deleteContribution,
-            onClearState = viewModel::clearSaveState,
         )
         EssenceContributionsViewModel.Mode.Create -> CreateContributions(
             availableManifestations = availableManifestations,
@@ -110,7 +117,6 @@ private fun CreateContributions(
                 saveState = saveState,
                 onSave = onSaveManifestation,
                 onDelete = {},
-                onClearState = onClearState,
             )
             1 -> ConfluenceForm(
                 availableManifestations = availableManifestations,
@@ -130,28 +136,11 @@ private fun ConfluenceEditForm(
     saveState: EssenceContributionsViewModel.SaveState,
     onSave: (name: String, isRestricted: Boolean) -> Unit,
     onDelete: () -> Unit,
-    onClearState: () -> Unit,
 ) {
     val name = initial.name
     var isRestricted by remember(initial) { mutableStateOf(initial.isRestricted) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete contribution?") },
-            text = { Text("Permanently delete \"$name\" from your contributions?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteConfirm = false
-                    onDelete()
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
-            },
-        )
-    }
+    val saving = saveState is EssenceContributionsViewModel.SaveState.Saving
 
     Column(
         modifier = Modifier
@@ -183,19 +172,21 @@ private fun ConfluenceEditForm(
             Text("• ${set.set.joinToString(" + ") { it.name }}${if (set.isRestricted) " (restricted)" else ""}")
         }
 
-        SaveFeedback(saveState = saveState, onClearState = onClearState)
+        ContributionErrorFeedback(
+            error = (saveState as? EssenceContributionsViewModel.SaveState.Error)?.message,
+        )
 
         Button(
             onClick = { onSave(name, isRestricted) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = saveState !is EssenceContributionsViewModel.SaveState.Saving,
+            enabled = !saving,
         ) { Text("Update Confluence") }
 
-        OutlinedButton(
-            onClick = { showDeleteConfirm = true },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = saveState !is EssenceContributionsViewModel.SaveState.Saving,
-        ) { Text("Delete Contribution", color = MaterialTheme.colorScheme.error) }
+        DeleteContributionButton(
+            name = name,
+            enabled = !saving,
+            onDelete = onDelete,
+        )
     }
 }
 
@@ -206,30 +197,15 @@ private fun ManifestationForm(
     saveState: EssenceContributionsViewModel.SaveState,
     onSave: (name: String, rarity: Rarity, description: String, isRestricted: Boolean) -> Unit,
     onDelete: () -> Unit,
-    onClearState: () -> Unit,
 ) {
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var rarity by remember(initial) { mutableStateOf(initial?.rarity ?: Rarity.Common) }
     var description by remember(initial) { mutableStateOf(initial?.description.orEmpty()) }
     var isRestricted by remember(initial) { mutableStateOf(initial?.isRestricted ?: false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var preview by rememberSaveable { mutableStateOf(false) }
 
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete contribution?") },
-            text = { Text("Permanently delete \"$name\" from your contributions?") },
-            confirmButton = {
-                TextButton(onClick = {
-                    showDeleteConfirm = false
-                    onDelete()
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
-            },
-        )
-    }
+    val saving = saveState is EssenceContributionsViewModel.SaveState.Saving
+    val canSave = name.isNotBlank() && !saving
 
     Column(
         modifier = Modifier
@@ -238,55 +214,66 @@ private fun ManifestationForm(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            readOnly = isEdit,
-        )
+        EditPreviewToggle(isPreview = preview, onChange = { preview = it })
 
-        RarityDropdown(
-            selected = rarity,
-            onSelected = { rarity = it },
-        )
+        if (!preview) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name *") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                readOnly = isEdit,
+            )
 
-        OutlinedTextField(
-            value = description,
-            onValueChange = { description = it },
-            label = { Text("Description") },
-            modifier = Modifier.fillMaxWidth(),
-            minLines = 3,
-        )
+            ContributionDropdown(
+                label = "Rarity",
+                options = Rarity.entries,
+                selected = rarity,
+                optionLabel = { it.name },
+                onSelected = { rarity = it },
+            )
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Restricted")
-            Switch(checked = isRestricted, onCheckedChange = { isRestricted = it })
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Description") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3,
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Restricted")
+                Switch(checked = isRestricted, onCheckedChange = { isRestricted = it })
+            }
+        } else {
+            ContributionReportCard(
+                text = manifestationPreviewText(name, rarity, description, isRestricted),
+            )
         }
 
-        SaveFeedback(saveState = saveState, onClearState = onClearState)
+        ContributionErrorFeedback(
+            error = (saveState as? EssenceContributionsViewModel.SaveState.Error)?.message,
+        )
 
         Button(
             onClick = { onSave(name, rarity, description, isRestricted) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = saveState !is EssenceContributionsViewModel.SaveState.Saving,
+            enabled = canSave,
         ) {
             Text(if (isEdit) "Update Essence" else "Save Essence")
         }
 
         if (isEdit) {
-            OutlinedButton(
-                onClick = { showDeleteConfirm = true },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = saveState !is EssenceContributionsViewModel.SaveState.Saving,
-            ) {
-                Text("Delete Contribution", color = MaterialTheme.colorScheme.error)
-            }
+            DeleteContributionButton(
+                name = name,
+                enabled = !saving,
+                onDelete = onDelete,
+            )
         }
     }
 }
@@ -394,7 +381,7 @@ private fun ConfluenceForm(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Confluence Name") },
+                    label = { Text("Confluence Name *") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
@@ -436,12 +423,18 @@ private fun ConfluenceForm(
             Switch(checked = isRestricted, onCheckedChange = { isRestricted = it })
         }
 
-        SaveFeedback(saveState = saveState, onClearState = onClearState)
+        ContributionErrorFeedback(
+            error = (saveState as? EssenceContributionsViewModel.SaveState.Error)?.message,
+        )
 
-        val manifestationsSelected = manifestation1 != null && manifestation2 != null && manifestation3 != null
+        val m1 = manifestation1
+        val m2 = manifestation2
+        val m3 = manifestation3
+        val manifestationsValid = m1 != null && m2 != null && m3 != null &&
+            m1.name != m2.name && m1.name != m3.name && m2.name != m3.name
         val notSaving = saveState !is EssenceContributionsViewModel.SaveState.Saving
-        val canSave = manifestationsSelected && notSaving && when (mode) {
-            ConfluenceMode.New -> true
+        val canSave = manifestationsValid && notSaving && when (mode) {
+            ConfluenceMode.New -> name.isNotBlank()
             ConfluenceMode.AddCombination -> targetConfluence != null
         }
         Button(
@@ -575,62 +568,17 @@ private fun ConfluencePickerSheet(
     }
 }
 
-@Composable
-private fun RarityDropdown(
-    selected: Rarity,
-    onSelected: (Rarity) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedButton(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(selected.name)
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            Rarity.entries.forEach { rarity ->
-                DropdownMenuItem(
-                    text = { Text(rarity.name) },
-                    onClick = {
-                        onSelected(rarity)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SaveFeedback(
-    saveState: EssenceContributionsViewModel.SaveState,
-    onClearState: () -> Unit,
-) {
-    when (saveState) {
-        is EssenceContributionsViewModel.SaveState.Success -> {
-            LaunchedEffect(saveState) {
-                kotlinx.coroutines.delay(2000)
-                onClearState()
-            }
-            Text(
-                text = "Saved successfully",
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        is EssenceContributionsViewModel.SaveState.Error -> {
-            Text(
-                text = saveState.message,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        else -> {}
-    }
+private fun manifestationPreviewText(
+    name: String,
+    rarity: Rarity,
+    description: String,
+    isRestricted: Boolean,
+): String = buildString {
+    append("Item: [${name.ifBlank { "(unnamed)" }} Essence]\n")
+    append("(${rarity.name.lowercase()})")
+    if (isRestricted) append(" — restricted")
+    append("\n\n")
+    append(description.ifBlank { "(no description)" })
 }
 
 // region Previews
@@ -664,20 +612,6 @@ private fun ManifestationFormIdlePreview() {
         saveState = EssenceContributionsViewModel.SaveState.Idle,
         onSave = { _, _, _, _ -> },
         onDelete = {},
-        onClearState = {},
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ManifestationFormSuccessPreview() {
-    ManifestationForm(
-        initial = null,
-        isEdit = false,
-        saveState = EssenceContributionsViewModel.SaveState.Success,
-        onSave = { _, _, _, _ -> },
-        onDelete = {},
-        onClearState = {},
     )
 }
 
@@ -690,7 +624,6 @@ private fun ManifestationFormErrorPreview() {
         saveState = EssenceContributionsViewModel.SaveState.Error("Name cannot be empty"),
         onSave = { _, _, _, _ -> },
         onDelete = {},
-        onClearState = {},
     )
 }
 

@@ -172,6 +172,7 @@ class MainActivity : ComponentActivity() {
                             val editName = backStackEntry.arguments?.getString(Nav.Contributions.ARG_NAME)
                             title = if (editName != null) "Edit Contribution" else "Add Contribution"
                             EssenceContributionsScreen(
+                                onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.EssenceSearch.route, false) },
                             )
                         }
@@ -189,6 +190,7 @@ class MainActivity : ComponentActivity() {
                             val editName = backStackEntry.arguments?.getString(Nav.AwakeningStoneContributions.ARG_NAME)
                             title = if (editName != null) "Edit Awakening Stone" else "Add Awakening Stone"
                             AwakeningStoneContributionsScreen(
+                                onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.AwakeningStoneSearch.route, false) },
                             )
                         }
@@ -232,6 +234,7 @@ class MainActivity : ComponentActivity() {
                             val editName = backStackEntry.arguments?.getString(Nav.AbilityListingContributions.ARG_NAME)
                             title = if (editName != null) "Edit Ability Listing" else "Add Ability Listing"
                             AbilityListingContributionsScreen(
+                                onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.AbilityListingSearch.route, false) },
                             )
                         }

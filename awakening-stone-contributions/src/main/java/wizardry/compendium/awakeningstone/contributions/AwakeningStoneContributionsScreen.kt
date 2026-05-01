@@ -8,22 +8,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,9 +26,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.ui.ContributionDropdown
+import wizardry.compendium.ui.ContributionErrorFeedback
+import wizardry.compendium.ui.ContributionReportCard
+import wizardry.compendium.ui.DeleteContributionButton
+import wizardry.compendium.ui.EditPreviewToggle
 
 @Composable
 fun AwakeningStoneContributionsScreen(
+    onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
     viewModel: AwakeningStoneContributionsViewModel = hiltViewModel(),
 ) {
@@ -42,8 +42,10 @@ fun AwakeningStoneContributionsScreen(
     val mode by viewModel.mode.collectAsState()
 
     LaunchedEffect(saveState) {
-        if (saveState is AwakeningStoneContributionsViewModel.SaveState.Deleted) {
-            onContributionDeleted()
+        when (saveState) {
+            is AwakeningStoneContributionsViewModel.SaveState.Deleted -> onContributionDeleted()
+            is AwakeningStoneContributionsViewModel.SaveState.Success -> onContributionSaved()
+            else -> {}
         }
     }
 
@@ -55,7 +57,6 @@ fun AwakeningStoneContributionsScreen(
                 saveState = saveState,
                 onSave = { name, rarity -> viewModel.saveAwakeningStone(name, rarity) },
                 onDelete = {},
-                onClearState = viewModel::clearSaveState,
             )
         }
         AwakeningStoneContributionsViewModel.Mode.Edit.Loading -> Loading()
@@ -67,7 +68,6 @@ fun AwakeningStoneContributionsScreen(
                 saveState = saveState,
                 onSave = { name, rarity -> viewModel.saveAwakeningStone(name, rarity) },
                 onDelete = viewModel::deleteContribution,
-                onClearState = viewModel::clearSaveState,
             )
         }
     }
@@ -94,22 +94,13 @@ private fun AwakeningStoneForm(
     saveState: AwakeningStoneContributionsViewModel.SaveState,
     onSave: (name: String, rarity: Rarity) -> Unit,
     onDelete: () -> Unit,
-    onClearState: () -> Unit,
 ) {
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var rarity by remember(initial) { mutableStateOf(initial?.rarity ?: Rarity.Common) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
+    var preview by rememberSaveable { mutableStateOf(false) }
 
-    if (showDeleteConfirm) {
-        DeleteConfirmDialog(
-            name = initial?.name.orEmpty(),
-            onConfirm = {
-                showDeleteConfirm = false
-                onDelete()
-            },
-            onDismiss = { showDeleteConfirm = false },
-        )
-    }
+    val saving = saveState is AwakeningStoneContributionsViewModel.SaveState.Saving
+    val canSave = name.isNotBlank() && !saving
 
     Column(
         modifier = Modifier
@@ -118,126 +109,58 @@ private fun AwakeningStoneForm(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Name") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            readOnly = isEdit,
-        )
+        EditPreviewToggle(isPreview = preview, onChange = { preview = it })
 
-        RarityDropdown(
-            selected = rarity,
-            onSelected = { rarity = it },
-        )
+        if (!preview) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name *") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                readOnly = isEdit,
+            )
 
-        SaveFeedback(saveState = saveState, onClearState = onClearState)
+            ContributionDropdown(
+                label = "Rarity",
+                options = Rarity.entries,
+                selected = rarity,
+                optionLabel = { it.name },
+                onSelected = { rarity = it },
+            )
+        } else {
+            ContributionReportCard(
+                text = awakeningStonePreviewText(name, rarity),
+            )
+        }
+
+        ContributionErrorFeedback(
+            error = (saveState as? AwakeningStoneContributionsViewModel.SaveState.Error)?.message,
+        )
 
         Button(
             onClick = { onSave(name, rarity) },
             modifier = Modifier.fillMaxWidth(),
-            enabled = saveState !is AwakeningStoneContributionsViewModel.SaveState.Saving,
+            enabled = canSave,
         ) {
             Text(if (isEdit) "Update Awakening Stone" else "Save Awakening Stone")
         }
 
         if (isEdit) {
-            OutlinedButton(
-                onClick = { showDeleteConfirm = true },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = saveState !is AwakeningStoneContributionsViewModel.SaveState.Saving,
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error,
-                ),
-            ) {
-                Text("Delete Contribution")
-            }
-        }
-    }
-}
-
-@Composable
-private fun DeleteConfirmDialog(
-    name: String,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Delete contribution?") },
-        text = { Text("Permanently delete \"$name\" from your contributions?") },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error,
-                ),
-            ) { Text("Delete") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
-        },
-    )
-}
-
-@Composable
-private fun RarityDropdown(
-    selected: Rarity,
-    onSelected: (Rarity) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Box(modifier = Modifier.fillMaxWidth()) {
-        OutlinedButton(
-            onClick = { expanded = true },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(selected.name)
-        }
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            Rarity.entries.forEach { entry ->
-                DropdownMenuItem(
-                    text = { Text(entry.name) },
-                    onClick = {
-                        onSelected(entry)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SaveFeedback(
-    saveState: AwakeningStoneContributionsViewModel.SaveState,
-    onClearState: () -> Unit,
-) {
-    when (saveState) {
-        is AwakeningStoneContributionsViewModel.SaveState.Success -> {
-            LaunchedEffect(saveState) {
-                kotlinx.coroutines.delay(2000)
-                onClearState()
-            }
-            Text(
-                text = "Saved successfully",
-                color = MaterialTheme.colorScheme.primary,
-                style = MaterialTheme.typography.bodySmall,
+            DeleteContributionButton(
+                name = initial?.name.orEmpty(),
+                enabled = !saving,
+                onDelete = onDelete,
             )
         }
-        is AwakeningStoneContributionsViewModel.SaveState.Error -> {
-            Text(
-                text = saveState.message,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodySmall,
-            )
-        }
-        else -> {}
     }
 }
+
+private fun awakeningStonePreviewText(name: String, rarity: Rarity): String =
+    """
+        Item: [${name.ifBlank { "(unnamed)" }} Awakening Stone]
+        (${rarity.name.lowercase()})
+    """.trimIndent()
 
 @Preview(showBackground = true)
 @Composable
@@ -248,7 +171,6 @@ private fun AwakeningStoneFormIdlePreview() {
         saveState = AwakeningStoneContributionsViewModel.SaveState.Idle,
         onSave = { _, _ -> },
         onDelete = {},
-        onClearState = {},
     )
 }
 
@@ -261,7 +183,6 @@ private fun AwakeningStoneFormErrorPreview() {
         saveState = AwakeningStoneContributionsViewModel.SaveState.Error("Name cannot be empty"),
         onSave = { _, _ -> },
         onDelete = {},
-        onClearState = {},
     )
 }
 
@@ -274,6 +195,5 @@ private fun AwakeningStoneFormEditPreview() {
         saveState = AwakeningStoneContributionsViewModel.SaveState.Idle,
         onSave = { _, _ -> },
         onDelete = {},
-        onClearState = {},
     )
 }
