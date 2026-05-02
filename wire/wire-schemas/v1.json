@@ -3,9 +3,166 @@
     "envelope": "wizardry.compendium.wire.Envelope",
     "types": [
         {
+            "fqn": "wizardry.compendium.wire.Confluence",
+            "typeAlias": "confluence",
+            "fields": [
+                {
+                    "name": "combinations",
+                    "alias": "s",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<wizardry.compendium.wire.ConfluenceSet>",
+                    "hasDefault": false
+                },
+                {
+                    "name": "isRestricted",
+                    "alias": "x",
+                    "previousAlias": "",
+                    "type": "kotlin.Boolean",
+                    "hasDefault": true
+                },
+                {
+                    "name": "name",
+                    "alias": "n",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": false
+                }
+            ]
+        },
+        {
+            "fqn": "wizardry.compendium.wire.ConfluenceSet",
+            "typeAlias": "confluenceSet",
+            "fields": [
+                {
+                    "name": "name1",
+                    "alias": "name1",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": false
+                },
+                {
+                    "name": "name2",
+                    "alias": "name2",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": false
+                },
+                {
+                    "name": "name3",
+                    "alias": "name3",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": false
+                },
+                {
+                    "name": "restrictedFlag",
+                    "alias": "restrictedFlag",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "hasDefault": false
+                }
+            ]
+        },
+        {
+            "fqn": "wizardry.compendium.wire.Cost",
+            "typeAlias": "cost",
+            "fields": [
+                {
+                    "name": "amountIndex",
+                    "alias": "amountIndex",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "hasDefault": false
+                },
+                {
+                    "name": "kind",
+                    "alias": "kind",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": false
+                },
+                {
+                    "name": "resourceIndex",
+                    "alias": "resourceIndex",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "hasDefault": false
+                }
+            ]
+        },
+        {
+            "fqn": "wizardry.compendium.wire.Effect",
+            "typeAlias": "effect",
+            "fields": [
+                {
+                    "name": "cooldown",
+                    "alias": "o",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": true
+                },
+                {
+                    "name": "costs",
+                    "alias": "c",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<wizardry.compendium.wire.Cost>",
+                    "hasDefault": true
+                },
+                {
+                    "name": "description",
+                    "alias": "d",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": false
+                },
+                {
+                    "name": "propertyIndices",
+                    "alias": "p",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<kotlin.Int>",
+                    "hasDefault": true
+                },
+                {
+                    "name": "rankIndex",
+                    "alias": "k",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "hasDefault": false
+                },
+                {
+                    "name": "replacementKey",
+                    "alias": "q",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": true
+                },
+                {
+                    "name": "typeIndex",
+                    "alias": "t",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "hasDefault": false
+                }
+            ]
+        },
+        {
             "fqn": "wizardry.compendium.wire.Envelope",
             "typeAlias": "envelope",
             "fields": [
+                {
+                    "name": "confluences",
+                    "alias": "c",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<wizardry.compendium.wire.Confluence>",
+                    "hasDefault": true
+                },
+                {
+                    "name": "listings",
+                    "alias": "a",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<wizardry.compendium.wire.Listing>",
+                    "hasDefault": true
+                },
                 {
                     "name": "manifestations",
                     "alias": "e",
@@ -14,10 +171,37 @@
                     "hasDefault": true
                 },
                 {
+                    "name": "stones",
+                    "alias": "s",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<wizardry.compendium.wire.Stone>",
+                    "hasDefault": true
+                },
+                {
                     "name": "version",
                     "alias": "v",
                     "previousAlias": "",
                     "type": "kotlin.Int",
+                    "hasDefault": false
+                }
+            ]
+        },
+        {
+            "fqn": "wizardry.compendium.wire.Listing",
+            "typeAlias": "listing",
+            "fields": [
+                {
+                    "name": "effects",
+                    "alias": "f",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<wizardry.compendium.wire.Effect>",
+                    "hasDefault": false
+                },
+                {
+                    "name": "name",
+                    "alias": "n",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
                     "hasDefault": false
                 }
             ]
@@ -59,6 +243,26 @@
                     "alias": "k",
                     "previousAlias": "",
                     "type": "kotlin.Int",
+                    "hasDefault": false
+                },
+                {
+                    "name": "rarityIndex",
+                    "alias": "r",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "hasDefault": false
+                }
+            ]
+        },
+        {
+            "fqn": "wizardry.compendium.wire.Stone",
+            "typeAlias": "stone",
+            "fields": [
+                {
+                    "name": "name",
+                    "alias": "n",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
                     "hasDefault": false
                 },
                 {

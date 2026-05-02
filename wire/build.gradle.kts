@@ -10,6 +10,14 @@ kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
+    // Make KSP-generated Kotlin sources visible to compileKotlin. KSP
+    // generally wires this automatically when applied via its Gradle
+    // plugin, but the wiring is sensitive to plugin order and
+    // configuration timing — manually declaring the source dir is
+    // belt-and-suspenders insurance against the common case where the
+    // generated code (e.g., WireMigrators.kt) is "missing" from the
+    // compile classpath despite being on disk.
+    sourceSets["main"].kotlin.srcDir(layout.buildDirectory.dir("generated/ksp/main/kotlin"))
 }
 
 dependencies {
@@ -57,6 +65,21 @@ ksp {
 
 val generatedWireSchemaDir = layout.buildDirectory.dir("generated/ksp/main/resources/wire-schemas")
 val committedWireSchemaDir = layout.projectDirectory.dir("wire-schemas").asFile
+
+// Force the kspKotlin task to re-run when its expected outputs are missing
+// from disk — without this, KSP's incremental task can claim UP-TO-DATE
+// after a stray `clean` even though the snapshot file is gone, which then
+// breaks `checkWireSchemaLock`. Belt and suspenders against a Gradle/KSP
+// caching corner case; the predicate is cheap (single File.exists() call)
+// and only kicks in when something has actually wiped the build dir.
+afterEvaluate {
+    tasks.named("kspKotlin").configure {
+        outputs.upToDateWhen {
+            val dir = generatedWireSchemaDir.get().asFile
+            dir.exists() && dir.list()?.isNotEmpty() == true
+        }
+    }
+}
 
 val checkWireSchemaLock = tasks.register("checkWireSchemaLock") {
     group = "verification"
