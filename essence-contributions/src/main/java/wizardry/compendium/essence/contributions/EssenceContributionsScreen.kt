@@ -27,6 +27,13 @@ import kotlinx.coroutines.launch
 fun EssenceContributionsScreen(
     onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
+    /**
+     * Decode a paste-buffer into a single manifestation, or surface an
+     * error message. Tab-aware: only fires on the Manifestation tab in
+     * Create mode; Confluence import is deferred (the manifestation
+     * resolution problem is out of scope for the contribute pre-fill).
+     */
+    onPasteImport: (text: String) -> Pair<Essence.Manifestation?, String?> = { null to null },
     viewModel: EssenceContributionsViewModel = hiltViewModel(),
 ) {
     val availableManifestations by viewModel.availableManifestations.collectAsState()
@@ -41,6 +48,11 @@ fun EssenceContributionsScreen(
             else -> {}
         }
     }
+
+    var importedManifestation by remember { mutableStateOf<Essence.Manifestation?>(null) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importErrorMessage by remember { mutableStateOf<String?>(null) }
+    var pasteText by remember { mutableStateOf("") }
 
     when (val current = mode) {
         EssenceContributionsViewModel.Mode.Edit.Loading -> Box(
@@ -59,6 +71,7 @@ fun EssenceContributionsScreen(
                 viewModel.saveManifestation(name, rarity, description, isRestricted)
             },
             onDelete = viewModel::deleteContribution,
+            onImportClick = null,
         )
         is EssenceContributionsViewModel.Mode.Edit.ConfluenceReady -> ConfluenceEditForm(
             initial = current.confluence,
@@ -70,6 +83,7 @@ fun EssenceContributionsScreen(
             availableManifestations = availableManifestations,
             availableConfluences = availableConfluences,
             saveState = saveState,
+            manifestationInitial = importedManifestation,
             onSaveManifestation = { name, rarity, description, isRestricted ->
                 viewModel.saveManifestation(name, rarity, description, isRestricted)
             },
@@ -80,6 +94,51 @@ fun EssenceContributionsScreen(
                 viewModel.addCombinationToConfluence(target, m1, m2, m3, isRestricted)
             },
             onClearState = viewModel::clearSaveState,
+            onManifestationImportClick = {
+                pasteText = ""
+                showImportDialog = true
+            },
+        )
+    }
+
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportDialog = false },
+            title = { Text("Import Essence") },
+            text = {
+                OutlinedTextField(
+                    value = pasteText,
+                    onValueChange = { pasteText = it },
+                    label = { Text("Paste a single-essence share") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 4,
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val (manifestation, error) = onPasteImport(pasteText)
+                    showImportDialog = false
+                    if (manifestation != null) {
+                        importedManifestation = manifestation
+                    } else {
+                        importErrorMessage = error
+                    }
+                }) { Text("Import") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showImportDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    importErrorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { importErrorMessage = null },
+            title = { Text("Couldn't import") },
+            text = { Text(message) },
+            confirmButton = {
+                Button(onClick = { importErrorMessage = null }) { Text("OK") }
+            },
         )
     }
 }
@@ -89,10 +148,12 @@ private fun CreateContributions(
     availableManifestations: List<Essence.Manifestation>,
     availableConfluences: List<Essence.Confluence>,
     saveState: EssenceContributionsViewModel.SaveState,
+    manifestationInitial: Essence.Manifestation?,
     onSaveManifestation: (String, Rarity, String, Boolean) -> Unit,
     onSaveNewConfluence: (String, Essence.Manifestation, Essence.Manifestation, Essence.Manifestation, Boolean) -> Unit,
     onAddCombination: (Essence.Confluence, Essence.Manifestation, Essence.Manifestation, Essence.Manifestation, Boolean) -> Unit,
     onClearState: () -> Unit,
+    onManifestationImportClick: () -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -112,11 +173,12 @@ private fun CreateContributions(
 
         when (selectedTab) {
             0 -> ManifestationForm(
-                initial = null,
+                initial = manifestationInitial,
                 isEdit = false,
                 saveState = saveState,
                 onSave = onSaveManifestation,
                 onDelete = {},
+                onImportClick = onManifestationImportClick,
             )
             1 -> ConfluenceForm(
                 availableManifestations = availableManifestations,
@@ -197,6 +259,7 @@ private fun ManifestationForm(
     saveState: EssenceContributionsViewModel.SaveState,
     onSave: (name: String, rarity: Rarity, description: String, isRestricted: Boolean) -> Unit,
     onDelete: () -> Unit,
+    onImportClick: (() -> Unit)? = null,
 ) {
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var rarity by remember(initial) { mutableStateOf(initial?.rarity ?: Rarity.Common) }
@@ -274,6 +337,13 @@ private fun ManifestationForm(
                 enabled = !saving,
                 onDelete = onDelete,
             )
+        }
+
+        if (!isEdit && onImportClick != null) {
+            OutlinedButton(
+                onClick = onImportClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Import from Share") }
         }
     }
 }

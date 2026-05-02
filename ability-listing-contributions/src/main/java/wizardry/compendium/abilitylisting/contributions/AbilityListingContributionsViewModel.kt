@@ -41,6 +41,14 @@ class AbilityListingContributionsViewModel @Inject constructor(
     private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
     val mode = _mode.asStateFlow()
 
+    /**
+     * Pre-fill name supplied by an Import action. Null in normal Create
+     * mode; populated when the user pastes a single-listing share. The
+     * screen reads this and threads it into the form's `initialName`.
+     */
+    private val _importedName = MutableStateFlow<String?>(null)
+    val importedName = _importedName.asStateFlow()
+
     init {
         if (editName != null) {
             viewModelScope.launch(Dispatchers.IO) {
@@ -117,6 +125,16 @@ class AbilityListingContributionsViewModel @Inject constructor(
 
     fun clearSaveState() {
         viewModelScope.launch { _saveState.emit(SaveState.Idle) }
+    }
+
+    /**
+     * Apply an imported listing to the contribute form by populating the
+     * effects state and surfacing the imported name. Only sensible in
+     * Create mode; callers gate it accordingly.
+     */
+    fun prefillFromImport(listing: Ability.Listing) {
+        _importedName.value = listing.name
+        _effects.value = listing.effects.map { it.toDraft() }
     }
 
     private fun fail(message: String) {

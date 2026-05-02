@@ -208,6 +208,12 @@ class MainActivity : ComponentActivity() {
                             EssenceContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.EssenceSearch.route, false) },
+                                onPasteImport = { text ->
+                                    when (val result = shareViewModel.decodeSingleManifestation(text)) {
+                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
+                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
+                                    }
+                                },
                             )
                         }
                         composable(
@@ -279,6 +285,12 @@ class MainActivity : ComponentActivity() {
                             AbilityListingContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.AbilityListingSearch.route, false) },
+                                onPasteImport = { text ->
+                                    when (val result = shareViewModel.decodeSingleListing(text)) {
+                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
+                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
+                                    }
+                                },
                             )
                         }
                     }

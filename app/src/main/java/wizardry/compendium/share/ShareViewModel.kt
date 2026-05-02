@@ -98,6 +98,24 @@ class ShareViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Decode a paste containing exactly one essence manifestation.
+     *
+     * Confluences are NOT accepted by this entry point — they have their
+     * own contribute sub-form (the Confluence tab) and embed manifestation
+     * references that the pre-fill form can't represent. Multi-entry
+     * shares route to Settings → Import.
+     */
+    fun decodeSingleManifestation(text: String): DecodedSingle<Essence.Manifestation> = decodeSingle(text) { envelope ->
+        val others = envelope.confluences.size + envelope.stones.size + envelope.listings.size
+        when {
+            envelope.manifestations.size != 1 || others > 0 -> DecodedSingle.Failed(
+                "This share doesn't contain exactly one essence manifestation. Use Settings → Import for multi-entry shares.",
+            )
+            else -> DecodedSingle.Loaded(EnvelopeMapper.toModel(envelope.manifestations.single()))
+        }
+    }
+
     private inline fun <T> decodeSingle(
         text: String,
         extract: (wizardry.compendium.wire.Envelope) -> DecodedSingle<T>,

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -86,11 +87,18 @@ import kotlin.time.Duration
 fun AbilityListingContributionsScreen(
     onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
+    /**
+     * Decode a paste-buffer into a single ability listing or surface an
+     * error. On success, the screen calls `prefillFromImport` on the VM
+     * to populate the effects state and the imported name.
+     */
+    onPasteImport: (text: String) -> Pair<Ability.Listing?, String?> = { null to null },
     viewModel: AbilityListingContributionsViewModel = hiltViewModel(),
 ) {
     val saveState by viewModel.saveState.collectAsState()
     val effects by viewModel.effects.collectAsState()
     val mode by viewModel.mode.collectAsState()
+    val importedName by viewModel.importedName.collectAsState()
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -99,6 +107,10 @@ fun AbilityListingContributionsScreen(
             else -> {}
         }
     }
+
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importErrorMessage by remember { mutableStateOf<String?>(null) }
+    var pasteText by remember { mutableStateOf("") }
 
     when (val current = mode) {
         AbilityListingContributionsViewModel.Mode.Edit.Loading -> Box(
@@ -110,7 +122,7 @@ fun AbilityListingContributionsScreen(
             contentAlignment = Alignment.Center,
         ) { Text("This ability listing is not a user contribution and cannot be edited.") }
         AbilityListingContributionsViewModel.Mode.Create -> AbilityListingForm(
-            initialName = null,
+            initialName = importedName,
             isEdit = false,
             effects = effects,
             saveState = saveState,
@@ -119,6 +131,10 @@ fun AbilityListingContributionsScreen(
             onAppendEffect = viewModel::appendEffect,
             onSave = viewModel::saveAbilityListing,
             onDelete = {},
+            onImportClick = {
+                pasteText = ""
+                showImportDialog = true
+            },
         )
         is AbilityListingContributionsViewModel.Mode.Edit.Ready -> AbilityListingForm(
             initialName = current.listing.name,
@@ -130,6 +146,50 @@ fun AbilityListingContributionsScreen(
             onAppendEffect = viewModel::appendEffect,
             onSave = viewModel::saveAbilityListing,
             onDelete = viewModel::deleteContribution,
+            onImportClick = null,
+        )
+    }
+
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportDialog = false },
+            title = { Text("Import Ability Listing") },
+            text = {
+                OutlinedTextField(
+                    value = pasteText,
+                    onValueChange = { pasteText = it },
+                    label = { Text("Paste a single-listing share") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 4,
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val (listing, error) = onPasteImport(pasteText)
+                    showImportDialog = false
+                    if (listing != null) {
+                        viewModel.prefillFromImport(listing)
+                    } else {
+                        importErrorMessage = error
+                    }
+                }) { Text("Import") }
+            },
+            dismissButton = {
+                androidx.compose.material3.OutlinedButton(onClick = { showImportDialog = false }) {
+                    Text("Cancel")
+                }
+            },
+        )
+    }
+
+    importErrorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { importErrorMessage = null },
+            title = { Text("Couldn't import") },
+            text = { Text(message) },
+            confirmButton = {
+                Button(onClick = { importErrorMessage = null }) { Text("OK") }
+            },
         )
     }
 }
@@ -145,6 +205,7 @@ private fun AbilityListingForm(
     onAppendEffect: () -> Unit,
     onSave: (name: String) -> Unit,
     onDelete: () -> Unit,
+    onImportClick: (() -> Unit)? = null,
 ) {
     var name by remember(initialName) { mutableStateOf(initialName.orEmpty()) }
     var preview by rememberSaveable { mutableStateOf(false) }
@@ -223,6 +284,13 @@ private fun AbilityListingForm(
                 enabled = !saving,
                 onDelete = onDelete,
             )
+        }
+
+        if (!isEdit && onImportClick != null) {
+            androidx.compose.material3.OutlinedButton(
+                onClick = onImportClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Import from Share") }
         }
     }
 }
