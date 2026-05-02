@@ -59,6 +59,8 @@ class DefaultAbilityListingRepository @Inject constructor(
         return detectAbilityListingConflicts(canonical, contributionsCache.contents)
     }
 
+    override suspend fun getContributions(): List<Ability.Listing> = contributionsCache.contents
+
     override suspend fun saveAbilityListingContribution(
         listing: Ability.Listing,
     ): ContributionResult = writeMutex.withLock {

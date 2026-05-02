@@ -56,6 +56,8 @@ class DefaultEssenceRepository @Inject constructor(
         return detectEssenceConflicts(canonical, contributionsCache.contents)
     }
 
+    override suspend fun getContributions(): List<Essence> = contributionsCache.contents
+
     override suspend fun saveManifestationContribution(
         manifestation: Essence.Manifestation,
     ): ContributionResult = writeMutex.withLock {

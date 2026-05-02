@@ -10,6 +10,9 @@ interface AwakeningStoneRepository {
 
     suspend fun getAwakeningStones(): List<AwakeningStone>
 
+    /** Returns only user-contributed awakening stones (no canonical entries). */
+    suspend fun getContributions(): List<AwakeningStone>
+
     suspend fun getConflicts(): List<AwakeningStoneConflict>
 
     suspend fun saveAwakeningStoneContribution(stone: AwakeningStone): ContributionResult

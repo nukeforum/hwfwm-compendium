@@ -67,6 +67,7 @@ dependencies {
     implementation(project(":model-core"))
     implementation(project(":persistence"))
     implementation(project(":randomizer"))
+    implementation(project(":wire"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

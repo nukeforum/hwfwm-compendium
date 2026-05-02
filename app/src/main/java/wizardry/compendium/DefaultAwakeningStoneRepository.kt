@@ -59,6 +59,8 @@ class DefaultAwakeningStoneRepository @Inject constructor(
         return detectAwakeningStoneConflicts(canonical, contributionsCache.contents)
     }
 
+    override suspend fun getContributions(): List<AwakeningStone> = contributionsCache.contents
+
     override suspend fun saveAwakeningStoneContribution(
         stone: AwakeningStone,
     ): ContributionResult = writeMutex.withLock {

@@ -128,6 +128,7 @@ private class FakeEssenceRepo(
     override val essences: Flow<List<Essence>> = MutableStateFlow(emptyList())
     override val conflicts: Flow<List<EssenceConflict>> = MutableStateFlow(initialConflicts)
     override suspend fun getEssences(): List<Essence> = emptyList()
+    override suspend fun getContributions(): List<Essence> = emptyList()
     override suspend fun getConflicts(): List<EssenceConflict> = initialConflicts
     override suspend fun saveManifestationContribution(manifestation: Essence.Manifestation) =
         ContributionResult.Success
@@ -160,6 +161,7 @@ private class FakeStoneRepo(
     override val awakeningStones: Flow<List<AwakeningStone>> = MutableStateFlow(emptyList())
     override val conflicts: Flow<List<AwakeningStoneConflict>> = MutableStateFlow(initialConflicts)
     override suspend fun getAwakeningStones(): List<AwakeningStone> = emptyList()
+    override suspend fun getContributions(): List<AwakeningStone> = emptyList()
     override suspend fun getConflicts(): List<AwakeningStoneConflict> = initialConflicts
     override suspend fun saveAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
     override suspend fun isContribution(name: String): Boolean = false
@@ -173,6 +175,7 @@ private class FakeAbilityRepo(
     override val abilityListings: Flow<List<Ability.Listing>> = MutableStateFlow(emptyList())
     override val conflicts: Flow<List<AbilityListingConflict>> = MutableStateFlow(initialConflicts)
     override suspend fun getAbilityListings(): List<Ability.Listing> = emptyList()
+    override suspend fun getContributions(): List<Ability.Listing> = emptyList()
     override suspend fun getConflicts(): List<AbilityListingConflict> = initialConflicts
     override suspend fun saveAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
     override suspend fun isContribution(name: String): Boolean = false

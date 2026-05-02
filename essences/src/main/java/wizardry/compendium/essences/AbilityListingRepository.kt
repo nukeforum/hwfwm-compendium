@@ -10,6 +10,9 @@ interface AbilityListingRepository {
 
     suspend fun getAbilityListings(): List<Ability.Listing>
 
+    /** Returns only user-contributed ability listings (no canonical entries). */
+    suspend fun getContributions(): List<Ability.Listing>
+
     suspend fun getConflicts(): List<AbilityListingConflict>
 
     suspend fun saveAbilityListingContribution(listing: Ability.Listing): ContributionResult

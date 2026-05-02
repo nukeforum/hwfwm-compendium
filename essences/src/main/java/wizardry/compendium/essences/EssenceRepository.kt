@@ -11,6 +11,12 @@ interface EssenceRepository {
 
     suspend fun getEssences(): List<Essence>
 
+    /**
+     * Returns the user's contributed essences only (no canonical entries).
+     * Used by the export flow to build a wire envelope of the user's data.
+     */
+    suspend fun getContributions(): List<Essence>
+
     suspend fun getConflicts(): List<EssenceConflict>
 
     suspend fun saveManifestationContribution(
