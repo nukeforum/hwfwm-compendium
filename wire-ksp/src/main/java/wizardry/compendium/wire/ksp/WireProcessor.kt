@@ -15,6 +15,7 @@ import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.Modifier
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.io.File
 
 /**
  * Wire-schema KSP processor.
@@ -152,8 +153,99 @@ class WireProcessor(
             writer.write("\n")
         }
 
+        // Diff against the previous version's committed snapshot, if any.
+        // The path is supplied via a KSP option (`wireSchemaDir`) so this
+        // processor can be reused from any module without baking paths in.
+        runDiffAndGenerate(snapshot)
+
         emitted = true
         return emptyList()
+    }
+
+    /**
+     * Reads the previous-version committed snapshot from the configured
+     * schema dir, runs the diff, and either generates a migrator or fails the
+     * build with detailed instructions.
+     *
+     * Tier 2 scope: handles the "go from v(N-1) to v(N)" case. If multiple
+     * older versions are committed, only v(current-1) is diffed against —
+     * older migrators are presumed to already exist on disk from the prior
+     * version bumps.
+     */
+    private fun runDiffAndGenerate(current: SchemaSnapshot) {
+        val schemaDirPath = env.options[OPTION_WIRE_SCHEMA_DIR]
+        if (schemaDirPath.isNullOrBlank()) {
+            // No path configured = first-version setup. Nothing to diff.
+            // The lock-check task will demand the dev commit the new lock.
+            env.logger.info(
+                "wire-ksp: no '$OPTION_WIRE_SCHEMA_DIR' option set; skipping diff. " +
+                    "This is expected at v1 setup.",
+            )
+            return
+        }
+        val schemaDir = File(schemaDirPath)
+        val previousVersion = current.version - 1
+        if (previousVersion <= 0) {
+            // No prior version to diff against.
+            return
+        }
+        val prevFile = File(schemaDir, "v$previousVersion.json")
+        if (!prevFile.exists()) {
+            // The dev bumped the version without having a prior committed
+            // lock. Allowed — this is the path for "I'm starting fresh at
+            // v2 because the old format was thrown away." Warn so it's
+            // visible if unintentional.
+            env.logger.warn(
+                "wire-ksp: bumped to v${current.version} but no v$previousVersion.json " +
+                    "found at ${schemaDir.absolutePath}. Skipping diff.",
+            )
+            return
+        }
+        val previous = try {
+            SNAPSHOT_JSON_LENIENT.decodeFromString(SchemaSnapshot.serializer(), prevFile.readText())
+        } catch (e: Exception) {
+            env.logger.error("wire-ksp: failed to parse $prevFile: ${e.message}")
+            return
+        }
+
+        val changes = diffSnapshots(previous, current)
+        if (changes.isEmpty()) {
+            // Bumped version but nothing changed. Suspicious but legal.
+            env.logger.warn(
+                "wire-ksp: version bumped to ${current.version} but the schema is unchanged " +
+                    "from v$previousVersion. Generating an identity migrator.",
+            )
+        }
+
+        val needsManual = changes.any { it.classification == SchemaChange.Classification.NeedsManualMigrator }
+
+        // Generate the migrator regardless of classification — even non-
+        // mechanical cases get a file so the developer has a starting point
+        // to edit. The processor also `error`s so the build still fails.
+        val source = MigratorGenerator.generate(
+            fromVersion = previous.version,
+            toVersion = current.version,
+            changes = changes,
+        )
+        val out = env.codeGenerator.createNewFile(
+            dependencies = Dependencies(aggregating = true),
+            packageName = GENERATED_PACKAGE,
+            fileName = "MigratorV${previous.version}ToV${current.version}",
+            extensionName = "kt",
+        )
+        out.bufferedWriter(Charsets.UTF_8).use { it.write(source) }
+
+        if (needsManual) {
+            val report = changes
+                .filter { it.classification == SchemaChange.Classification.NeedsManualMigrator }
+                .joinToString("\n") { "  - $it" }
+            env.logger.error(
+                "wire-ksp: schema changed in ways that require a manual migrator from " +
+                    "v${previous.version} to v${current.version}. A stub was generated at " +
+                    "$GENERATED_PACKAGE.MigratorV${previous.version}ToV${current.version}. " +
+                    "Fill in the body and re-run the build.\n$report",
+            )
+        }
     }
 
     /**
@@ -352,6 +444,16 @@ class WireProcessor(
         const val WIRE_TYPE_FQN = "wizardry.compendium.wire.annotations.WireType"
         const val WIRE_ENUM_FQN = "wizardry.compendium.wire.annotations.WireEnum"
 
+        /**
+         * KSP arg name that callers (Gradle scripts) set to point us at the
+         * committed wire-schemas directory for diff-against-previous-version.
+         * Optional — when unset, the processor only emits the current
+         * snapshot and skips diffing.
+         */
+        const val OPTION_WIRE_SCHEMA_DIR = "wireSchemaDir"
+
+        const val GENERATED_PACKAGE = "wizardry.compendium.wire.generated"
+
         private val SNAPSHOT_JSON = Json {
             prettyPrint = true
             // The committed lock file is human-reviewed in code review, so
@@ -359,6 +461,15 @@ class WireProcessor(
             // (4 spaces) — change in tandem with whatever editor the team
             // uses if diffs become noisy.
             encodeDefaults = true
+        }
+
+        /**
+         * Lenient configuration used to read previous-version snapshots.
+         * `ignoreUnknownKeys = true` lets us evolve the SchemaSnapshot data
+         * class without breaking on older lock files that lack new fields.
+         */
+        private val SNAPSHOT_JSON_LENIENT = Json {
+            ignoreUnknownKeys = true
         }
     }
 }

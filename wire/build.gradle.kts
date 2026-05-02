@@ -25,6 +25,13 @@ dependencies {
     testImplementation(libs.kotlin.coroutines.test)
 }
 
+ksp {
+    // Tell the wire-ksp processor where to look for the previous version's
+    // committed snapshot when diffing. Path is absolute so the processor
+    // doesn't need to know about the project's rootDir.
+    arg("wireSchemaDir", layout.projectDirectory.dir("wire-schemas").asFile.absolutePath)
+}
+
 // =============================================================================
 // Wire schema lock-check tasks.
 //

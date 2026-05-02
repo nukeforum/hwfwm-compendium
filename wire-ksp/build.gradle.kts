@@ -13,4 +13,6 @@ dependencies {
     implementation(libs.ksp.api)
     implementation(libs.kotlinx.serialization.json)
     implementation(project(":wire-annotations"))
+
+    testImplementation(libs.junit4)
 }
