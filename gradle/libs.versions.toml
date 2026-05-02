@@ -22,6 +22,7 @@ compose-runtime = "1.11.0"
 sqldelight = "2.3.2"
 androidx-datastore = "1.2.1"
 kotlinx-serialization = "1.9.0"
+kotlinpoet = "2.2.0"
 
 [libraries]
 #kotlin
@@ -55,6 +56,8 @@ dagger-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = 
 ksp = { module = "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
 
 #testing
 junit4 = { module = "junit:junit", version.ref = "junit4" }

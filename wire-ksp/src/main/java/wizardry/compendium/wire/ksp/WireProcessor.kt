@@ -13,6 +13,14 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.Modifier
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.LIST
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.ksp.writeTo
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -222,34 +230,43 @@ class WireProcessor(
     }
 
     private fun writeRegistryFile(pairs: List<Pair<Int, Int>>) {
-        val source = buildString {
-            appendLine("// AUTO-GENERATED — DO NOT EDIT")
-            appendLine("// Listing of every wire-format migrator the project ships.")
-            appendLine("// Regenerated each build from the committed wire-schemas/ directory.")
-            appendLine("package $GENERATED_PACKAGE")
-            appendLine()
-            appendLine("import wizardry.compendium.wire.WireMigrator")
-            appendLine()
-            appendLine("/**")
-            appendLine(" * Every migrator known to the project, in `from`-version order.")
-            appendLine(" * The runtime envelope codec walks this list to chain migrations from")
-            appendLine(" * an inbound envelope's version to the current version.")
-            appendLine(" */")
-            appendLine("object WireMigrators {")
-            appendLine("    val all: List<WireMigrator> = listOf(")
-            for ((from, to) in pairs) {
-                appendLine("        MigratorV${from}ToV${to},")
-            }
-            appendLine("    )")
-            appendLine("}")
+        val wireMigrator = ClassName("wizardry.compendium.wire", "WireMigrator")
+        val migratorClassNames = pairs.map { (from, to) ->
+            ClassName(GENERATED_PACKAGE, "MigratorV${from}ToV${to}")
         }
-        val file = env.codeGenerator.createNewFile(
-            dependencies = Dependencies(aggregating = true),
-            packageName = GENERATED_PACKAGE,
-            fileName = "WireMigrators",
-            extensionName = "kt",
-        )
-        file.bufferedWriter(Charsets.UTF_8).use { it.write(source) }
+        val initializer = if (migratorClassNames.isEmpty()) {
+            CodeBlock.of("emptyList()")
+        } else {
+            CodeBlock.builder().apply {
+                add("listOf(\n")
+                indent()
+                for (cn in migratorClassNames) {
+                    add("%T,\n", cn)
+                }
+                unindent()
+                add(")")
+            }.build()
+        }
+        val registry = TypeSpec.objectBuilder("WireMigrators")
+            .addKdoc(
+                "Every migrator known to the project, in `from`-version order.\n" +
+                    "The runtime envelope codec walks this list to chain migrations from\n" +
+                    "an inbound envelope's version to the current version.\n",
+            )
+            .addProperty(
+                PropertySpec.builder("all", LIST.parameterizedBy(wireMigrator))
+                    .initializer(initializer)
+                    .build(),
+            )
+            .build()
+
+        val file = FileSpec.builder(GENERATED_PACKAGE, "WireMigrators")
+            .addFileComment("AUTO-GENERATED — DO NOT EDIT\n")
+            .addFileComment("Listing of every wire-format migrator the project ships.\n")
+            .addFileComment("Regenerated each build from the committed wire-schemas/ directory.")
+            .addType(registry)
+            .build()
+        file.writeTo(env.codeGenerator, aggregating = true)
     }
 
     /**
@@ -312,18 +329,12 @@ class WireProcessor(
         // Generate the migrator regardless of classification — even non-
         // mechanical cases get a file so the developer has a starting point
         // to edit. The processor also `error`s so the build still fails.
-        val source = MigratorGenerator.generate(
+        val migratorFile = MigratorGenerator.fileSpec(
             fromVersion = previous.version,
             toVersion = current.version,
             changes = changes,
         )
-        val out = env.codeGenerator.createNewFile(
-            dependencies = Dependencies(aggregating = true),
-            packageName = GENERATED_PACKAGE,
-            fileName = "MigratorV${previous.version}ToV${current.version}",
-            extensionName = "kt",
-        )
-        out.bufferedWriter(Charsets.UTF_8).use { it.write(source) }
+        migratorFile.writeTo(env.codeGenerator, aggregating = true)
 
         if (needsManual) {
             val report = changes
