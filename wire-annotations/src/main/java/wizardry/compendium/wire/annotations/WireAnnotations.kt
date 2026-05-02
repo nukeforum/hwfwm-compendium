@@ -9,21 +9,34 @@ package wizardry.compendium.wire.annotations
 annotation class WireFormat(val version: Int)
 
 /**
- * Marks a property as part of the wire format.
+ * Annotates a property with wire-format metadata that doesn't fit on
+ * `@SerialName`. Currently this is just the rename history.
  *
- * @param alias Single-letter (or short) name used on the wire.
- * @param previousAlias Comma-separated list of prior aliases this field used to be known by.
- *                      Auto-migration uses this to rename fields without manual migrators.
- *                      Empty when the field has never been renamed.
- * @param omitOnDefault If true, the property is omitted from the wire form when it equals
- *                      the Kotlin-declared default. Requires the property to have a default.
+ * # Why this is split from `@SerialName`
+ *
+ * The wire alias itself comes from kotlinx-serialization's `@SerialName` —
+ * which is already required for the runtime to encode/decode against the
+ * alias. Re-declaring the alias on `@WireField` would be silly redundancy.
+ *
+ * `@WireField` exists only to carry information kotlinx-serialization
+ * doesn't model:
+ *
+ * - `previousAlias`: comma-separated list of aliases this field used to
+ *   carry. The diff engine reads this to detect a rename and emit a
+ *   migrator instead of treating the change as remove+add.
+ *
+ * `omitOnDefault` is intentionally NOT a per-field setting. The wire codec
+ * uses `Json { encodeDefaults = false }` globally so any field with a
+ * declared default is omitted when it equals that default. If we ever need
+ * field-level override, that's the place to add it.
+ *
+ * `@WireField` is *optional* — most properties don't need it. Only renamed
+ * fields require this annotation.
  */
 @Target(AnnotationTarget.PROPERTY, AnnotationTarget.VALUE_PARAMETER)
 @Retention(AnnotationRetention.BINARY)
 annotation class WireField(
-    val alias: String,
     val previousAlias: String = "",
-    val omitOnDefault: Boolean = true,
 )
 
 /**

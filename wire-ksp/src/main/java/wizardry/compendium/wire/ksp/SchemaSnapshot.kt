@@ -65,29 +65,34 @@ data class TypeEntry(
 @Serializable
 data class FieldEntry(
     val name: String,
+    /**
+     * Wire alias. Sourced from `@SerialName.value` on the property — kotlinx-
+     * serialization's annotation is the single source of truth for the alias
+     * since the runtime needs it anyway.
+     */
     val alias: String,
     /**
      * Comma-separated previous aliases. Empty when never renamed.
-     * Stored as a single string (matching the annotation's shape) rather than a
-     * list to keep the diff engine's job simpler — it just looks for membership.
+     * Stored as a single string (matching the annotation's shape) rather than
+     * a list to keep the diff engine's job simpler — it just looks for
+     * membership.
      */
     val previousAlias: String,
     /** FQN of the property type, with type-arguments rendered as `<...>`. */
     val type: String,
-    val omitOnDefault: Boolean,
     /**
-     * True if the property has a Kotlin-declared default. Required to validate
-     * `omitOnDefault = true`, and to know whether a newly-added field can be
-     * mechanically migrated (default backfill) or needs a manual migrator.
+     * True if the property has a Kotlin-declared default. Required to know
+     * whether a newly-added field can be mechanically migrated (default
+     * backfill) or needs a manual migrator.
      *
      * ## Caveat: KSP can't always tell us the default *value*
      * We record presence-of-default but not the literal value. This is enough
-     * for the v1 migration story: when an old envelope is missing a field that
-     * the new model has a default for, decoding fills the default in
+     * for the v1 migration story: when an old envelope is missing a field
+     * that the new model has a default for, decoding fills the default in
      * automatically. If we ever need the literal value baked into a generated
      * migrator (e.g., for transformations) we'd need to also capture and parse
-     * the default expression — KSP exposes this as a `KSValueArgument` for some
-     * cases but not all (especially function-call defaults).
+     * the default expression — KSP exposes this as a `KSValueArgument` for
+     * some cases but not all (especially function-call defaults).
      */
     val hasDefault: Boolean,
 )

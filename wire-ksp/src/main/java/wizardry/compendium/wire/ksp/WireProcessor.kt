@@ -332,13 +332,31 @@ class WireProcessor(
 
         val fields = constructorProperties()
             .map { prop ->
-                val ann = prop.annotations.firstOrNull { it.matches(WIRE_FIELD_FQN) }
+                // Alias comes from @SerialName (kotlinx-serialization's
+                // annotation). @WireField is *optional* and only carries
+                // information kotlinx doesn't model — currently just the
+                // rename history.
+                val serialName = prop.annotations
+                    .firstOrNull { it.matches(SERIAL_NAME_FQN) }
+                    ?.stringArg("value")
+                val wireField = prop.annotations.firstOrNull { it.matches(WIRE_FIELD_FQN) }
+                val alias = serialName ?: prop.simpleName.asString()
+                if (serialName == null) {
+                    // Properties without @SerialName fall back to their Kotlin
+                    // name as the alias. This is intentional for wire types
+                    // where the property name is also a fine alias (e.g., a
+                    // top-level Kotlin field already named "v"); we don't
+                    // require @SerialName everywhere just to look diligent.
+                    env.logger.info(
+                        "wire-ksp: ${prop.simpleName.asString()} on ${qualifiedName?.asString()} " +
+                            "has no @SerialName; using property name as alias.",
+                    )
+                }
                 FieldEntry(
                     name = prop.simpleName.asString(),
-                    alias = ann?.stringArg("alias").orEmpty(),
-                    previousAlias = ann?.stringArg("previousAlias").orEmpty(),
+                    alias = alias,
+                    previousAlias = wireField?.stringArg("previousAlias").orEmpty(),
                     type = prop.type.resolve().renderForSnapshot(),
-                    omitOnDefault = ann?.booleanArg("omitOnDefault") ?: true,
                     hasDefault = prop.hasDefault(),
                 )
             }
@@ -443,6 +461,13 @@ class WireProcessor(
         const val WIRE_FIELD_FQN = "wizardry.compendium.wire.annotations.WireField"
         const val WIRE_TYPE_FQN = "wizardry.compendium.wire.annotations.WireType"
         const val WIRE_ENUM_FQN = "wizardry.compendium.wire.annotations.WireEnum"
+
+        /**
+         * kotlinx-serialization's annotation, read by FQN to avoid a hard
+         * compile-time dep on kotlinx-serialization-core inside the
+         * processor module.
+         */
+        const val SERIAL_NAME_FQN = "kotlinx.serialization.SerialName"
 
         /**
          * KSP arg name that callers (Gradle scripts) set to point us at the

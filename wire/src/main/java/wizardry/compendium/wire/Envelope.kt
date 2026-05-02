@@ -2,7 +2,6 @@ package wizardry.compendium.wire
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import wizardry.compendium.wire.annotations.WireField
 import wizardry.compendium.wire.annotations.WireFormat
 import wizardry.compendium.wire.annotations.WireType
 
@@ -10,22 +9,21 @@ import wizardry.compendium.wire.annotations.WireType
  * Wire envelope for contribution import/export. The shape lives in this module
  * so the KSP processor can snapshot it from annotations alone.
  *
- * # Tier-1 status
+ * # Single source of truth for aliases
  *
- * This is a *seed* envelope — only enough types are present to drive the
- * processor and produce a meaningful initial snapshot. Tier 2 will fill in the
+ * `@SerialName` is the only place the wire alias is declared. The KSP
+ * processor reads `@SerialName.value` to populate the schema snapshot;
+ * kotlinx-serialization reads it at runtime to drive encode/decode. No
+ * duplication.
+ *
+ * `@WireField` is *optional* — present only when a property has been
+ * renamed (carries `previousAlias` for the diff engine).
+ *
+ * # Tier-3 status
+ *
+ * This is still a *seed* envelope — only Manifestation is fleshed out. The
  * remaining domain types (Confluence, Stone, Listing, Effect, Cost,
- * ConfluenceSet) along with the diff engine. Adapter generation is also
- * deferred; for now the kotlinx-serialization adapters are hand-written via
- * `@SerialName`.
- *
- * # Why both `@WireField` and `@SerialName`?
- *
- * `@WireField` is consumed by the KSP processor (compile time) for the schema
- * lock and future codegen. `@SerialName` is consumed by kotlinx-serialization
- * (runtime) to drive the JSON encode/decode. They MUST match. Tier 3 will
- * have the processor generate the kotlinx adapters from `@WireField` so the
- * developer only writes the alias once.
+ * ConfluenceSet) and the model↔wire encoders/decoders land later in tier 3.
  *
  * # Naming convention for aliases
  *
@@ -37,11 +35,9 @@ import wizardry.compendium.wire.annotations.WireType
 @WireType(alias = "envelope")
 @Serializable
 data class Envelope(
-    @WireField(alias = "v")
     @SerialName("v")
     val version: Int,
 
-    @WireField(alias = "e")
     @SerialName("e")
     val manifestations: List<Manifestation> = emptyList(),
 )
@@ -49,27 +45,21 @@ data class Envelope(
 @WireType(alias = "manifestation")
 @Serializable
 data class Manifestation(
-    @WireField(alias = "n")
     @SerialName("n")
     val name: String,
 
-    @WireField(alias = "k")
     @SerialName("k")
     val rankIndex: Int,
 
-    @WireField(alias = "r")
     @SerialName("r")
     val rarityIndex: Int,
 
-    @WireField(alias = "p")
     @SerialName("p")
     val propertyIndices: List<Int> = emptyList(),
 
-    @WireField(alias = "d")
     @SerialName("d")
     val description: String = "",
 
-    @WireField(alias = "x")
     @SerialName("x")
     val isRestricted: Boolean = false,
 )

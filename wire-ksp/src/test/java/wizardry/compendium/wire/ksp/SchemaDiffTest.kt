@@ -43,7 +43,7 @@ class SchemaDiffTest {
         val prev = snapshot(types = listOf(envelopeType()))
         val curr = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("color", "c", "", "kotlin.String", omitOnDefault = true, hasDefault = true),
+                FieldEntry("color", "c", "", "kotlin.String", hasDefault = true),
             ),
         ))
         val change = diffSnapshots(prev, curr).single() as SchemaChange.FieldAdded
@@ -56,7 +56,7 @@ class SchemaDiffTest {
         val prev = snapshot(types = listOf(envelopeType()))
         val curr = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("color", "c", "", "kotlin.String", omitOnDefault = false, hasDefault = false),
+                FieldEntry("color", "c", "", "kotlin.String", hasDefault = false),
             ),
         ))
         val change = diffSnapshots(prev, curr).single() as SchemaChange.FieldAdded
@@ -67,7 +67,7 @@ class SchemaDiffTest {
     fun `field removed is mechanical`() {
         val prev = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("color", "c", "", "kotlin.String", omitOnDefault = true, hasDefault = true),
+                FieldEntry("color", "c", "", "kotlin.String", hasDefault = true),
             ),
         ))
         val curr = snapshot(types = listOf(envelopeType()))
@@ -80,12 +80,12 @@ class SchemaDiffTest {
     fun `field rename declared via previousAlias is auto-migratable on envelope`() {
         val prev = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("description", "desc", "", "kotlin.String", omitOnDefault = true, hasDefault = true),
+                FieldEntry("description", "desc", "", "kotlin.String", hasDefault = true),
             ),
         ))
         val curr = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("description", "d", "desc", "kotlin.String", omitOnDefault = true, hasDefault = true),
+                FieldEntry("description", "d", "desc", "kotlin.String", hasDefault = true),
             ),
         ))
         val change = diffSnapshots(prev, curr).single() as SchemaChange.FieldRenamed
@@ -100,13 +100,13 @@ class SchemaDiffTest {
         val prev = snapshot(types = listOf(
             envelopeType(),
             manifestationType().withFields(
-                FieldEntry("description", "desc", "", "kotlin.String", omitOnDefault = true, hasDefault = true),
+                FieldEntry("description", "desc", "", "kotlin.String", hasDefault = true),
             ),
         ))
         val curr = snapshot(types = listOf(
             envelopeType(),
             manifestationType().withFields(
-                FieldEntry("description", "d", "desc", "kotlin.String", omitOnDefault = true, hasDefault = true),
+                FieldEntry("description", "d", "desc", "kotlin.String", hasDefault = true),
             ),
         ))
         val change = diffSnapshots(prev, curr).single() as SchemaChange.FieldRenamed
@@ -121,12 +121,12 @@ class SchemaDiffTest {
         // than silently breaking old envelopes.
         val prev = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("description", "desc", "", "kotlin.String", omitOnDefault = true, hasDefault = true),
+                FieldEntry("description", "desc", "", "kotlin.String", hasDefault = true),
             ),
         ))
         val curr = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("description", "d", "", "kotlin.String", omitOnDefault = true, hasDefault = true),
+                FieldEntry("description", "d", "", "kotlin.String", hasDefault = true),
             ),
         ))
         val changes = diffSnapshots(prev, curr)
@@ -139,12 +139,12 @@ class SchemaDiffTest {
     fun `field type changed needs manual migrator`() {
         val prev = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("count", "c", "", "kotlin.Int", omitOnDefault = false, hasDefault = false),
+                FieldEntry("count", "c", "", "kotlin.Int", hasDefault = false),
             ),
         ))
         val curr = snapshot(types = listOf(
             envelopeType().withFields(
-                FieldEntry("count", "c", "", "kotlin.Long", omitOnDefault = false, hasDefault = false),
+                FieldEntry("count", "c", "", "kotlin.Long", hasDefault = false),
             ),
         ))
         val change = diffSnapshots(prev, curr).single() as SchemaChange.FieldTypeChanged

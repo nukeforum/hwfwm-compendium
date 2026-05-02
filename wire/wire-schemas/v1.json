@@ -11,7 +11,6 @@
                     "alias": "e",
                     "previousAlias": "",
                     "type": "kotlin.collections.List<wizardry.compendium.wire.Manifestation>",
-                    "omitOnDefault": true,
                     "hasDefault": true
                 },
                 {
@@ -19,7 +18,6 @@
                     "alias": "v",
                     "previousAlias": "",
                     "type": "kotlin.Int",
-                    "omitOnDefault": true,
                     "hasDefault": false
                 }
             ]
@@ -33,7 +31,6 @@
                     "alias": "d",
                     "previousAlias": "",
                     "type": "kotlin.String",
-                    "omitOnDefault": true,
                     "hasDefault": true
                 },
                 {
@@ -41,7 +38,6 @@
                     "alias": "x",
                     "previousAlias": "",
                     "type": "kotlin.Boolean",
-                    "omitOnDefault": true,
                     "hasDefault": true
                 },
                 {
@@ -49,7 +45,6 @@
                     "alias": "n",
                     "previousAlias": "",
                     "type": "kotlin.String",
-                    "omitOnDefault": true,
                     "hasDefault": false
                 },
                 {
@@ -57,7 +52,6 @@
                     "alias": "p",
                     "previousAlias": "",
                     "type": "kotlin.collections.List<kotlin.Int>",
-                    "omitOnDefault": true,
                     "hasDefault": true
                 },
                 {
@@ -65,7 +59,6 @@
                     "alias": "k",
                     "previousAlias": "",
                     "type": "kotlin.Int",
-                    "omitOnDefault": true,
                     "hasDefault": false
                 },
                 {
@@ -73,7 +66,6 @@
                     "alias": "r",
                     "previousAlias": "",
                     "type": "kotlin.Int",
-                    "omitOnDefault": true,
                     "hasDefault": false
                 }
             ]
