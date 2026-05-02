@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -30,6 +31,7 @@ fun EssenceDetails(
     essenceName: String,
     onEssenceLoaded: (Essence) -> Unit,
     onEditContribution: (Essence) -> Unit = {},
+    onShareContribution: (Essence) -> Unit = {},
     viewModel: EssenceDetailViewModel = hiltViewModel()
 ) {
     LaunchedEffect(essenceName) {
@@ -51,6 +53,7 @@ fun EssenceDetails(
                 state = details,
                 onEssenceClick = { viewModel.load(it) },
                 onEdit = { onEditContribution(details.essence) },
+                onShare = { onShareContribution(details.essence) },
             )
         }
     }
@@ -81,6 +84,7 @@ private fun Details(
     state: EssenceDetailUiState.Success,
     onEssenceClick: (Essence) -> Unit,
     onEdit: () -> Unit,
+    onShare: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -94,6 +98,11 @@ private fun Details(
                     .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
+                OutlinedButton(onClick = onShare) {
+                    Icon(Icons.Filled.Share, contentDescription = null)
+                    Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 OutlinedButton(onClick = onEdit) {
                     Icon(Icons.Filled.Edit, contentDescription = null)
                     Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))

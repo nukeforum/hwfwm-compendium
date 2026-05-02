@@ -34,6 +34,9 @@ import wizardry.compendium.abilitylistinginfo.AbilityListingDetails
 import wizardry.compendium.awakeningstone.contributions.AwakeningStoneContributionsScreen
 import wizardry.compendium.conflicts.ConflictsScreen
 import wizardry.compendium.conflicts.ConflictsViewModel
+import wizardry.compendium.share.ShareViewModel
+import android.content.Intent as AndroidIntent
+import android.content.Context
 import wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
 import wizardry.compendium.awakeningstoneinfo.AwakeningStoneDetails
 import wizardry.compendium.essence.contributions.EssenceContributionsScreen
@@ -54,6 +57,8 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             var currentRoute by remember { mutableStateOf<String?>(null) }
             var title by remember { mutableStateOf("Magic Society Compendium") }
+            val shareViewModel = hiltViewModel<ShareViewModel>()
+            val activityContext: Context = this
             CompendiumTheme {
                 Scaffold(
                     topBar = {
@@ -137,6 +142,9 @@ class MainActivity : ComponentActivity() {
                                 onEditContribution = { essence ->
                                     navController.navigate(Nav.Contributions.buildEditRoute(essence))
                                 },
+                                onShareContribution = { essence ->
+                                    fireShareIntent(activityContext, shareViewModel.encode(essence))
+                                },
                             )
                         }
                         composable(
@@ -153,6 +161,9 @@ class MainActivity : ComponentActivity() {
                                 onStoneLoaded = { title = it.name },
                                 onEditContribution = { stone ->
                                     navController.navigate(Nav.AwakeningStoneContributions.buildEditRoute(stone))
+                                },
+                                onShareContribution = { stone ->
+                                    fireShareIntent(activityContext, shareViewModel.encode(stone))
                                 },
                             )
                         }
@@ -241,6 +252,9 @@ class MainActivity : ComponentActivity() {
                                 onEditContribution = { listing ->
                                     navController.navigate(Nav.AbilityListingContributions.buildEditRoute(listing))
                                 },
+                                onShareContribution = { listing ->
+                                    fireShareIntent(activityContext, shareViewModel.encode(listing))
+                                },
                             )
                         }
                         composable(
@@ -310,4 +324,19 @@ private fun BackButton(navigate: () -> Unit) {
     IconButton(onClick = navigate) {
         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
     }
+}
+
+/**
+ * Fires an Android `ACTION_SEND` chooser with the given share text.
+ *
+ * Single-entity shares always go through plain text — they're tiny enough
+ * to fit comfortably in the share-size limit (typical encoded size is a
+ * few hundred chars, well below the 100 KB cap).
+ */
+private fun fireShareIntent(context: Context, text: String) {
+    val intent = AndroidIntent(AndroidIntent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(AndroidIntent.EXTRA_TEXT, text)
+    }
+    context.startActivity(AndroidIntent.createChooser(intent, "Share contribution"))
 }

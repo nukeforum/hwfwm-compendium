@@ -5,12 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -32,6 +35,7 @@ fun AbilityListingDetails(
     listingName: String,
     onListingLoaded: (Ability.Listing) -> Unit,
     onEditContribution: (Ability.Listing) -> Unit = {},
+    onShareContribution: (Ability.Listing) -> Unit = {},
     viewModel: AbilityListingDetailViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(listingName) {
@@ -45,7 +49,11 @@ fun AbilityListingDetails(
         AbilityListingDetailUiState.Loading -> Loading()
         is AbilityListingDetailUiState.Success -> {
             onListingLoaded(details.listing)
-            Details(state = details, onEdit = { onEditContribution(details.listing) })
+            Details(
+                state = details,
+                onEdit = { onEditContribution(details.listing) },
+                onShare = { onShareContribution(details.listing) },
+            )
         }
     }
 }
@@ -71,7 +79,11 @@ private fun Loading() {
 }
 
 @Composable
-private fun Details(state: AbilityListingDetailUiState.Success, onEdit: () -> Unit) {
+private fun Details(
+    state: AbilityListingDetailUiState.Success,
+    onEdit: () -> Unit,
+    onShare: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -84,6 +96,11 @@ private fun Details(state: AbilityListingDetailUiState.Success, onEdit: () -> Un
                     .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
+                OutlinedButton(onClick = onShare) {
+                    Icon(Icons.Filled.Share, contentDescription = null)
+                    Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 OutlinedButton(onClick = onEdit) {
                     Icon(Icons.Filled.Edit, contentDescription = null)
                     Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))

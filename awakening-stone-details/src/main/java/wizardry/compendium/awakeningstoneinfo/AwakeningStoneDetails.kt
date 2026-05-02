@@ -9,8 +9,11 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -31,6 +34,7 @@ fun AwakeningStoneDetails(
     stoneName: String,
     onStoneLoaded: (AwakeningStone) -> Unit,
     onEditContribution: (AwakeningStone) -> Unit = {},
+    onShareContribution: (AwakeningStone) -> Unit = {},
     viewModel: AwakeningStoneDetailViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(stoneName) {
@@ -44,7 +48,11 @@ fun AwakeningStoneDetails(
         AwakeningStoneDetailUiState.Loading -> Loading()
         is AwakeningStoneDetailUiState.Success -> {
             onStoneLoaded(details.stone)
-            Details(state = details, onEdit = { onEditContribution(details.stone) })
+            Details(
+                state = details,
+                onEdit = { onEditContribution(details.stone) },
+                onShare = { onShareContribution(details.stone) },
+            )
         }
     }
 }
@@ -70,7 +78,11 @@ private fun Loading() {
 }
 
 @Composable
-private fun Details(state: AwakeningStoneDetailUiState.Success, onEdit: () -> Unit) {
+private fun Details(
+    state: AwakeningStoneDetailUiState.Success,
+    onEdit: () -> Unit,
+    onShare: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -83,6 +95,11 @@ private fun Details(state: AwakeningStoneDetailUiState.Success, onEdit: () -> Un
                     .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
+                OutlinedButton(onClick = onShare) {
+                    Icon(Icons.Filled.Share, contentDescription = null)
+                    Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                }
+                Spacer(modifier = Modifier.size(8.dp))
                 OutlinedButton(onClick = onEdit) {
                     Icon(Icons.Filled.Edit, contentDescription = null)
                     Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))

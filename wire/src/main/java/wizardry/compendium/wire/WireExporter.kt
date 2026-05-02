@@ -3,6 +3,8 @@ package wizardry.compendium.wire
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
 
 /**
@@ -51,4 +53,54 @@ class WireExporter(
             listings = listings,
         )
     }
+
+    /**
+     * Wraps a single manifestation in an envelope.
+     *
+     * Used by the detail-screen "Share" action. The receiver imports the
+     * single entry; if they already have a same-name entity, the importer
+     * returns SkippedDuplicate and they're informed cleanly.
+     */
+    fun exportSingle(manifestation: Essence.Manifestation): Envelope = Envelope(
+        version = EnvelopeCodec.CurrentVersion,
+        manifestations = listOf(EnvelopeMapper.toWire(manifestation)),
+    )
+
+    /**
+     * Wraps a single confluence in an envelope. The referenced
+     * manifestations are included alongside so the receiver can resolve
+     * the combination's name references even if some are user
+     * contributions the receiver hasn't seen yet.
+     *
+     * # Why we include all referenced manifestations rather than just the
+     * # ones we know are user contributions
+     *
+     * The exporter doesn't have a cheap way to tell which manifestations
+     * are user contributions vs. canonical without an extra `isContribution`
+     * call per manifestation. Including all is a few extra bytes (typically
+     * 3 mfns per combination, each ~30 chars on the wire) in exchange for
+     * straightforward code; the receiver's importer handles duplicates
+     * gracefully via SkippedDuplicate. Optimize later if size matters.
+     */
+    fun exportSingle(confluence: Essence.Confluence): Envelope {
+        val referenced = confluence.confluenceSets
+            .flatMap { it.set }
+            .distinctBy { it.name }
+            .map { EnvelopeMapper.toWire(it) }
+        return Envelope(
+            version = EnvelopeCodec.CurrentVersion,
+            manifestations = referenced,
+            confluences = listOf(EnvelopeMapper.toWire(confluence)),
+        )
+    }
+
+    fun exportSingle(stone: AwakeningStone): Envelope = Envelope(
+        version = EnvelopeCodec.CurrentVersion,
+        stones = listOf(EnvelopeMapper.toWire(stone)),
+    )
+
+    fun exportSingle(listing: Ability.Listing): Envelope = Envelope(
+        version = EnvelopeCodec.CurrentVersion,
+        listings = listOf(EnvelopeMapper.toWire(listing)),
+    )
 }
