@@ -226,6 +226,12 @@ class MainActivity : ComponentActivity() {
                             AwakeningStoneContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.AwakeningStoneSearch.route, false) },
+                                onPasteImport = { text ->
+                                    when (val result = shareViewModel.decodeSingleStone(text)) {
+                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
+                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
+                                    }
+                                },
                             )
                         }
                         composable(Nav.AbilityListingSearch.route) { backStackEntry ->

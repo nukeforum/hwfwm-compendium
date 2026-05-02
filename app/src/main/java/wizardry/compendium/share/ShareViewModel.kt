@@ -9,7 +9,10 @@ import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.wire.EnvelopeCodec
+import wizardry.compendium.wire.EnvelopeMapper
+import wizardry.compendium.wire.WireDecodeException
 import wizardry.compendium.wire.WireExporter
+import wizardry.compendium.wire.WireVersionUnsupported
 import javax.inject.Inject
 
 /**
@@ -53,4 +56,61 @@ class ShareViewModel @Inject constructor(
 
     fun encode(listing: Ability.Listing): String =
         EnvelopeCodec.encode(exporter.exportSingle(listing)).text
+
+    /**
+     * Result of decoding a paste-buffer for the Contribute-screen Import
+     * action. The contribute form pre-fills from the model in `Loaded`;
+     * `Failed` surfaces a user-facing error.
+     */
+    sealed interface DecodedSingle<out T> {
+        data class Loaded<T>(val model: T) : DecodedSingle<T>
+        data class Failed(val reason: String) : DecodedSingle<Nothing>
+    }
+
+    /**
+     * Decode a paste-buffer and extract a single awakening stone, if the
+     * envelope contains exactly one and nothing else. Anything that doesn't
+     * match (multi-entity envelope, wrong domain, malformed) becomes
+     * `Failed` with a user-friendly message.
+     *
+     * Why we reject multi-entity envelopes here even when one of the
+     * entries matches: the user is on a single-contribution form. Pasting
+     * a full-DB share should funnel them to Settings → Import instead,
+     * not silently grab one entry. Explicit error keeps the model clean.
+     */
+    fun decodeSingleStone(text: String): DecodedSingle<AwakeningStone> = decodeSingle(text) { envelope ->
+        val others = envelope.manifestations.size + envelope.confluences.size + envelope.listings.size
+        when {
+            envelope.stones.size != 1 || others > 0 -> DecodedSingle.Failed(
+                "This share doesn't contain exactly one awakening stone. Use Settings → Import for multi-entry shares.",
+            )
+            else -> DecodedSingle.Loaded(EnvelopeMapper.toModel(envelope.stones.single()))
+        }
+    }
+
+    fun decodeSingleListing(text: String): DecodedSingle<Ability.Listing> = decodeSingle(text) { envelope ->
+        val others = envelope.manifestations.size + envelope.confluences.size + envelope.stones.size
+        when {
+            envelope.listings.size != 1 || others > 0 -> DecodedSingle.Failed(
+                "This share doesn't contain exactly one ability listing. Use Settings → Import for multi-entry shares.",
+            )
+            else -> DecodedSingle.Loaded(EnvelopeMapper.toModel(envelope.listings.single()))
+        }
+    }
+
+    private inline fun <T> decodeSingle(
+        text: String,
+        extract: (wizardry.compendium.wire.Envelope) -> DecodedSingle<T>,
+    ): DecodedSingle<T> {
+        if (text.isBlank()) return DecodedSingle.Failed("Paste is empty.")
+        return try {
+            extract(EnvelopeCodec.decode(text))
+        } catch (e: WireVersionUnsupported) {
+            DecodedSingle.Failed("This share was made with a newer app version. Update to import.")
+        } catch (e: WireDecodeException) {
+            DecodedSingle.Failed(e.message ?: "Pasted data is not a valid contribution share.")
+        } catch (e: Exception) {
+            DecodedSingle.Failed("Import failed: ${e.message}")
+        }
+    }
 }

@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +38,13 @@ import wizardry.compendium.ui.EditPreviewToggle
 fun AwakeningStoneContributionsScreen(
     onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
+    /**
+     * Hook for the Import action shown in Create mode. Returns a tuple of
+     * (stone, errorMessage) where exactly one is non-null. The screen
+     * uses the stone to pre-fill the form; errorMessage drives a dialog.
+     * App-side wires this to ShareViewModel.decodeSingleStone.
+     */
+    onPasteImport: (text: String) -> Pair<AwakeningStone?, String?> = { null to null },
     viewModel: AwakeningStoneContributionsViewModel = hiltViewModel(),
 ) {
     val saveState by viewModel.saveState.collectAsState()
@@ -49,14 +58,23 @@ fun AwakeningStoneContributionsScreen(
         }
     }
 
+    var importedInitial by remember { mutableStateOf<AwakeningStone?>(null) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importErrorMessage by remember { mutableStateOf<String?>(null) }
+    var pasteText by remember { mutableStateOf("") }
+
     when (val current = mode) {
         AwakeningStoneContributionsViewModel.Mode.Create -> {
             AwakeningStoneForm(
-                initial = null,
+                initial = importedInitial,
                 isEdit = false,
                 saveState = saveState,
                 onSave = { name, rarity -> viewModel.saveAwakeningStone(name, rarity) },
                 onDelete = {},
+                onImportClick = {
+                    pasteText = ""
+                    showImportDialog = true
+                },
             )
         }
         AwakeningStoneContributionsViewModel.Mode.Edit.Loading -> Loading()
@@ -68,10 +86,55 @@ fun AwakeningStoneContributionsScreen(
                 saveState = saveState,
                 onSave = { name, rarity -> viewModel.saveAwakeningStone(name, rarity) },
                 onDelete = viewModel::deleteContribution,
+                // Edit mode doesn't surface an Import button — you're
+                // editing an existing entry, not bringing in fresh data.
+                onImportClick = null,
             )
         }
     }
+
+    if (showImportDialog) {
+        AlertDialog(
+            onDismissRequest = { showImportDialog = false },
+            title = { Text("Import Awakening Stone") },
+            text = {
+                OutlinedTextField(
+                    value = pasteText,
+                    onValueChange = { pasteText = it },
+                    label = { Text("Paste a single-stone share") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 4,
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    val (stone, error) = onPasteImport(pasteText)
+                    showImportDialog = false
+                    if (stone != null) {
+                        importedInitial = stone
+                    } else {
+                        importErrorMessage = error
+                    }
+                }) { Text("Import") }
+            },
+            dismissButton = {
+                OutlinedButton(onClick = { showImportDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
+
+    importErrorMessage?.let { message ->
+        AlertDialog(
+            onDismissRequest = { importErrorMessage = null },
+            title = { Text("Couldn't import") },
+            text = { Text(message) },
+            confirmButton = {
+                Button(onClick = { importErrorMessage = null }) { Text("OK") }
+            },
+        )
+    }
 }
+
 
 @Composable
 private fun Loading() {
@@ -94,6 +157,7 @@ private fun AwakeningStoneForm(
     saveState: AwakeningStoneContributionsViewModel.SaveState,
     onSave: (name: String, rarity: Rarity) -> Unit,
     onDelete: () -> Unit,
+    onImportClick: (() -> Unit)? = null,
 ) {
     var name by remember(initial) { mutableStateOf(initial?.name.orEmpty()) }
     var rarity by remember(initial) { mutableStateOf(initial?.rarity ?: Rarity.Common) }
@@ -152,6 +216,16 @@ private fun AwakeningStoneForm(
                 enabled = !saving,
                 onDelete = onDelete,
             )
+        }
+
+        if (!isEdit && onImportClick != null) {
+            // Below the save button so the primary action stays prominent.
+            // Imports are a "I have a thing in my clipboard" power-user
+            // operation, not the typical contribute flow.
+            OutlinedButton(
+                onClick = onImportClick,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Import from Share") }
         }
     }
 }
