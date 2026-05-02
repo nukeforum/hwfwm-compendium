@@ -1,6 +1,9 @@
 package wizardry.compendium.settings
 
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,7 +36,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import wizardry.compendium.wire.ImportResult
 import wizardry.compendium.wire.ImportSummary
 
 @Composable
@@ -49,19 +51,69 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     var showImportDialog by remember { mutableStateOf(false) }
     var pasteText by remember { mutableStateOf("") }
 
-    // When encoding finishes and the result fits in the share limit, fire
-    // the share intent immediately and reset state. Doing this in a
-    // LaunchedEffect rather than synchronously in the click handler keeps
-    // the ViewModel's Encoding state visible to the UI even for fast
-    // encodes.
+    // Tracks whether the user requested file-export. When non-null, an
+    // encoder result should be written to this URI rather than fired into
+    // a share intent. Cleared once the write completes.
+    var pendingExportUri by remember { mutableStateOf<Uri?>(null) }
+
+    // SAF launcher: "Save to File". `text/plain` MIME so any text editor
+    // can open the file. The default filename `contributions.compendium`
+    // is suggested but the user can change it in the picker.
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain"),
+    ) { uri: Uri? ->
+        if (uri != null) {
+            pendingExportUri = uri
+            viewModel.beginExport()
+        }
+    }
+
+    // SAF launcher: "Open File". `text/*` lets the picker accept .compendium
+    // files (registered as text) plus any other text the user has on disk.
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val text = try {
+                context.contentResolver.openInputStream(uri)
+                    ?.bufferedReader(Charsets.UTF_8)
+                    ?.use { it.readText() }
+                    .orEmpty()
+            } catch (e: Exception) {
+                viewModel.resetIoState()
+                viewModel.importFromText("")  // surface the empty-paste error path
+                return@rememberLauncherForActivityResult
+            }
+            viewModel.importFromText(text)
+        }
+    }
+
+    // When encoding finishes and the result fits in the share limit, route
+    // it to either the share intent OR the pending file URI based on what
+    // the user originally clicked. Doing the routing in a LaunchedEffect
+    // keeps the ViewModel ignorant of which transport was chosen.
     LaunchedEffect(ioState) {
         val state = ioState
         if (state is SettingsViewModel.IoState.ReadyToShare) {
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, state.text)
+            val targetUri = pendingExportUri
+            if (targetUri != null) {
+                try {
+                    context.contentResolver.openOutputStream(targetUri)?.use { out ->
+                        out.write(state.text.toByteArray(Charsets.UTF_8))
+                    }
+                } catch (_: Exception) {
+                    // File-write failures are rare but possible (revoked
+                    // permission, disk full). Silent for now; future tier
+                    // could surface a toast or dialog.
+                }
+                pendingExportUri = null
+            } else {
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, state.text)
+                }
+                context.startActivity(Intent.createChooser(intent, "Share contributions"))
             }
-            context.startActivity(Intent.createChooser(intent, "Share contributions"))
             viewModel.resetIoState()
         }
     }
@@ -76,10 +128,20 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         abilityListingContributionsEnabled = abilityListingContributionsEnabled,
         abilityListingConflictCount = abilityListingConflictCount,
         onAbilityListingContributionsToggled = viewModel::setAbilityListingContributionsEnabled,
-        onExportClick = viewModel::beginExport,
-        onImportClick = {
+        onShareClick = viewModel::beginExport,
+        onSaveToFileClick = {
+            // Suggest a default filename; the user can change it.
+            createDocumentLauncher.launch("contributions.compendium")
+        },
+        onPasteClick = {
             pasteText = ""
             showImportDialog = true
+        },
+        onOpenFileClick = {
+            // Don't constrain to a single MIME type — `*/*` would be too
+            // permissive but `text/*` covers .txt, .compendium-as-text-plain,
+            // etc. without dragging in binary picker entries.
+            openDocumentLauncher.launch(arrayOf("text/*"))
         },
         ioState = ioState,
     )
@@ -126,11 +188,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     Text(
                         "Your contributions encoded to ${state.byteSize / 1024} KB, " +
                             "above the ${state.limit / 1024} KB limit for plain-text shares. " +
-                            "Use export-to-file instead (coming soon).",
+                            "Use \"Save to File\" instead.",
                     )
                 },
                 confirmButton = {
-                    Button(onClick = viewModel::resetIoState) { Text("OK") }
+                    Button(onClick = {
+                        viewModel.resetIoState()
+                        createDocumentLauncher.launch("contributions.compendium")
+                    }) { Text("Save to File") }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::resetIoState) { Text("Cancel") }
                 },
             )
         }
@@ -162,8 +230,10 @@ fun SettingsContent(
     abilityListingContributionsEnabled: Boolean,
     abilityListingConflictCount: Int,
     onAbilityListingContributionsToggled: (Boolean) -> Unit,
-    onExportClick: () -> Unit,
-    onImportClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onSaveToFileClick: () -> Unit,
+    onPasteClick: () -> Unit,
+    onOpenFileClick: () -> Unit,
     ioState: SettingsViewModel.IoState,
 ) {
     Column(
@@ -200,31 +270,50 @@ fun SettingsContent(
 
         Text("Backup & Share", style = MaterialTheme.typography.titleMedium)
         Text(
-            "Export your contributions as a shareable text blob, or import a share " +
-                "from someone else.",
+            "Share your contributions as a text blob (Discord, email, etc.) or " +
+                "save them to a file for larger backups.",
             style = MaterialTheme.typography.bodySmall,
         )
+        val encoding = ioState is SettingsViewModel.IoState.Encoding
+        val importing = ioState is SettingsViewModel.IoState.Importing
+        Text("Export", style = MaterialTheme.typography.labelMedium)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Button(
-                onClick = onExportClick,
-                enabled = ioState !is SettingsViewModel.IoState.Encoding,
+                onClick = onShareClick,
+                enabled = !encoding,
                 modifier = Modifier.weight(1f),
             ) {
-                Text(
-                    if (ioState is SettingsViewModel.IoState.Encoding) "Encoding…" else "Share",
-                )
+                Text(if (encoding) "Encoding…" else "Share")
             }
             OutlinedButton(
-                onClick = onImportClick,
-                enabled = ioState !is SettingsViewModel.IoState.Importing,
+                onClick = onSaveToFileClick,
+                enabled = !encoding,
                 modifier = Modifier.weight(1f),
             ) {
-                Text(
-                    if (ioState is SettingsViewModel.IoState.Importing) "Importing…" else "Import",
-                )
+                Text("Save to File")
+            }
+        }
+        Text("Import", style = MaterialTheme.typography.labelMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Button(
+                onClick = onPasteClick,
+                enabled = !importing,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(if (importing) "Importing…" else "Paste")
+            }
+            OutlinedButton(
+                onClick = onOpenFileClick,
+                enabled = !importing,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("Open File")
             }
         }
 
@@ -316,8 +405,10 @@ private fun SettingsContentOffPreview() {
         abilityListingContributionsEnabled = false,
         abilityListingConflictCount = 0,
         onAbilityListingContributionsToggled = {},
-        onExportClick = {},
-        onImportClick = {},
+        onShareClick = {},
+        onSaveToFileClick = {},
+        onPasteClick = {},
+        onOpenFileClick = {},
         ioState = SettingsViewModel.IoState.Idle,
     )
 }
@@ -335,8 +426,10 @@ private fun SettingsContentEncodingPreview() {
         abilityListingContributionsEnabled = true,
         abilityListingConflictCount = 0,
         onAbilityListingContributionsToggled = {},
-        onExportClick = {},
-        onImportClick = {},
+        onShareClick = {},
+        onSaveToFileClick = {},
+        onPasteClick = {},
+        onOpenFileClick = {},
         ioState = SettingsViewModel.IoState.Encoding,
     )
 }
@@ -354,8 +447,10 @@ private fun SettingsContentConflictPreview() {
         abilityListingContributionsEnabled = true,
         abilityListingConflictCount = 1,
         onAbilityListingContributionsToggled = {},
-        onExportClick = {},
-        onImportClick = {},
+        onShareClick = {},
+        onSaveToFileClick = {},
+        onPasteClick = {},
+        onOpenFileClick = {},
         ioState = SettingsViewModel.IoState.Idle,
     )
 }
