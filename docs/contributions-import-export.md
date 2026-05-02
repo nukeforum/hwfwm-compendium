@@ -18,9 +18,13 @@ Three import/export entry points, all sharing the same wire format:
 
 | Surface | Action | Scope |
 | --- | --- | --- |
-| Detail screen (essence / awakening stone / ability listing) | Export | One entity (the one being viewed) |
-| Contribute screen | Import | Paste a one-entity blob; pre-fills the form |
-| Settings screen | Import / Export | Per-domain table or full database |
+| Detail screen (essence / awakening stone / ability listing) | Share | One entity (a contribution being viewed). Confluence shares include their referenced manifestations. |
+| Contribute screen (awakening stone) | Import | Paste a one-stone share; pre-fills the form. Other domains' contribute imports are deferred. |
+| Settings screen | Share / Save to File / Paste / Open File | Full database (all four domains). |
+
+The Settings screen exposes four buttons: Share (ACTION_SEND with text),
+Save to File (SAF CreateDocument), Paste (text dialog), Open File (SAF
+OpenDocument). The encoded payload is identical regardless of transport.
 
 ## Transport
 
@@ -294,20 +298,42 @@ interface WireMigrator {
 }
 ```
 
-A registry holds all migrators. Importer rejects envelopes with `v > CURRENT`
+The KSP plugin auto-generates a `wizardry.compendium.wire.generated.WireMigrators`
+registry listing every consecutive-version migrator the project ships,
+derived from the committed `wire/wire-schemas/v<N>.json` files. The runtime
+codec walks this list to chain migrations from an inbound envelope's
+version to `EnvelopeCodec.CurrentVersion`.
+
+The importer rejects envelopes with `v > CURRENT` via `WireVersionUnsupported`
 ("export from a newer build, please update").
 
-### Adding a new version
+### Adding a new version (mechanical changes only)
 
-1. Write the new wire types under `wire/v<N>/` (or the equivalent package).
-2. Write a `WireMigrator` from the prior version to the new one.
-3. Register it.
-4. Bump the `CURRENT_WIRE_VERSION` constant.
-5. Add tests that round-trip a v(N-1) blob through the migrator into a v(N)
-   model object.
+1. Update the wire types in `:wire/.../Envelope.kt` and bump the
+   `@WireFormat(version = N)` annotation.
+2. Run the build. The KSP plugin diffs the new annotated state against the
+   previous committed snapshot and:
+   - Emits `MigratorV(N-1)ToV(N)` under
+     `build/generated/ksp/main/kotlin/wizardry/compendium/wire/generated/`
+     for mechanical changes (top-level field renames; ignorable adds/removes).
+   - Updates the `WireMigrators` registry to include it.
+3. Run `./gradlew :wire:updateWireSchemaLock` and commit the new
+   `wire/wire-schemas/v<N>.json`.
+4. Bump `EnvelopeCodec.CurrentVersion` to N.
+5. Add a round-trip test fixture for the new version in `:wire/test/`.
 
-Old test fixtures from prior versions stay around as regression coverage —
-they should always import cleanly through the chain.
+### Adding a new version (non-mechanical changes)
+
+Same as above, but step 2 fails the build with a stub migrator file in
+`build/generated/`. Move the stub to a committed source path under the
+same FQN (`wire/src/main/.../wire/generated/MigratorV(N-1)ToV(N).kt`),
+fill in the body, then run `updateWireSchemaLock`.
+
+The stub's kdoc lists every detected non-mechanical change with concrete
+guidance — read it carefully before writing the body.
+
+Old test fixtures from prior versions should stay around as regression
+coverage — they should always import cleanly through the chain.
 
 ## Conflict handling at import
 
@@ -393,38 +419,41 @@ migrator or fails the build with a stub for the developer to fill in.
 
 When you add a new contribution domain (call it `X`):
 
-1. **Wire types**: define the v<CURRENT> shape in the wire package. Single-
-   letter aliased fields, `encodeDefaults = false`, omit-on-default for any
-   field with a sensible default.
-2. **Enum index tables**: extend the relevant tables in this doc, or add new
-   ones if the domain introduces enums. Add the enum classes to the lint lock.
-3. **Encoder/decoder**: implement `WireEncoder` and `WireDecoder` for the
-   domain. Encoders accept the user-form draft shape; decoders return it.
-4. **Envelope**: add a domain-letter field to the `Envelope` data class
-   (e.g., `"x"`). Wire it through the encode/decode pipeline.
-5. **Conflict resolution**: import returns `ImportResult` per entry. Reuse the
-   detection logic from `:essences/Conflict.kt` to decide
-   Added/SkippedDuplicate. If your domain has a domain-specific shape of
-   conflict (like essence's combination collision), surface it from the
-   importer the same way.
-6. **Surfaces**:
-   - Detail screen → "Export" action that calls the per-domain encoder.
-   - Contribute screen → "Import" action that opens a paste/file dialog,
-     decodes a one-entry envelope, prefills the form.
-   - Settings screen → add the domain to the per-table dropdown for export and
-     to the import target list.
-7. **Migrations**: if this is a wire-version bump, write the migrator. If you
-   are extending an existing version with optional fields, no migrator needed.
-8. **Lint lock**: re-run `./gradlew updateWireSchemaLock` and commit the new
-   hashes.
+1. **Wire type**: add a `data class WireX` in `:wire/.../Envelope.kt` with
+   `@WireType` and `@SerialName`-aliased properties. If the type contains
+   fixed-shape sub-records that benefit from positional encoding, write a
+   custom `KSerializer` (see `ConfluenceSetSerializer` / `CostSerializer`).
+2. **Envelope**: add a list field to `Envelope` for the new domain.
+3. **Repository**: ensure the relevant repo exposes `getContributions()`
+   returning only user contributions (the existing three repos already do).
+4. **Mapper**: add bidirectional `EnvelopeMapper.toWire(model: X)` and
+   `toModel(wire: WireX)` functions, using `EnumIndex` for enum
+   conversions. If your domain has cross-references (like Confluence to
+   Manifestation), accept a lookup callback on `toModel`.
+5. **Exporter**: extend `WireExporter.exportAll()` to include the new
+   domain's contributions. Add an `exportSingle(model: X)` overload for
+   detail-screen sharing.
+6. **Importer**: extend `WireImporter.import(envelope)` with an
+   `importX(wire: WireX)` step that maps to the model and calls the
+   repo's save method. Failures from the repo become `SkippedDuplicate`
+   results; mapper errors become `Failed`.
+7. **UI surfaces**:
+   - Settings screen: existing exports/imports cover the new domain
+     automatically since they go through `WireExporter.exportAll()` /
+     `WireImporter.import()`. Per-table UI is a future add.
+   - Detail screen: add a `Share` button that calls
+     `ShareViewModel.encode(modelX)` and fires `fireShareIntent`.
+   - Contribute screen: optionally add a paste-import dialog (see
+     `AwakeningStoneContributionsScreen` for the pattern).
+8. **Schema lock**: run `./gradlew :wire:updateWireSchemaLock` and commit
+   the new `wire/wire-schemas/v<N>.json`. Schema version bumps and
+   migrators only required if the new domain isn't backward-compatible.
 9. **Tests**:
-   - Round-trip: contribution → encode → decode → contribution.
-   - Versioned regression: import every committed test fixture from prior
-     versions; assert success.
-   - Migrator-chain: hand-craft a v(N-1) blob, run migration, assert v(N)
-     output equality.
-   - Conflict at import: contribution that matches canonical → SkippedDuplicate;
-     contribution that matches an existing contribution → SkippedDuplicate.
+   - Round-trip in `EnvelopeMapperTest`.
+   - Decode-error coverage: malformed wire data → `WireDecodeException`
+     wrapped as `ImportResult.Failed`.
+   - Per-domain conflict tests already in
+     `:app/test/Default*RepositoryConflictTest.kt`.
 
 ## Known limitations / not in scope for v1
 
