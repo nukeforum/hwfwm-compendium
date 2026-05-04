@@ -62,21 +62,10 @@ private val BoonSubtypes: List<StatusType.Boon> = listOf(
     StatusType.Boon.UnTyped,
 )
 
-private val AllProperties: List<Property> = listOf(
-    Property.Affliction, Property.Blood, Property.Boon, Property.Channel,
-    Property.Cleanse, Property.Combination, Property.Conjuration, Property.Consumable,
-    Property.CounterExecute, Property.Curse, Property.DamageOverTime, Property.Dark,
-    Property.Darkness, Property.Dimension, Property.Disease, Property.Drain,
-    Property.Elemental, Property.Essence, Property.Execute, Property.Fire,
-    Property.HealOverTime, Property.Healing, Property.Holy, Property.Ice,
-    Property.Illusion, Property.Light, Property.Lightning, Property.Magic,
-    Property.ManaOverTime, Property.Melee, Property.Momentum, Property.Movement,
-    Property.Nature, Property.Perception, Property.Poison, Property.Recovery,
-    Property.Restoration, Property.Retributive, Property.Ritual, Property.Sacrifice,
-    Property.ShapeChange, Property.Signal, Property.Stacking, Property.StaminaOverTime,
-    Property.Summon, Property.Teleport, Property.Tracking, Property.Trap,
-    Property.Unholy, Property.Vehicle, Property.Wounding, Property.Zone,
-)
+private val AllProperties: List<Property> by lazy {
+    val klass: kotlin.reflect.KClass<Property> = Property::class
+    klass.sealedSubclasses.mapNotNull { it.objectInstance }
+}
 
 private fun subtypeLabel(t: StatusType): String = when (t) {
     StatusType.Affliction.Curse -> "Curse"
