@@ -21,11 +21,14 @@ import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectConflict
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.essences.model.StatusEffect
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConflictsViewModelTest {
@@ -62,7 +65,7 @@ class ConflictsViewModelTest {
                 AbilityListingConflict.NameCollision(listing("Fireball"), listing("Fireball")),
             ),
         )
-        val vm = ConflictsViewModel(essenceRepo, stoneRepo, abilityRepo)
+        val vm = ConflictsViewModel(essenceRepo, stoneRepo, abilityRepo, FakeStatusEffectRepo())
 
         // Subscribe so stateIn starts collecting
         val collector = launch { vm.state.collect {} }
@@ -80,7 +83,7 @@ class ConflictsViewModelTest {
     @Test
     fun `delete essence contribution dispatches to repository`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo())
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
 
         vm.deleteEssenceContribution("Wind")
         advanceUntilIdle()
@@ -91,7 +94,7 @@ class ConflictsViewModelTest {
     @Test
     fun `remove single combination keeps remaining combinations on contribution`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo())
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
 
         val original = confluence(
             "Doom",
@@ -108,7 +111,7 @@ class ConflictsViewModelTest {
     @Test
     fun `remove last combination deletes the contribution entirely`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo())
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
 
         val original = confluence("Doom", setOf(set("A", "B", "C")))
         vm.removeCombinationFromContribution(original, set("A", "B", "C"))
@@ -181,6 +184,20 @@ private class FakeAbilityRepo(
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
     override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+}
+
+private class FakeStatusEffectRepo(
+    private val initialConflicts: List<StatusEffectConflict> = emptyList(),
+) : StatusEffectRepository {
+    override val statusEffects: Flow<List<StatusEffect>> = MutableStateFlow(emptyList())
+    override val conflicts: Flow<List<StatusEffectConflict>> = MutableStateFlow(initialConflicts)
+    override suspend fun getStatusEffects(): List<StatusEffect> = emptyList()
+    override suspend fun getContributions(): List<StatusEffect> = emptyList()
+    override suspend fun getConflicts(): List<StatusEffectConflict> = initialConflicts
+    override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun isContribution(name: String): Boolean = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
 }
 
 private fun manifestation(name: String): Essence.Manifestation =
