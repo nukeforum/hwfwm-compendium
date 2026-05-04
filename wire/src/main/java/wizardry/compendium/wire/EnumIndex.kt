@@ -196,6 +196,10 @@ internal object EnumIndex {
 
     // -------------------------------------------------------------------------
     // StatusType (nested sealed interface — flattened to a single index table)
+    //
+    // NOTE: future entries must be appended at the END of the global list
+    // (slot 13+). Do NOT insert into the Affliction or Boon grouping below —
+    // that would shift later indices and is a wire-version bump.
     // -------------------------------------------------------------------------
 
     private val STATUS_TYPE_TABLE: List<StatusType> = listOf(

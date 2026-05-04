@@ -109,6 +109,11 @@ class WireExporter(
         listings = listOf(EnvelopeMapper.toWire(listing)),
     )
 
+    /**
+     * Wraps a single status effect in an envelope. Used by the detail-screen
+     * "Share" action; the receiver imports the entry, surfacing
+     * SkippedDuplicate if they already have a same-named effect.
+     */
     fun exportSingle(effect: ModelStatusEffect): Envelope = Envelope(
         version = EnvelopeCodec.CurrentVersion,
         statusEffects = listOf(EnvelopeMapper.toWire(effect)),
