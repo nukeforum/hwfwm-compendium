@@ -5,6 +5,7 @@ import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
 import javax.inject.Inject
+import kotlin.reflect.KClass
 
 class StatusEffectDatabase @Inject constructor(driver: SqlDriver) {
     private val db = CompendiumDatabase(driver)
@@ -40,25 +41,18 @@ class StatusEffectDatabase @Inject constructor(driver: SqlDriver) {
 
     private fun decodeProperties(serialized: String): List<Property> {
         if (serialized.isEmpty()) return emptyList()
-        return serialized.split("|").mapNotNull { token -> propertyByToken[token] }
+        return serialized.split("|").map { token ->
+            propertyByToken[token] ?: error("Unknown Property: $token")
+        }
     }
 
     companion object {
-        private val allProperties: List<Property> = listOf(
-            Property.Affliction, Property.Blood, Property.Boon, Property.Channel, Property.Cleanse,
-            Property.Combination, Property.Conjuration, Property.Consumable, Property.CounterExecute,
-            Property.Curse, Property.DamageOverTime, Property.Dark, Property.Darkness,
-            Property.Dimension, Property.Disease, Property.Drain, Property.Elemental, Property.Essence,
-            Property.Execute, Property.Fire, Property.HealOverTime, Property.Healing, Property.Holy,
-            Property.Ice, Property.Illusion, Property.Light, Property.Lightning, Property.Magic,
-            Property.ManaOverTime, Property.Melee, Property.Momentum, Property.Movement,
-            Property.Nature, Property.Perception, Property.Poison, Property.Recovery,
-            Property.Restoration, Property.Retributive, Property.Ritual, Property.Sacrifice,
-            Property.ShapeChange, Property.Signal, Property.Stacking, Property.StaminaOverTime,
-            Property.Summon, Property.Teleport, Property.Tracking, Property.Trap, Property.Unholy,
-            Property.Vehicle, Property.Wounding, Property.Zone,
-        )
-        private val propertyByToken: Map<String, Property> = allProperties.associateBy { it.toString() }
+        private val propertyByToken: Map<String, Property> by lazy {
+            val klass: KClass<Property> = Property::class
+            klass.sealedSubclasses
+                .mapNotNull { it.objectInstance }
+                .associateBy { it.toString() }
+        }
 
         fun encodeType(type: StatusType): String = when (type) {
             StatusType.Affliction.Curse -> "Affliction.Curse"
