@@ -1,6 +1,7 @@
 package wizardry.compendium.wire
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.StatusEffect
@@ -45,6 +46,14 @@ class StatusEffectWireTest {
         val decoded = EnvelopeCodec.decode(text)
 
         assertEquals(sample, EnvelopeMapper.toModel(decoded.statusEffects.single()))
+    }
+
+    @Test
+    fun `envelope without statusEffects decodes with empty list`() {
+        val envelope = Envelope(version = EnvelopeCodec.CurrentVersion)
+        val text = EnvelopeCodec.encode(envelope).text
+        val decoded = EnvelopeCodec.decode(text)
+        assertTrue(decoded.statusEffects.isEmpty())
     }
 
     @Test
