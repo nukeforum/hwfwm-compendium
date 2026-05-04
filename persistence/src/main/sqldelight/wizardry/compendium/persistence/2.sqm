@@ -1,7 +1,0 @@
-CREATE TABLE IF NOT EXISTS status_effect (
-    name TEXT PRIMARY KEY NOT NULL,
-    type TEXT NOT NULL,
-    stackable INTEGER NOT NULL,
-    description TEXT NOT NULL,
-    properties TEXT NOT NULL
-);
