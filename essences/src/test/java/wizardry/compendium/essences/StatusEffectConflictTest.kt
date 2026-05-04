@@ -43,5 +43,6 @@ class StatusEffectConflictTest {
         val collision = result.single() as StatusEffectConflict.NameCollision
         assertEquals(contribution, collision.contribution)
         assertEquals(canonical, collision.canonical)
+        assertEquals(ConflictKey("status-effect", "name::burn"), collision.key)
     }
 }
