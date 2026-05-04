@@ -23,6 +23,7 @@ import wizardry.compendium.ui.DeleteContributionButton
 import wizardry.compendium.ui.EditPreviewToggle
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EssenceContributionsScreen(
     onContributionSaved: () -> Unit = {},
@@ -34,6 +35,17 @@ fun EssenceContributionsScreen(
      * resolution problem is out of scope for the contribute pre-fill).
      */
     onPasteImport: (text: String) -> Pair<Essence.Manifestation?, String?> = { null to null },
+    /**
+     * Suspend decoder for confluence paste-bundle. Wired in MainActivity
+     * to ShareViewModel.decodeConfluenceBundle. Returns a preview to drive
+     * the review sheet, or a non-null reason to surface in the error dialog.
+     *
+     * Pair-shaped because :essence-contributions can't see :app's
+     * `ShareViewModel.DecodedSingle`; MainActivity pattern-matches the
+     * sealed result and forwards it as `(preview, null)` or `(null, reason)`.
+     */
+    onPasteImportConfluence: suspend (text: String) -> Pair<wizardry.compendium.share.ConfluenceImportPreview?, String?> =
+        { null to "not wired" },
     viewModel: EssenceContributionsViewModel = hiltViewModel(),
 ) {
     val availableManifestations by viewModel.availableManifestations.collectAsState()
@@ -54,92 +66,218 @@ fun EssenceContributionsScreen(
     var importErrorMessage by remember { mutableStateOf<String?>(null) }
     var pasteText by remember { mutableStateOf("") }
 
-    when (val current = mode) {
-        EssenceContributionsViewModel.Mode.Edit.Loading -> Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) { Text("Loading") }
-        EssenceContributionsViewModel.Mode.Edit.NotFound -> Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) { Text("This essence is not a user contribution and cannot be edited.") }
-        is EssenceContributionsViewModel.Mode.Edit.ManifestationReady -> ManifestationForm(
-            initial = current.manifestation,
-            isEdit = true,
-            saveState = saveState,
-            onSave = { name, rarity, description, isRestricted ->
-                viewModel.saveManifestation(name, rarity, description, isRestricted)
-            },
-            onDelete = viewModel::deleteContribution,
-            onImportClick = null,
-        )
-        is EssenceContributionsViewModel.Mode.Edit.ConfluenceReady -> ConfluenceEditForm(
-            initial = current.confluence,
-            saveState = saveState,
-            onSave = { name, isRestricted -> viewModel.updateConfluence(name, isRestricted) },
-            onDelete = viewModel::deleteContribution,
-        )
-        EssenceContributionsViewModel.Mode.Create -> CreateContributions(
-            availableManifestations = availableManifestations,
-            availableConfluences = availableConfluences,
-            saveState = saveState,
-            manifestationInitial = importedManifestation,
-            onSaveManifestation = { name, rarity, description, isRestricted ->
-                viewModel.saveManifestation(name, rarity, description, isRestricted)
-            },
-            onSaveNewConfluence = { name, m1, m2, m3, isRestricted ->
-                viewModel.saveConfluence(name, m1, m2, m3, isRestricted)
-            },
-            onAddCombination = { target, m1, m2, m3, isRestricted ->
-                viewModel.addCombinationToConfluence(target, m1, m2, m3, isRestricted)
-            },
-            onClearState = viewModel::clearSaveState,
-            onManifestationImportClick = {
-                pasteText = ""
-                showImportDialog = true
-            },
-        )
-    }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val pasteImportState by viewModel.pasteImportState.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+    var showConfluencePasteDialog by remember { mutableStateOf(false) }
+    var confluencePasteText by remember { mutableStateOf("") }
+    var confluenceImportError by remember { mutableStateOf<String?>(null) }
 
-    if (showImportDialog) {
-        AlertDialog(
-            onDismissRequest = { showImportDialog = false },
-            title = { Text("Import Essence") },
-            text = {
-                OutlinedTextField(
-                    value = pasteText,
-                    onValueChange = { pasteText = it },
-                    label = { Text("Paste a single-essence share") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 4,
-                )
-            },
-            confirmButton = {
-                Button(onClick = {
-                    val (manifestation, error) = onPasteImport(pasteText)
-                    showImportDialog = false
-                    if (manifestation != null) {
-                        importedManifestation = manifestation
-                    } else {
-                        importErrorMessage = error
+    LaunchedEffect(pasteImportState) {
+        when (val state = pasteImportState) {
+            is EssenceContributionsViewModel.PasteImportState.Done -> {
+                val summary = state.summary
+                val confluenceFailed = summary.results
+                    .filterIsInstance<wizardry.compendium.wire.ImportResult.Failed>()
+                    .firstOrNull { it.domain == wizardry.compendium.wire.ImportResult.Domain.Essence && it.name == state.confluenceName }
+                val confluenceSkipped = summary.results
+                    .filterIsInstance<wizardry.compendium.wire.ImportResult.SkippedDuplicate>()
+                    .firstOrNull { it.domain == wizardry.compendium.wire.ImportResult.Domain.Essence && it.name == state.confluenceName }
+                val essencesAdded = summary.added.count {
+                    it.domain == wizardry.compendium.wire.ImportResult.Domain.Essence && it.name != state.confluenceName
+                }
+                val message = when {
+                    confluenceFailed != null -> null
+                    confluenceSkipped != null -> buildString {
+                        append("Confluence '").append(state.confluenceName).append("' is already in your library")
+                        if (essencesAdded > 0) append(" (added ").append(essencesAdded).append(" essence")
+                            .append(if (essencesAdded == 1) "" else "s").append(")")
                     }
-                }) { Text("Import") }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showImportDialog = false }) { Text("Cancel") }
-            },
-        )
+                    else -> buildString {
+                        append("Imported confluence '").append(state.confluenceName).append("'")
+                        if (essencesAdded > 0) append(" (added ").append(essencesAdded).append(" essence")
+                            .append(if (essencesAdded == 1) "" else "s").append(")")
+                    }
+                }
+                if (message != null) {
+                    snackbarHostState.showSnackbar(message)
+                    viewModel.consumePasteImportTerminal()
+                } else {
+                    confluenceImportError = confluenceFailed?.reason ?: "Failed to import confluence."
+                    viewModel.consumePasteImportTerminal()
+                }
+            }
+            is EssenceContributionsViewModel.PasteImportState.Failed -> {
+                confluenceImportError = state.reason
+                viewModel.consumePasteImportTerminal()
+            }
+            else -> {}
+        }
     }
 
-    importErrorMessage?.let { message ->
-        AlertDialog(
-            onDismissRequest = { importErrorMessage = null },
-            title = { Text("Couldn't import") },
-            text = { Text(message) },
-            confirmButton = {
-                Button(onClick = { importErrorMessage = null }) { Text("OK") }
-            },
-        )
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { contentPadding ->
+        Box(modifier = Modifier.padding(contentPadding)) {
+            when (val current = mode) {
+                EssenceContributionsViewModel.Mode.Edit.Loading -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) { Text("Loading") }
+                EssenceContributionsViewModel.Mode.Edit.NotFound -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) { Text("This essence is not a user contribution and cannot be edited.") }
+                is EssenceContributionsViewModel.Mode.Edit.ManifestationReady -> ManifestationForm(
+                    initial = current.manifestation,
+                    isEdit = true,
+                    saveState = saveState,
+                    onSave = { name, rarity, description, isRestricted ->
+                        viewModel.saveManifestation(name, rarity, description, isRestricted)
+                    },
+                    onDelete = viewModel::deleteContribution,
+                    onImportClick = null,
+                )
+                is EssenceContributionsViewModel.Mode.Edit.ConfluenceReady -> ConfluenceEditForm(
+                    initial = current.confluence,
+                    saveState = saveState,
+                    onSave = { name, isRestricted -> viewModel.updateConfluence(name, isRestricted) },
+                    onDelete = viewModel::deleteContribution,
+                )
+                EssenceContributionsViewModel.Mode.Create -> CreateContributions(
+                    availableManifestations = availableManifestations,
+                    availableConfluences = availableConfluences,
+                    saveState = saveState,
+                    manifestationInitial = importedManifestation,
+                    onSaveManifestation = { name, rarity, description, isRestricted ->
+                        viewModel.saveManifestation(name, rarity, description, isRestricted)
+                    },
+                    onSaveNewConfluence = { name, m1, m2, m3, isRestricted ->
+                        viewModel.saveConfluence(name, m1, m2, m3, isRestricted)
+                    },
+                    onAddCombination = { target, m1, m2, m3, isRestricted ->
+                        viewModel.addCombinationToConfluence(target, m1, m2, m3, isRestricted)
+                    },
+                    onClearState = viewModel::clearSaveState,
+                    onManifestationImportClick = {
+                        pasteText = ""
+                        showImportDialog = true
+                    },
+                    onConfluenceImportClick = {
+                        confluencePasteText = ""
+                        showConfluencePasteDialog = true
+                    },
+                )
+            }
+
+            if (showImportDialog) {
+                AlertDialog(
+                    onDismissRequest = { showImportDialog = false },
+                    title = { Text("Import Essence") },
+                    text = {
+                        OutlinedTextField(
+                            value = pasteText,
+                            onValueChange = { pasteText = it },
+                            label = { Text("Paste a single-essence share") },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 4,
+                        )
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            val (manifestation, error) = onPasteImport(pasteText)
+                            showImportDialog = false
+                            if (manifestation != null) {
+                                importedManifestation = manifestation
+                            } else {
+                                importErrorMessage = error
+                            }
+                        }) { Text("Import") }
+                    },
+                    dismissButton = {
+                        OutlinedButton(onClick = { showImportDialog = false }) { Text("Cancel") }
+                    },
+                )
+            }
+
+            importErrorMessage?.let { message ->
+                AlertDialog(
+                    onDismissRequest = { importErrorMessage = null },
+                    title = { Text("Couldn't import") },
+                    text = { Text(message) },
+                    confirmButton = {
+                        Button(onClick = { importErrorMessage = null }) { Text("OK") }
+                    },
+                )
+            }
+
+            if (showConfluencePasteDialog) {
+                AlertDialog(
+                    onDismissRequest = { showConfluencePasteDialog = false },
+                    title = { Text("Import Confluence") },
+                    text = {
+                        OutlinedTextField(
+                            value = confluencePasteText,
+                            onValueChange = { confluencePasteText = it },
+                            label = { Text("Paste a single-confluence share") },
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 4,
+                        )
+                    },
+                    confirmButton = {
+                        Button(onClick = {
+                            val text = confluencePasteText
+                            showConfluencePasteDialog = false
+                            coroutineScope.launch {
+                                val (preview, reason) = onPasteImportConfluence(text)
+                                if (preview != null) {
+                                    viewModel.startPasteImport(preview)
+                                } else {
+                                    confluenceImportError = reason
+                                }
+                            }
+                        }) { Text("Import") }
+                    },
+                    dismissButton = {
+                        OutlinedButton(onClick = { showConfluencePasteDialog = false }) { Text("Cancel") }
+                    },
+                )
+            }
+
+            confluenceImportError?.let { message ->
+                AlertDialog(
+                    onDismissRequest = { confluenceImportError = null },
+                    title = { Text("Couldn't import") },
+                    text = { Text(message) },
+                    confirmButton = {
+                        Button(onClick = { confluenceImportError = null }) { Text("OK") }
+                    },
+                )
+            }
+
+            val reviewing = pasteImportState as? EssenceContributionsViewModel.PasteImportState.Reviewing
+            val savingState = pasteImportState as? EssenceContributionsViewModel.PasteImportState.Saving
+            val activePreview = reviewing?.preview ?: savingState?.preview
+            val isSaving = savingState != null
+
+            if (activePreview != null) {
+                val sheetState = rememberModalBottomSheetState(
+                    skipPartiallyExpanded = true,
+                    confirmValueChange = { false },
+                )
+                ModalBottomSheet(
+                    onDismissRequest = { /* drag-dismiss is blocked by confirmValueChange */ },
+                    sheetState = sheetState,
+                ) {
+                    ConfluenceReviewSheet(
+                        preview = activePreview,
+                        saving = isSaving,
+                        onSave = { viewModel.confirmPasteImport() },
+                        onCancel = { viewModel.cancelPasteImport() },
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -154,6 +292,7 @@ private fun CreateContributions(
     onAddCombination: (Essence.Confluence, Essence.Manifestation, Essence.Manifestation, Essence.Manifestation, Boolean) -> Unit,
     onClearState: () -> Unit,
     onManifestationImportClick: () -> Unit,
+    onConfluenceImportClick: () -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
@@ -187,6 +326,7 @@ private fun CreateContributions(
                 onSaveNew = onSaveNewConfluence,
                 onAddCombination = onAddCombination,
                 onClearState = onClearState,
+                onImportClick = onConfluenceImportClick,
             )
         }
     }
@@ -359,6 +499,7 @@ private fun ConfluenceForm(
     onSaveNew: (name: String, m1: Essence.Manifestation, m2: Essence.Manifestation, m3: Essence.Manifestation, isRestricted: Boolean) -> Unit,
     onAddCombination: (target: Essence.Confluence, m1: Essence.Manifestation, m2: Essence.Manifestation, m3: Essence.Manifestation, isRestricted: Boolean) -> Unit,
     onClearState: () -> Unit,
+    onImportClick: () -> Unit = {},
 ) {
     var mode by remember { mutableStateOf(ConfluenceMode.New) }
     var name by remember { mutableStateOf("") }
@@ -536,6 +677,11 @@ private fun ConfluenceForm(
                 }
             )
         }
+
+        OutlinedButton(
+            onClick = onImportClick,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Import from Share") }
     }
 }
 
