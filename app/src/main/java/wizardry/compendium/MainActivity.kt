@@ -214,6 +214,12 @@ class MainActivity : ComponentActivity() {
                                         is ShareViewModel.DecodedSingle.Failed -> null to result.reason
                                     }
                                 },
+                                onPasteImportConfluence = { text ->
+                                    when (val result = shareViewModel.decodeConfluenceBundle(text)) {
+                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
+                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
+                                    }
+                                },
                             )
                         }
                         composable(
