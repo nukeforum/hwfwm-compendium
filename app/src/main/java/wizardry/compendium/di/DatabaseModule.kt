@@ -14,9 +14,13 @@ import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.DatabaseAbilityListingCache
 import wizardry.compendium.persistence.DatabaseAwakeningStoneCache
 import wizardry.compendium.persistence.DatabaseEssenceCache
+import wizardry.compendium.persistence.DatabaseStatusEffectCache
 import wizardry.compendium.persistence.EssenceCache
 import wizardry.compendium.persistence.EssenceContributionsToggle
 import wizardry.compendium.persistence.EssenceDatabase
+import wizardry.compendium.persistence.StatusEffectCache
+import wizardry.compendium.persistence.StatusEffectContributionsToggle
+import wizardry.compendium.persistence.StatusEffectDatabase
 import wizardry.compendium.preferences.PreferencesRepository
 import dagger.Binds
 import dagger.Module
@@ -41,6 +45,10 @@ abstract class DatabaseModule {
     @Binds
     @Singleton
     abstract fun bindAbilityListingContributionsToggle(impl: PreferencesRepository): AbilityListingContributionsToggle
+
+    @Binds
+    @Singleton
+    abstract fun bindStatusEffectContributionsToggle(impl: PreferencesRepository): StatusEffectContributionsToggle
 
     companion object {
         @Provides
@@ -99,6 +107,26 @@ abstract class DatabaseModule {
         fun provideContributionsAbilityListingCache(@ApplicationContext context: Context): AbilityListingCache =
             DatabaseAbilityListingCache(
                 AbilityListingDatabase(
+                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
+                )
+            )
+
+        @Provides
+        @Singleton
+        @Canonical
+        fun provideCanonicalStatusEffectCache(@ApplicationContext context: Context): StatusEffectCache =
+            DatabaseStatusEffectCache(
+                StatusEffectDatabase(
+                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
+                )
+            )
+
+        @Provides
+        @Singleton
+        @Contributions
+        fun provideContributionsStatusEffectCache(@ApplicationContext context: Context): StatusEffectCache =
+            DatabaseStatusEffectCache(
+                StatusEffectDatabase(
                     AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
                 )
             )
