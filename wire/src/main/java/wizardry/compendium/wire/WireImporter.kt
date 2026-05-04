@@ -4,6 +4,7 @@ import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Essence
 
 /**
@@ -55,6 +56,7 @@ class WireImporter(
     private val essenceRepository: EssenceRepository,
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
+    private val statusEffectRepository: StatusEffectRepository,
 ) {
 
     suspend fun import(envelope: Envelope): ImportSummary {
@@ -77,6 +79,10 @@ class WireImporter(
 
         for (wire in envelope.listings) {
             results += importListing(wire)
+        }
+
+        for (wire in envelope.statusEffects) {
+            results += importStatusEffect(wire)
         }
 
         return ImportSummary(results)
@@ -159,6 +165,23 @@ class WireImporter(
             }
         } catch (e: WireDecodeException) {
             ImportResult.Failed(name, ImportResult.Domain.AbilityListing, e.message ?: "decode failed")
+        }
+    }
+
+    private suspend fun importStatusEffect(wire: StatusEffect): ImportResult {
+        val name = wire.name
+        return try {
+            val model = EnvelopeMapper.toModel(wire)
+            when (val r = statusEffectRepository.saveStatusEffectContribution(model)) {
+                is ContributionResult.Success -> ImportResult.Added(name, ImportResult.Domain.StatusEffect)
+                is ContributionResult.Failure -> ImportResult.SkippedDuplicate(
+                    name = name,
+                    domain = ImportResult.Domain.StatusEffect,
+                    reason = r.message,
+                )
+            }
+        } catch (e: WireDecodeException) {
+            ImportResult.Failed(name, ImportResult.Domain.StatusEffect, e.message ?: "decode failed")
         }
     }
 }

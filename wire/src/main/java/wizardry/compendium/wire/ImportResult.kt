@@ -22,7 +22,7 @@ sealed interface ImportResult {
     /** Domain that this entity belongs to, for grouping in the UI summary. */
     val domain: Domain
 
-    enum class Domain { Essence, AwakeningStone, AbilityListing }
+    enum class Domain { Essence, AwakeningStone, AbilityListing, StatusEffect }
 
     /** Successfully written to the contributions DB. */
     data class Added(
