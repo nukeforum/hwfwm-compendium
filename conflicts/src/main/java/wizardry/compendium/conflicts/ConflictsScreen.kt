@@ -30,6 +30,7 @@ import wizardry.compendium.essences.AbilityListingConflict
 import wizardry.compendium.essences.AwakeningStoneConflict
 import wizardry.compendium.essences.Conflict
 import wizardry.compendium.essences.EssenceConflict
+import wizardry.compendium.essences.StatusEffectConflict
 
 @Composable
 fun ConflictsScreen(
@@ -80,6 +81,7 @@ fun ConflictsScreen(
                     is EssenceConflict -> onEditEssenceContribution(name)
                     is AwakeningStoneConflict -> onEditAwakeningStoneContribution(name)
                     is AbilityListingConflict -> onEditAbilityListingContribution(name)
+                    is StatusEffectConflict -> Unit // wired up in T20
                 }
             },
             onDeleteContribution = {
@@ -89,6 +91,7 @@ fun ConflictsScreen(
                     is EssenceConflict.CombinationCollision -> viewModel.deleteEssenceContribution(current.contribution.name)
                     is AwakeningStoneConflict.NameCollision -> viewModel.deleteAwakeningStoneContribution(current.contribution.name)
                     is AbilityListingConflict.NameCollision -> viewModel.deleteAbilityListingContribution(current.contribution.name)
+                    is StatusEffectConflict.NameCollision -> Unit // wired up in T20
                 }
             },
             onRemoveCombination = if (current is EssenceConflict.CombinationCollision) {
@@ -183,4 +186,5 @@ private fun Conflict.editTargetName(): String = when (this) {
     is EssenceConflict.CombinationCollision -> contribution.name
     is AwakeningStoneConflict.NameCollision -> contribution.name
     is AbilityListingConflict.NameCollision -> contribution.name
+    is StatusEffectConflict.NameCollision -> contribution.name
 }
