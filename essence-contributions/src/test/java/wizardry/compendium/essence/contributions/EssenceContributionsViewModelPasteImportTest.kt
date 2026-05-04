@@ -151,6 +151,41 @@ class EssenceContributionsViewModelPasteImportTest {
         advanceUntilIdle()
         assertEquals(EssenceContributionsViewModel.PasteImportState.Idle, viewModel.pasteImportState.value)
     }
+
+    @Test
+    fun `confirmPasteImport transitions to Failed when importer throws`() = runTest(dispatcher) {
+        // WireImporter wraps each per-entry step in try/catch but only
+        // catches WireDecodeException, not generic RuntimeException. So a
+        // fake repository that throws RuntimeException from
+        // saveManifestationContribution will bubble out of
+        // wireImporter.import(...) and trip the runCatching in the VM,
+        // driving the Failed branch.
+        val throwingRepo = ThrowingFakeEssenceRepository()
+        viewModel = EssenceContributionsViewModel(
+            savedStateHandle = androidx.lifecycle.SavedStateHandle(),
+            essenceRepository = throwingRepo,
+            awakeningStoneRepository = stoneRepo,
+            abilityListingRepository = listingRepo,
+        )
+        // Build an envelope that contains a manifestation so the throwing
+        // saveManifestationContribution path is actually reached.
+        val manifestation = Essence.of("Wind", "", Rarity.Common, false)
+        val envelope = WireExporter(essenceRepo, stoneRepo, listingRepo)
+            .exportSingle(manifestation)
+        val preview = samplePreview(envelope)
+
+        viewModel.startPasteImport(preview)
+        viewModel.confirmPasteImport()
+        advanceUntilIdle()
+
+        val state = viewModel.pasteImportState.value
+        assertTrue("expected Failed, got $state", state is EssenceContributionsViewModel.PasteImportState.Failed)
+        val failed = state as EssenceContributionsViewModel.PasteImportState.Failed
+        assertTrue(
+            "reason should mention import failure, got '${failed.reason}'",
+            failed.reason.startsWith("Import failed:"),
+        )
+    }
 }
 
 private class FakeEssenceRepository(
@@ -180,6 +215,32 @@ private class FakeEssenceRepository(
         savedConfluences += confluence
         return ContributionResult.Success
     }
+    override suspend fun addCombinationToConfluence(
+        target: Essence.Confluence,
+        combination: ConfluenceSet,
+    ): ContributionResult = ContributionResult.Success
+    override suspend fun isContribution(name: String): Boolean = false
+    override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
+    override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation): ContributionResult = ContributionResult.Success
+    override suspend fun updateConfluenceContribution(confluence: Essence.Confluence): ContributionResult = ContributionResult.Success
+}
+
+private class ThrowingFakeEssenceRepository : EssenceRepository {
+    // Mirrors FakeEssenceRepository for everything except
+    // saveManifestationContribution, which throws to drive the importer's
+    // exception path out through the VM's runCatching.
+    override val essences: Flow<List<Essence>> = MutableStateFlow(emptyList())
+    override val conflicts: Flow<List<EssenceConflict>> = MutableStateFlow(emptyList())
+    override suspend fun getEssences(): List<Essence> = emptyList()
+    override suspend fun getContributions(): List<Essence> = emptyList()
+    override suspend fun getConflicts(): List<EssenceConflict> = emptyList()
+    override suspend fun saveManifestationContribution(manifestation: Essence.Manifestation): ContributionResult {
+        throw RuntimeException("boom")
+    }
+    override suspend fun saveConfluenceContribution(
+        confluence: Essence.Confluence,
+        referencedManifestations: List<Essence.Manifestation>,
+    ): ContributionResult = ContributionResult.Success
     override suspend fun addCombinationToConfluence(
         target: Essence.Confluence,
         combination: ConfluenceSet,

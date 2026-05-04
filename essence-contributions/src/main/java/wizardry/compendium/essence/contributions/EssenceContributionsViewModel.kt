@@ -49,13 +49,22 @@ class EssenceContributionsViewModel @Inject constructor(
     fun confirmPasteImport() {
         val current = _pasteImportState.value
         if (current !is PasteImportState.Reviewing) return
-        _pasteImportState.value = PasteImportState.Saving(current.preview)
+        val pending = current.preview
+        _pasteImportState.value = PasteImportState.Saving(pending)
         viewModelScope.launch {
-            try {
-                val summary = wireImporter.import(current.preview.envelope)
-                _pasteImportState.value = PasteImportState.Done(summary, current.preview.confluenceName)
-            } catch (e: Exception) {
-                _pasteImportState.value = PasteImportState.Failed("Import failed: ${e.message}")
+            val outcome = runCatching { wireImporter.import(pending.envelope) }
+            // Re-check state at the end of the launch to close an in-flight
+            // race: if cancelPasteImport() or startPasteImport(other) ran
+            // while import() was suspended, the VM is no longer Saving this
+            // preview and we must not clobber the new state. Identity (===)
+            // is required — a structurally-equal Saving wrapping a different
+            // preview instance must not match.
+            val now = _pasteImportState.value
+            if (now is PasteImportState.Saving && now.preview === pending) {
+                _pasteImportState.value = outcome.fold(
+                    onSuccess = { PasteImportState.Done(it, pending.confluenceName) },
+                    onFailure = { PasteImportState.Failed("Import failed: ${it.message ?: "unknown"}") },
+                )
             }
         }
     }
