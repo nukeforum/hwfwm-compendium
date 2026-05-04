@@ -40,6 +40,9 @@ import android.content.Context
 import wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
 import wizardry.compendium.awakeningstoneinfo.AwakeningStoneDetails
 import wizardry.compendium.essence.contributions.EssenceContributionsScreen
+import wizardry.compendium.statuseffect.contributions.StatusEffectContributionsScreen
+import wizardry.compendium.statuseffect.details.StatusEffectDetails
+import wizardry.compendium.statuseffect.search.StatusEffectSearch
 import wizardry.compendium.essenceinfo.EssenceDetails
 import wizardry.compendium.randomizer.Randomizer
 import wizardry.compendium.search.EssenceSearch
@@ -86,6 +89,11 @@ class MainActivity : ComponentActivity() {
                                 if (currentRoute == Nav.AbilityListingSearch.route) {
                                     ContributeButton {
                                         navController.navigate(Nav.AbilityListingContributions.newRoute)
+                                    }
+                                }
+                                if (currentRoute == Nav.StatusEffectSearch.route) {
+                                    ContributeButton {
+                                        navController.navigate(Nav.StatusEffectContributions.newRoute)
                                     }
                                 }
                                 ConflictsBadge(navigate = { navController.navigate(Nav.Conflicts.route) })
@@ -297,6 +305,59 @@ class MainActivity : ComponentActivity() {
                                 onContributionDeleted = { navController.popBackStack(Nav.AbilityListingSearch.route, false) },
                                 onPasteImport = { text ->
                                     when (val result = shareViewModel.decodeSingleListing(text)) {
+                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
+                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
+                                    }
+                                },
+                            )
+                        }
+                        composable(Nav.StatusEffectSearch.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Status Effect Search"
+                            StatusEffectSearch(
+                                onEffectClicked = { effect ->
+                                    navController.navigate(Nav.StatusEffectDetail.buildRoute(effect))
+                                },
+                            )
+                        }
+                        composable(
+                            Nav.StatusEffectDetail.route,
+                            arguments = listOf(
+                                navArgument(Nav.StatusEffectDetail.ARG_NAME) { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            val effectName = backStackEntry.arguments!!.getString(Nav.StatusEffectDetail.ARG_NAME)!!
+                            title = effectName
+                            StatusEffectDetails(
+                                effectName = effectName,
+                                onEffectLoaded = { title = it.name },
+                                onEditContribution = { effect ->
+                                    navController.navigate(Nav.StatusEffectContributions.buildEditRoute(effect))
+                                },
+                                onShareContribution = { effect ->
+                                    fireShareIntent(activityContext, shareViewModel.encode(effect))
+                                },
+                            )
+                        }
+                        composable(
+                            Nav.StatusEffectContributions.route,
+                            arguments = listOf(
+                                navArgument(Nav.StatusEffectContributions.ARG_NAME) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            ),
+                        ) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            val editName = backStackEntry.arguments?.getString(Nav.StatusEffectContributions.ARG_NAME)
+                            title = if (editName != null) "Edit Status Effect" else "Add Status Effect"
+                            StatusEffectContributionsScreen(
+                                onContributionSaved = { navController.popBackStack() },
+                                onContributionDeleted = { navController.popBackStack(Nav.StatusEffectSearch.route, false) },
+                                onPasteImport = { text ->
+                                    when (val result = shareViewModel.decodeSingleStatusEffect(text)) {
                                         is ShareViewModel.DecodedSingle.Loaded -> result.model to null
                                         is ShareViewModel.DecodedSingle.Failed -> null to result.reason
                                     }

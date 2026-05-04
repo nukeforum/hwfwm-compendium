@@ -69,6 +69,9 @@ dependencies {
     implementation(project(":model-core"))
     implementation(project(":persistence"))
     implementation(project(":randomizer"))
+    implementation(project(":status-effect-contributions"))
+    implementation(project(":status-effect-details"))
+    implementation(project(":status-effect-search"))
     implementation(project(":wire"))
 
     implementation(libs.androidx.core.ktx)
