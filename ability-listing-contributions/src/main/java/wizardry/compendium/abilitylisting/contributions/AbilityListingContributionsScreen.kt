@@ -871,7 +871,7 @@ private inline fun <reified T : Any> sealedObjects(): List<T> =
     T::class.sealedSubclasses.mapNotNull { it.objectInstance }
 
 private val AbilityTypeOptions: List<AbilityType> =
-    sealedObjects<AbilityType>().filterNot { it === AbilityType.Use || it === AbilityType.RacialAbility }
+    sealedObjects<AbilityType>().filterNot { it === AbilityType.Use }
 
 private val AmountOptions: List<Amount> = sealedObjects<Amount>()
 
