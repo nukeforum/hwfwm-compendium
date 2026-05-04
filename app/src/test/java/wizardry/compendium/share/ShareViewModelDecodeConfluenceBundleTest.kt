@@ -125,6 +125,13 @@ class ShareViewModelDecodeConfluenceBundleTest {
     fun `rejects malformed paste`() = runTest(dispatcher) {
         val result = viewModel.decodeConfluenceBundle("not-a-real-share")
         assertTrue(result is ShareViewModel.DecodedSingle.Failed)
+        val reason = (result as ShareViewModel.DecodedSingle.Failed).reason
+        // The malformed-paste path goes through WireDecodeException; reason should
+        // not be the version-unsupported message and not the empty-paste message.
+        assertTrue(
+            "expected a decode-failure reason, got '$reason'",
+            reason != "Paste is empty." && reason != "This share was made with a newer app version. Update to import.",
+        )
     }
 
     @Test
@@ -152,7 +159,10 @@ class ShareViewModelDecodeConfluenceBundleTest {
         val text = EnvelopeCodec.encode(combined).text
 
         val result = viewModel.decodeConfluenceBundle(text)
-        assertTrue(result is ShareViewModel.DecodedSingle.Failed)
+        assertEquals(
+            "This share doesn't contain exactly one confluence. Use Settings → Import for multi-entry shares.",
+            (result as ShareViewModel.DecodedSingle.Failed).reason,
+        )
     }
 
     @Test
@@ -165,7 +175,10 @@ class ShareViewModelDecodeConfluenceBundleTest {
         val text = EnvelopeCodec.encode(combined).text
 
         val result = viewModel.decodeConfluenceBundle(text)
-        assertTrue(result is ShareViewModel.DecodedSingle.Failed)
+        assertEquals(
+            "This share doesn't contain exactly one confluence. Use Settings → Import for multi-entry shares.",
+            (result as ShareViewModel.DecodedSingle.Failed).reason,
+        )
     }
 }
 

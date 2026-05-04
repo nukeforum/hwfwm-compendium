@@ -8,6 +8,7 @@ import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.EnvelopeMapper
 import wizardry.compendium.wire.WireDecodeException
@@ -68,37 +69,6 @@ class ShareViewModel @Inject constructor(
     }
 
     /**
-     * Snapshot of a pasted confluence-bundle ready to render in the
-     * read-only review sheet.
-     *
-     * `unresolvableNames` is the set of essence names referenced by combinations
-     * that are neither bundled in the share nor present in the receiver's
-     * library. Names are stored lowercase. The Save button is disabled when
-     * this set is non-empty.
-     */
-    data class ConfluenceImportPreview(
-        val envelope: wizardry.compendium.wire.Envelope,
-        val confluenceName: String,
-        val isRestricted: Boolean,
-        val combinations: List<PreviewCombination>,
-        val essences: List<PreviewEssence>,
-        val unresolvableNames: Set<String>,
-    )
-
-    data class PreviewCombination(
-        val essence1: String,
-        val essence2: String,
-        val essence3: String,
-        val isRestricted: Boolean,
-    )
-
-    data class PreviewEssence(
-        val name: String,
-        val rarity: wizardry.compendium.essences.model.Rarity,
-        val isNew: Boolean,
-    )
-
-    /**
      * Decode a paste-buffer and extract a single awakening stone, if the
      * envelope contains exactly one and nothing else. Anything that doesn't
      * match (multi-entity envelope, wrong domain, malformed) becomes
@@ -156,15 +126,9 @@ class ShareViewModel @Inject constructor(
      * references that aren't bundled and aren't in the DB.
      */
     suspend fun decodeConfluenceBundle(text: String): DecodedSingle<ConfluenceImportPreview> {
-        if (text.isBlank()) return DecodedSingle.Failed("Paste is empty.")
-        val envelope = try {
-            EnvelopeCodec.decode(text)
-        } catch (e: WireVersionUnsupported) {
-            return DecodedSingle.Failed("This share was made with a newer app version. Update to import.")
-        } catch (e: WireDecodeException) {
-            return DecodedSingle.Failed(e.message ?: "Pasted data is not a valid contribution share.")
-        } catch (e: Exception) {
-            return DecodedSingle.Failed("Import failed: ${e.message}")
+        val envelope = when (val r = decodeEnvelopeOrFailed(text)) {
+            is EnvelopeResult.Failed -> return DecodedSingle.Failed(r.reason)
+            is EnvelopeResult.Decoded -> r.envelope
         }
 
         val others = envelope.stones.size + envelope.listings.size
@@ -199,14 +163,11 @@ class ShareViewModel @Inject constructor(
             )
         }
 
-        val referencedNamesLower = combinations
+        val unresolvable = combinations
             .flatMap { listOf(it.essence1, it.essence2, it.essence3) }
             .map { it.lowercase() }
+            .filter { it !in bundledByLower && it !in dbByLower }
             .toSet()
-
-        val unresolvable = referencedNamesLower.filter { lower ->
-            !bundledByLower.containsKey(lower) && !dbByLower.containsKey(lower)
-        }.toSet()
 
         return DecodedSingle.Loaded(
             ConfluenceImportPreview(
@@ -222,17 +183,32 @@ class ShareViewModel @Inject constructor(
 
     private inline fun <T> decodeSingle(
         text: String,
-        extract: (wizardry.compendium.wire.Envelope) -> DecodedSingle<T>,
-    ): DecodedSingle<T> {
-        if (text.isBlank()) return DecodedSingle.Failed("Paste is empty.")
+        extract: (Envelope) -> DecodedSingle<T>,
+    ): DecodedSingle<T> = when (val r = decodeEnvelopeOrFailed(text)) {
+        is EnvelopeResult.Failed -> DecodedSingle.Failed(r.reason)
+        is EnvelopeResult.Decoded -> extract(r.envelope)
+    }
+
+    /**
+     * Shared envelope-decoding step for all paste-buffer entry points.
+     * Centralizes the empty-paste / version-unsupported / decode-failure /
+     * generic-exception ladder so each consumer can focus on shape checks.
+     */
+    private fun decodeEnvelopeOrFailed(text: String): EnvelopeResult {
+        if (text.isBlank()) return EnvelopeResult.Failed("Paste is empty.")
         return try {
-            extract(EnvelopeCodec.decode(text))
+            EnvelopeResult.Decoded(EnvelopeCodec.decode(text))
         } catch (e: WireVersionUnsupported) {
-            DecodedSingle.Failed("This share was made with a newer app version. Update to import.")
+            EnvelopeResult.Failed("This share was made with a newer app version. Update to import.")
         } catch (e: WireDecodeException) {
-            DecodedSingle.Failed(e.message ?: "Pasted data is not a valid contribution share.")
+            EnvelopeResult.Failed(e.message ?: "Pasted data is not a valid contribution share.")
         } catch (e: Exception) {
-            DecodedSingle.Failed("Import failed: ${e.message}")
+            EnvelopeResult.Failed("Import failed: ${e.message}")
         }
+    }
+
+    private sealed interface EnvelopeResult {
+        data class Decoded(val envelope: Envelope) : EnvelopeResult
+        data class Failed(val reason: String) : EnvelopeResult
     }
 }
