@@ -26,11 +26,11 @@ sealed interface AbilityType {
     }
 
     object Familiar : AbilityType {
-        override fun toString(): String = "Special attack"
+        override fun toString(): String = "Familiar"
     }
 
     object Summoning : AbilityType {
-        override fun toString(): String = "Special attack"
+        override fun toString(): String = "Summoning"
     }
 
     /**
