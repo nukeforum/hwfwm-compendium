@@ -14,7 +14,7 @@ class AndroidPlugin : Plugin<Project> {
         apply(plugin = "com.google.devtools.ksp")
 
         configure<LibraryExtension> {
-            compileSdk = findVersion("target_sdk").toInt()
+            compileSdk = findVersion("compile_sdk").toInt()
             defaultConfig {
                 minSdk = findVersion("min_sdk").toInt()
                 testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
