@@ -34,7 +34,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class ShareViewModel @Inject constructor(
-    essenceRepository: EssenceRepository,
+    private val essenceRepository: EssenceRepository,
     awakeningStoneRepository: AwakeningStoneRepository,
     abilityListingRepository: AbilityListingRepository,
 ) : ViewModel() {
@@ -66,6 +66,37 @@ class ShareViewModel @Inject constructor(
         data class Loaded<T>(val model: T) : DecodedSingle<T>
         data class Failed(val reason: String) : DecodedSingle<Nothing>
     }
+
+    /**
+     * Snapshot of a pasted confluence-bundle ready to render in the
+     * read-only review sheet.
+     *
+     * `unresolvableNames` is the set of essence names referenced by combinations
+     * that are neither bundled in the share nor present in the receiver's
+     * library. Names are stored lowercase. The Save button is disabled when
+     * this set is non-empty.
+     */
+    data class ConfluenceImportPreview(
+        val envelope: wizardry.compendium.wire.Envelope,
+        val confluenceName: String,
+        val isRestricted: Boolean,
+        val combinations: List<PreviewCombination>,
+        val essences: List<PreviewEssence>,
+        val unresolvableNames: Set<String>,
+    )
+
+    data class PreviewCombination(
+        val essence1: String,
+        val essence2: String,
+        val essence3: String,
+        val isRestricted: Boolean,
+    )
+
+    data class PreviewEssence(
+        val name: String,
+        val rarity: wizardry.compendium.essences.model.Rarity,
+        val isNew: Boolean,
+    )
 
     /**
      * Decode a paste-buffer and extract a single awakening stone, if the
@@ -114,6 +145,79 @@ class ShareViewModel @Inject constructor(
             )
             else -> DecodedSingle.Loaded(EnvelopeMapper.toModel(envelope.manifestations.single()))
         }
+    }
+
+    /**
+     * Decode a paste containing exactly one confluence (with its bundled
+     * essences) and build a preview for the review sheet.
+     *
+     * Suspends because it reads the receiver's current essences to compute
+     * `isNew` per bundled essence and `unresolvableNames` for combination
+     * references that aren't bundled and aren't in the DB.
+     */
+    suspend fun decodeConfluenceBundle(text: String): DecodedSingle<ConfluenceImportPreview> {
+        if (text.isBlank()) return DecodedSingle.Failed("Paste is empty.")
+        val envelope = try {
+            EnvelopeCodec.decode(text)
+        } catch (e: WireVersionUnsupported) {
+            return DecodedSingle.Failed("This share was made with a newer app version. Update to import.")
+        } catch (e: WireDecodeException) {
+            return DecodedSingle.Failed(e.message ?: "Pasted data is not a valid contribution share.")
+        } catch (e: Exception) {
+            return DecodedSingle.Failed("Import failed: ${e.message}")
+        }
+
+        val others = envelope.stones.size + envelope.listings.size
+        if (envelope.confluences.size != 1 || others > 0) {
+            return DecodedSingle.Failed(
+                "This share doesn't contain exactly one confluence. Use Settings → Import for multi-entry shares.",
+            )
+        }
+
+        val wireConfluence = envelope.confluences.single()
+        val bundledEssences = envelope.manifestations.map { EnvelopeMapper.toModel(it) }
+        val bundledByLower = bundledEssences.associateBy { it.name.lowercase() }
+
+        val dbByLower = essenceRepository.getEssences()
+            .filterIsInstance<Essence.Manifestation>()
+            .associateBy { it.name.lowercase() }
+
+        val previewEssences = bundledEssences.map { e ->
+            PreviewEssence(
+                name = e.name,
+                rarity = e.rarity,
+                isNew = !dbByLower.containsKey(e.name.lowercase()),
+            )
+        }
+
+        val combinations = wireConfluence.combinations.map { set ->
+            PreviewCombination(
+                essence1 = set.name1,
+                essence2 = set.name2,
+                essence3 = set.name3,
+                isRestricted = set.restrictedFlag != 0,
+            )
+        }
+
+        val referencedNamesLower = combinations
+            .flatMap { listOf(it.essence1, it.essence2, it.essence3) }
+            .map { it.lowercase() }
+            .toSet()
+
+        val unresolvable = referencedNamesLower.filter { lower ->
+            !bundledByLower.containsKey(lower) && !dbByLower.containsKey(lower)
+        }.toSet()
+
+        return DecodedSingle.Loaded(
+            ConfluenceImportPreview(
+                envelope = envelope,
+                confluenceName = wireConfluence.name,
+                isRestricted = wireConfluence.isRestricted,
+                combinations = combinations,
+                essences = previewEssences,
+                unresolvableNames = unresolvable,
+            ),
+        )
     }
 
     private inline fun <T> decodeSingle(
