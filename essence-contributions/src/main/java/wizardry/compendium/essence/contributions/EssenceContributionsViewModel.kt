@@ -3,14 +3,20 @@ package wizardry.compendium.essence.contributions
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import wizardry.compendium.essences.AbilityListingRepository
+import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.share.ConfluenceImportPreview
+import wizardry.compendium.wire.ImportSummary
+import wizardry.compendium.wire.WireImporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -19,7 +25,47 @@ import javax.inject.Inject
 class EssenceContributionsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val essenceRepository: EssenceRepository,
+    awakeningStoneRepository: AwakeningStoneRepository,
+    abilityListingRepository: AbilityListingRepository,
 ) : ViewModel() {
+
+    private val wireImporter = WireImporter(
+        essenceRepository,
+        awakeningStoneRepository,
+        abilityListingRepository,
+    )
+
+    private val _pasteImportState = MutableStateFlow<PasteImportState>(PasteImportState.Idle)
+    val pasteImportState: StateFlow<PasteImportState> = _pasteImportState.asStateFlow()
+
+    fun startPasteImport(preview: ConfluenceImportPreview) {
+        _pasteImportState.value = PasteImportState.Reviewing(preview)
+    }
+
+    fun cancelPasteImport() {
+        _pasteImportState.value = PasteImportState.Idle
+    }
+
+    fun confirmPasteImport() {
+        val current = _pasteImportState.value
+        if (current !is PasteImportState.Reviewing) return
+        _pasteImportState.value = PasteImportState.Saving(current.preview)
+        viewModelScope.launch {
+            try {
+                val summary = wireImporter.import(current.preview.envelope)
+                _pasteImportState.value = PasteImportState.Done(summary, current.preview.confluenceName)
+            } catch (e: Exception) {
+                _pasteImportState.value = PasteImportState.Failed("Import failed: ${e.message}")
+            }
+        }
+    }
+
+    fun consumePasteImportTerminal() {
+        val current = _pasteImportState.value
+        if (current is PasteImportState.Done || current is PasteImportState.Failed) {
+            _pasteImportState.value = PasteImportState.Idle
+        }
+    }
 
     private val editName: String? = savedStateHandle.get<String>("name")
 
@@ -190,5 +236,16 @@ class EssenceContributionsViewModel @Inject constructor(
         data object Success : SaveState
         data object Deleted : SaveState
         data class Error(val message: String) : SaveState
+    }
+
+    sealed interface PasteImportState {
+        data object Idle : PasteImportState
+        data class Reviewing(val preview: ConfluenceImportPreview) : PasteImportState
+        data class Saving(val preview: ConfluenceImportPreview) : PasteImportState
+        data class Done(
+            val summary: ImportSummary,
+            val confluenceName: String,
+        ) : PasteImportState
+        data class Failed(val reason: String) : PasteImportState
     }
 }
