@@ -15,6 +15,8 @@ import wizardry.compendium.essences.AwakeningStoneConflict
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectConflict
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import javax.inject.Inject
@@ -23,8 +25,9 @@ data class ConflictsState(
     val essence: List<EssenceConflict> = emptyList(),
     val awakeningStone: List<AwakeningStoneConflict> = emptyList(),
     val abilityListing: List<AbilityListingConflict> = emptyList(),
+    val statusEffect: List<StatusEffectConflict> = emptyList(),
 ) {
-    val total: Int = essence.size + awakeningStone.size + abilityListing.size
+    val total: Int = essence.size + awakeningStone.size + abilityListing.size + statusEffect.size
 }
 
 @HiltViewModel
@@ -32,14 +35,16 @@ class ConflictsViewModel @Inject constructor(
     private val essenceRepository: EssenceRepository,
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
+    private val statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
 
     val state: StateFlow<ConflictsState> = combine(
         essenceRepository.conflicts,
         awakeningStoneRepository.conflicts,
         abilityListingRepository.conflicts,
-    ) { e, a, ab ->
-        ConflictsState(essence = e, awakeningStone = a, abilityListing = ab)
+        statusEffectRepository.conflicts,
+    ) { e, a, ab, s ->
+        ConflictsState(essence = e, awakeningStone = a, abilityListing = ab, statusEffect = s)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ConflictsState())
 
     fun deleteEssenceContribution(name: String) {
@@ -57,6 +62,12 @@ class ConflictsViewModel @Inject constructor(
     fun deleteAbilityListingContribution(name: String) {
         viewModelScope.launch(Dispatchers.IO) {
             abilityListingRepository.deleteContribution(name)
+        }
+    }
+
+    fun deleteStatusEffectContribution(name: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            statusEffectRepository.deleteContribution(name)
         }
     }
 

@@ -37,6 +37,7 @@ fun ConflictsScreen(
     onEditEssenceContribution: (name: String) -> Unit,
     onEditAwakeningStoneContribution: (name: String) -> Unit,
     onEditAbilityListingContribution: (name: String) -> Unit,
+    onEditStatusEffectContribution: (name: String) -> Unit,
     viewModel: ConflictsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -67,6 +68,10 @@ fun ConflictsScreen(
             item { GroupHeader("Ability Listings") }
             items(state.abilityListing) { ConflictRow(it) { selected = it } }
         }
+        if (state.statusEffect.isNotEmpty()) {
+            item { GroupHeader("Status Effects") }
+            items(state.statusEffect) { ConflictRow(it) { selected = it } }
+        }
     }
 
     val current = selected
@@ -81,7 +86,7 @@ fun ConflictsScreen(
                     is EssenceConflict -> onEditEssenceContribution(name)
                     is AwakeningStoneConflict -> onEditAwakeningStoneContribution(name)
                     is AbilityListingConflict -> onEditAbilityListingContribution(name)
-                    is StatusEffectConflict -> Unit // wired up in T20
+                    is StatusEffectConflict -> onEditStatusEffectContribution(name)
                 }
             },
             onDeleteContribution = {
@@ -91,7 +96,7 @@ fun ConflictsScreen(
                     is EssenceConflict.CombinationCollision -> viewModel.deleteEssenceContribution(current.contribution.name)
                     is AwakeningStoneConflict.NameCollision -> viewModel.deleteAwakeningStoneContribution(current.contribution.name)
                     is AbilityListingConflict.NameCollision -> viewModel.deleteAbilityListingContribution(current.contribution.name)
-                    is StatusEffectConflict.NameCollision -> Unit // wired up in T20
+                    is StatusEffectConflict.NameCollision -> viewModel.deleteStatusEffectContribution(current.contribution.name)
                 }
             },
             onRemoveCombination = if (current is EssenceConflict.CombinationCollision) {

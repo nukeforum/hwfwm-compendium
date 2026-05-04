@@ -191,6 +191,9 @@ class MainActivity : ComponentActivity() {
                                 onEditAbilityListingContribution = { name ->
                                     navController.navigate("abilityListingContributions?name=${android.net.Uri.encode(name)}")
                                 },
+                                onEditStatusEffectContribution = { name ->
+                                    navController.navigate("statusEffectContributions?name=${android.net.Uri.encode(name)}")
+                                },
                             )
                         }
                         composable(
