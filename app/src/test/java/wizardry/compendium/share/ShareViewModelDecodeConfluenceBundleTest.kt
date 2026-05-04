@@ -20,6 +20,9 @@ import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectConflict
+import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.ConfluenceSet
@@ -52,7 +55,7 @@ class ShareViewModelDecodeConfluenceBundleTest {
         essenceRepo = FakeEssenceRepository(canonical = emptyList(), contributions = emptyList())
         stoneRepo = FakeAwakeningStoneRepository()
         listingRepo = FakeAbilityListingRepository()
-        viewModel = ShareViewModel(essenceRepo, stoneRepo, listingRepo)
+        viewModel = ShareViewModel(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
     }
 
     @After
@@ -62,7 +65,7 @@ class ShareViewModelDecodeConfluenceBundleTest {
 
     @Test
     fun `decodes a bundled confluence with all-new essences`() = runTest(dispatcher) {
-        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val text = EnvelopeCodec.encode(exporter.exportSingle(doom)).text
 
         val result = viewModel.decodeConfluenceBundle(text)
@@ -80,8 +83,8 @@ class ShareViewModelDecodeConfluenceBundleTest {
     @Test
     fun `marks bundled essences as not new when already in repo`() = runTest(dispatcher) {
         essenceRepo = FakeEssenceRepository(canonical = listOf(wind), contributions = emptyList())
-        viewModel = ShareViewModel(essenceRepo, stoneRepo, listingRepo)
-        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        viewModel = ShareViewModel(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
+        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val text = EnvelopeCodec.encode(exporter.exportSingle(doom)).text
 
         val preview = (viewModel.decodeConfluenceBundle(text) as ShareViewModel.DecodedSingle.Loaded).model
@@ -103,7 +106,7 @@ class ShareViewModelDecodeConfluenceBundleTest {
                 Essence.of("Phantom", "", Rarity.Rare, false),
             ),
         )
-        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val full = exporter.exportSingle(phantomReferencingConfluence)
         val stripped = full.copy(
             manifestations = full.manifestations.filter { it.name != "Phantom" },
@@ -136,7 +139,7 @@ class ShareViewModelDecodeConfluenceBundleTest {
 
     @Test
     fun `rejects envelope with zero confluences`() = runTest(dispatcher) {
-        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val text = EnvelopeCodec.encode(exporter.exportSingle(wind)).text
         val result = viewModel.decodeConfluenceBundle(text)
         assertEquals(
@@ -147,7 +150,7 @@ class ShareViewModelDecodeConfluenceBundleTest {
 
     @Test
     fun `rejects envelope with two confluences`() = runTest(dispatcher) {
-        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val a = exporter.exportSingle(doom)
         val tempest = Essence.of(
             name = "Tempest",
@@ -167,7 +170,7 @@ class ShareViewModelDecodeConfluenceBundleTest {
 
     @Test
     fun `rejects envelope containing a stone`() = runTest(dispatcher) {
-        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val confluenceEnv = exporter.exportSingle(doom)
         val stone = wizardry.compendium.essences.model.AwakeningStone.of("Volcano", Rarity.Epic)
         val stoneEnv = exporter.exportSingle(stone)
@@ -180,6 +183,20 @@ class ShareViewModelDecodeConfluenceBundleTest {
             (result as ShareViewModel.DecodedSingle.Failed).reason,
         )
     }
+}
+
+private fun fakeStatusEffectRepo() = object : StatusEffectRepository {
+    override val statusEffects = kotlinx.coroutines.flow.flowOf(emptyList<StatusEffect>())
+    override val conflicts = kotlinx.coroutines.flow.flowOf(emptyList<StatusEffectConflict>())
+    override suspend fun getStatusEffects() = emptyList<StatusEffect>()
+    override suspend fun getContributions() = emptyList<StatusEffect>()
+    override suspend fun getConflicts() = emptyList<StatusEffectConflict>()
+    override suspend fun saveStatusEffectContribution(effect: StatusEffect) =
+        ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(effect: StatusEffect) =
+        ContributionResult.Success
 }
 
 private class FakeEssenceRepository(

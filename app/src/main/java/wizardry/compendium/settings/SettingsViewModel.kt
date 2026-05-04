@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.preferences.PreferencesRepository
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.ImportSummary
@@ -27,6 +28,7 @@ class SettingsViewModel @Inject constructor(
     essenceRepository: EssenceRepository,
     awakeningStoneRepository: AwakeningStoneRepository,
     abilityListingRepository: AbilityListingRepository,
+    statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
     val essenceContributionsEnabled = preferencesRepository.essenceContributionsEnabled
     val awakeningStoneContributionsEnabled = preferencesRepository.awakeningStoneContributionsEnabled
@@ -36,8 +38,8 @@ class SettingsViewModel @Inject constructor(
     val awakeningStoneConflictCount = awakeningStoneRepository.conflicts.map { it.size }
     val abilityListingConflictCount = abilityListingRepository.conflicts.map { it.size }
 
-    private val exporter = WireExporter(essenceRepository, awakeningStoneRepository, abilityListingRepository)
-    private val importer = WireImporter(essenceRepository, awakeningStoneRepository, abilityListingRepository)
+    private val exporter = WireExporter(essenceRepository, awakeningStoneRepository, abilityListingRepository, statusEffectRepository)
+    private val importer = WireImporter(essenceRepository, awakeningStoneRepository, abilityListingRepository, statusEffectRepository)
 
     /**
      * Modal states for the share/import flows.

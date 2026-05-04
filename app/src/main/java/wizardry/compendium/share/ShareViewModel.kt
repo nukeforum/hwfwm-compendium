@@ -5,9 +5,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.EnvelopeMapper
@@ -38,12 +40,14 @@ class ShareViewModel @Inject constructor(
     private val essenceRepository: EssenceRepository,
     awakeningStoneRepository: AwakeningStoneRepository,
     abilityListingRepository: AbilityListingRepository,
+    statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
 
     private val exporter = WireExporter(
         essenceRepository,
         awakeningStoneRepository,
         abilityListingRepository,
+        statusEffectRepository,
     )
 
     fun encode(essence: Essence): String = when (essence) {
@@ -57,6 +61,21 @@ class ShareViewModel @Inject constructor(
 
     fun encode(listing: Ability.Listing): String =
         EnvelopeCodec.encode(exporter.exportSingle(listing)).text
+
+    fun encode(effect: StatusEffect): String =
+        EnvelopeCodec.encode(exporter.exportSingle(effect)).text
+
+    fun decodeSingleStatusEffect(text: String): DecodedSingle<StatusEffect> =
+        decodeSingle(text) { envelope ->
+            val others = envelope.manifestations.size + envelope.confluences.size +
+                envelope.stones.size + envelope.listings.size
+            when {
+                envelope.statusEffects.size != 1 || others > 0 -> DecodedSingle.Failed(
+                    "This share doesn't contain exactly one status effect. Use Settings → Import for multi-entry shares.",
+                )
+                else -> DecodedSingle.Loaded(EnvelopeMapper.toModel(envelope.statusEffects.single()))
+            }
+        }
 
     /**
      * Result of decoding a paste-buffer for the Contribute-screen Import
