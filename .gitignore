@@ -17,3 +17,4 @@
 local.properties
 .claude/
 docs/superpowers/
+.worktrees/
