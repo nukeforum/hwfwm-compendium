@@ -24,6 +24,7 @@ fun LandingScreen(
     onEssenceClicked: () -> Unit,
     onAwakeningStoneClicked: () -> Unit,
     onAbilityListingClicked: () -> Unit,
+    onStatusEffectClicked: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -68,6 +69,13 @@ fun LandingScreen(
                     .fillMaxSize(),
                 onClick = onAbilityListingClicked,
             )
+            PanelButton(
+                label = "Status Effects",
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize(),
+                onClick = onStatusEffectClicked,
+            )
         }
         Spacer(modifier = Modifier.height(16.dp))
     }
@@ -108,5 +116,6 @@ private fun LandingScreenPreview() {
         onEssenceClicked = {},
         onAwakeningStoneClicked = {},
         onAbilityListingClicked = {},
+        onStatusEffectClicked = {},
     )
 }

@@ -107,6 +107,7 @@ class MainActivity : ComponentActivity() {
                                 onEssenceClicked = { navController.navigate(Nav.EssenceSearch.route) },
                                 onAwakeningStoneClicked = { navController.navigate(Nav.AwakeningStoneSearch.route) },
                                 onAbilityListingClicked = { navController.navigate(Nav.AbilityListingSearch.route) },
+                                onStatusEffectClicked = { navController.navigate(Nav.StatusEffectSearch.route) },
                             )
                         }
                         composable(Nav.EssenceSearch.route) { backStackEntry ->
