@@ -1,0 +1,16 @@
+CREATE TABLE status_effect (
+    name TEXT PRIMARY KEY NOT NULL,
+    type TEXT NOT NULL,
+    stackable INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    properties TEXT NOT NULL
+);
+
+insertStatusEffect:
+INSERT OR REPLACE INTO status_effect(name, type, stackable, description, properties) VALUES (?, ?, ?, ?, ?);
+
+selectAllStatusEffects:
+SELECT * FROM status_effect;
+
+deleteAllStatusEffects:
+DELETE FROM status_effect;
