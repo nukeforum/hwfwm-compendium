@@ -33,10 +33,12 @@ class SettingsViewModel @Inject constructor(
     val essenceContributionsEnabled = preferencesRepository.essenceContributionsEnabled
     val awakeningStoneContributionsEnabled = preferencesRepository.awakeningStoneContributionsEnabled
     val abilityListingContributionsEnabled = preferencesRepository.abilityListingContributionsEnabled
+    val statusEffectContributionsEnabled = preferencesRepository.statusEffectContributionsEnabled
 
     val essenceConflictCount = essenceRepository.conflicts.map { it.size }
     val awakeningStoneConflictCount = awakeningStoneRepository.conflicts.map { it.size }
     val abilityListingConflictCount = abilityListingRepository.conflicts.map { it.size }
+    val statusEffectConflictCount = statusEffectRepository.conflicts.map { it.size }
 
     private val exporter = WireExporter(essenceRepository, awakeningStoneRepository, abilityListingRepository, statusEffectRepository)
     private val importer = WireImporter(essenceRepository, awakeningStoneRepository, abilityListingRepository, statusEffectRepository)
@@ -72,6 +74,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setAbilityListingContributionsEnabled(enabled: Boolean) {
         preferencesRepository.setAbilityListingContributionsEnabled(enabled)
+    }
+
+    fun setStatusEffectContributionsEnabled(enabled: Boolean) {
+        preferencesRepository.setStatusEffectContributionsEnabled(enabled)
     }
 
     /**
