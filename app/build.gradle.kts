@@ -59,6 +59,7 @@ dependencies {
     implementation(project(":awakening-stone-contributions"))
     implementation(project(":awakening-stone-details"))
     implementation(project(":awakening-stone-search"))
+    implementation(project(":conflicts"))
     implementation(project(":dataloader"))
     implementation(project(":design"))
     implementation(project(":essence-contributions"))

@@ -113,7 +113,7 @@ When you introduce a new contribution domain, follow this checklist:
 9. **Tests**:
    - Pure detection tests in `essences/src/test`.
    - Read-path gating + delete tests in `app/src/test/.../Default*RepositoryConflictTest.kt`.
-   - Aggregation + resolution tests in `app/src/test/.../conflicts/ConflictsViewModelTest.kt`.
+   - Aggregation + resolution tests in `conflicts/src/test/.../ConflictsViewModelTest.kt`.
 
 ## Known limitations
 
