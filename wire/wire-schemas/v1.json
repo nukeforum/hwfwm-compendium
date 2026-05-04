@@ -171,6 +171,13 @@
                     "hasDefault": true
                 },
                 {
+                    "name": "statusEffects",
+                    "alias": "x",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<wizardry.compendium.wire.StatusEffect>",
+                    "hasDefault": true
+                },
+                {
                     "name": "stones",
                     "alias": "s",
                     "previousAlias": "",
@@ -248,6 +255,47 @@
                 {
                     "name": "rarityIndex",
                     "alias": "r",
+                    "previousAlias": "",
+                    "type": "kotlin.Int",
+                    "hasDefault": false
+                }
+            ]
+        },
+        {
+            "fqn": "wizardry.compendium.wire.StatusEffect",
+            "typeAlias": "statusEffect",
+            "fields": [
+                {
+                    "name": "description",
+                    "alias": "d",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": true
+                },
+                {
+                    "name": "name",
+                    "alias": "n",
+                    "previousAlias": "",
+                    "type": "kotlin.String",
+                    "hasDefault": false
+                },
+                {
+                    "name": "propertyIndices",
+                    "alias": "p",
+                    "previousAlias": "",
+                    "type": "kotlin.collections.List<kotlin.Int>",
+                    "hasDefault": true
+                },
+                {
+                    "name": "stackable",
+                    "alias": "k",
+                    "previousAlias": "",
+                    "type": "kotlin.Boolean",
+                    "hasDefault": true
+                },
+                {
+                    "name": "typeIndex",
+                    "alias": "t",
                     "previousAlias": "",
                     "type": "kotlin.Int",
                     "hasDefault": false

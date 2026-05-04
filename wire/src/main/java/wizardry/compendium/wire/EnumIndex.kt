@@ -6,6 +6,7 @@ import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.essences.model.Resource
+import wizardry.compendium.essences.model.StatusType
 
 /**
  * Wire-format integer indices for the model enums and sealed-interface
@@ -192,6 +193,35 @@ internal object EnumIndex {
         require(it >= 0) { "Property $this is not in the wire index table" }
     }
     fun propertyFromIndex(i: Int): Property = requireRange(PROPERTY_TABLE, i, "Property")
+
+    // -------------------------------------------------------------------------
+    // StatusType (nested sealed interface — flattened to a single index table)
+    //
+    // NOTE: future entries must be appended at the END of the global list
+    // (slot 13+). Do NOT insert into the Affliction or Boon grouping below —
+    // that would shift later indices and is a wire-version bump.
+    // -------------------------------------------------------------------------
+
+    private val STATUS_TYPE_TABLE: List<StatusType> = listOf(
+        StatusType.Affliction.Curse,
+        StatusType.Affliction.Disease,
+        StatusType.Affliction.Elemental,
+        StatusType.Affliction.Holy,
+        StatusType.Affliction.Magic,
+        StatusType.Affliction.Poison,
+        StatusType.Affliction.Unholy,
+        StatusType.Affliction.Wound,
+        StatusType.Affliction.UnTyped,
+        StatusType.Boon.Holy,
+        StatusType.Boon.Magic,
+        StatusType.Boon.Unholy,
+        StatusType.Boon.UnTyped,
+    )
+
+    fun StatusType.toIndex(): Int = STATUS_TYPE_TABLE.indexOf(this).also {
+        require(it >= 0) { "StatusType $this is not in the wire index table" }
+    }
+    fun statusTypeFromIndex(i: Int): StatusType = requireRange(STATUS_TYPE_TABLE, i, "StatusType")
 
     // -------------------------------------------------------------------------
     // Helpers

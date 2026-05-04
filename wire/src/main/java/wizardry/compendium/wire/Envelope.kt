@@ -73,6 +73,9 @@ data class Envelope(
 
     @SerialName("a")
     val listings: List<Listing> = emptyList(),
+
+    @SerialName("x")
+    val statusEffects: List<StatusEffect> = emptyList(),
 )
 
 @WireType(alias = "manifestation")
@@ -174,6 +177,25 @@ data class Effect(
 
     @SerialName("q")
     val replacementKey: String = "",
+)
+
+@WireType(alias = "statusEffect")
+@Serializable
+data class StatusEffect(
+    @SerialName("n")
+    val name: String,
+
+    @SerialName("t")
+    val typeIndex: Int,
+
+    @SerialName("p")
+    val propertyIndices: List<Int> = emptyList(),
+
+    @SerialName("k")
+    val stackable: Boolean = false,
+
+    @SerialName("d")
+    val description: String = "",
 )
 
 /**

@@ -3,9 +3,11 @@ package wizardry.compendium.wire
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.StatusEffect as ModelStatusEffect
 
 /**
  * Builds wire envelopes from the user's local contributions.
@@ -33,6 +35,7 @@ class WireExporter(
     private val essenceRepository: EssenceRepository,
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
+    private val statusEffectRepository: StatusEffectRepository,
 ) {
 
     suspend fun exportAll(): Envelope {
@@ -45,12 +48,14 @@ class WireExporter(
             .map { EnvelopeMapper.toWire(it) }
         val stones = awakeningStoneRepository.getContributions().map { EnvelopeMapper.toWire(it) }
         val listings = abilityListingRepository.getContributions().map { EnvelopeMapper.toWire(it) }
+        val effects = statusEffectRepository.getContributions().map { EnvelopeMapper.toWire(it) }
         return Envelope(
             version = EnvelopeCodec.CurrentVersion,
             manifestations = manifestations,
             confluences = confluences,
             stones = stones,
             listings = listings,
+            statusEffects = effects,
         )
     }
 
@@ -102,5 +107,15 @@ class WireExporter(
     fun exportSingle(listing: Ability.Listing): Envelope = Envelope(
         version = EnvelopeCodec.CurrentVersion,
         listings = listOf(EnvelopeMapper.toWire(listing)),
+    )
+
+    /**
+     * Wraps a single status effect in an envelope. Used by the detail-screen
+     * "Share" action; the receiver imports the entry, surfacing
+     * SkippedDuplicate if they already have a same-named effect.
+     */
+    fun exportSingle(effect: ModelStatusEffect): Envelope = Envelope(
+        version = EnvelopeCodec.CurrentVersion,
+        statusEffects = listOf(EnvelopeMapper.toWire(effect)),
     )
 }

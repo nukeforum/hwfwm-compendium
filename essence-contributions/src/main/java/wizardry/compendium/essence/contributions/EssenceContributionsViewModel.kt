@@ -7,6 +7,7 @@ import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
@@ -27,12 +28,14 @@ class EssenceContributionsViewModel @Inject constructor(
     private val essenceRepository: EssenceRepository,
     awakeningStoneRepository: AwakeningStoneRepository,
     abilityListingRepository: AbilityListingRepository,
+    statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
 
     private val wireImporter = WireImporter(
         essenceRepository,
         awakeningStoneRepository,
         abilityListingRepository,
+        statusEffectRepository,
     )
 
     private val _pasteImportState = MutableStateFlow<PasteImportState>(PasteImportState.Idle)

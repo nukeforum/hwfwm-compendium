@@ -6,12 +6,14 @@ import wizardry.compendium.essences.model.Cost as ModelCost
 import wizardry.compendium.essences.model.Effect as ModelEffect
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.ConfluenceSet as ModelConfluenceSet
+import wizardry.compendium.essences.model.StatusEffect as ModelStatusEffect
 import wizardry.compendium.wire.EnumIndex.abilityTypeFromIndex
 import wizardry.compendium.wire.EnumIndex.amountFromIndex
 import wizardry.compendium.wire.EnumIndex.propertyFromIndex
 import wizardry.compendium.wire.EnumIndex.rankFromIndex
 import wizardry.compendium.wire.EnumIndex.rarityFromIndex
 import wizardry.compendium.wire.EnumIndex.resourceFromIndex
+import wizardry.compendium.wire.EnumIndex.statusTypeFromIndex
 import wizardry.compendium.wire.EnumIndex.toIndex
 import kotlin.time.Duration
 
@@ -245,5 +247,31 @@ object EnvelopeMapper {
     private fun parseCooldown(text: String): Duration {
         if (text.isEmpty()) return Duration.ZERO
         return Duration.parseOrNull(text) ?: Duration.ZERO
+    }
+
+    // -------------------------------------------------------------------------
+    // Status effect
+    // -------------------------------------------------------------------------
+
+    fun toWire(effect: ModelStatusEffect): StatusEffect = StatusEffect(
+        name = effect.name,
+        typeIndex = effect.type.toIndex(),
+        propertyIndices = effect.properties.map { it.toIndex() },
+        stackable = effect.stackable,
+        description = effect.description,
+    )
+
+    fun toModel(wire: StatusEffect): ModelStatusEffect {
+        return try {
+            ModelStatusEffect(
+                name = wire.name,
+                type = statusTypeFromIndex(wire.typeIndex),
+                properties = wire.propertyIndices.map { propertyFromIndex(it) },
+                stackable = wire.stackable,
+                description = wire.description,
+            )
+        } catch (e: IllegalArgumentException) {
+            throw WireDecodeException("Failed to decode status effect '${wire.name}': ${e.message}", e)
+        }
     }
 }

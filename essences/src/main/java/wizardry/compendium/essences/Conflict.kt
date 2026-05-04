@@ -4,6 +4,7 @@ import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.StatusEffect
 
 sealed interface Conflict {
     val title: String
@@ -138,5 +139,32 @@ fun detectAbilityListingConflicts(
     return contributions.mapNotNull { contribution ->
         val match = canonicalByName[contribution.name.normalizedName()] ?: return@mapNotNull null
         AbilityListingConflict.NameCollision(contribution, match)
+    }
+}
+
+sealed interface StatusEffectConflict : Conflict {
+    data class NameCollision(
+        val contribution: StatusEffect,
+        val canonical: StatusEffect,
+    ) : StatusEffectConflict {
+        override val title get() = contribution.name
+        override val summary get() = "Name conflicts with a canonical status effect"
+        override val key get() = ConflictKey(DOMAIN, "name::${contribution.name}")
+    }
+
+    companion object {
+        const val DOMAIN: String = "status-effect"
+    }
+}
+
+fun detectStatusEffectConflicts(
+    canonical: List<StatusEffect>,
+    contributions: List<StatusEffect>,
+): List<StatusEffectConflict> {
+    if (contributions.isEmpty()) return emptyList()
+    val canonicalByName = canonical.associateBy { it.name.normalizedName() }
+    return contributions.mapNotNull { contribution ->
+        val match = canonicalByName[contribution.name.normalizedName()] ?: return@mapNotNull null
+        StatusEffectConflict.NameCollision(contribution, match)
     }
 }

@@ -43,9 +43,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val essenceContributionsEnabled by viewModel.essenceContributionsEnabled.collectAsState(initial = false)
     val awakeningStoneContributionsEnabled by viewModel.awakeningStoneContributionsEnabled.collectAsState(initial = false)
     val abilityListingContributionsEnabled by viewModel.abilityListingContributionsEnabled.collectAsState(initial = false)
+    val statusEffectContributionsEnabled by viewModel.statusEffectContributionsEnabled.collectAsState(initial = true)
     val essenceConflictCount by viewModel.essenceConflictCount.collectAsState(initial = 0)
     val awakeningStoneConflictCount by viewModel.awakeningStoneConflictCount.collectAsState(initial = 0)
     val abilityListingConflictCount by viewModel.abilityListingConflictCount.collectAsState(initial = 0)
+    val statusEffectConflictCount by viewModel.statusEffectConflictCount.collectAsState(initial = 0)
     val ioState by viewModel.ioState.collectAsState()
     val context = LocalContext.current
     var showImportDialog by remember { mutableStateOf(false) }
@@ -128,6 +130,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         abilityListingContributionsEnabled = abilityListingContributionsEnabled,
         abilityListingConflictCount = abilityListingConflictCount,
         onAbilityListingContributionsToggled = viewModel::setAbilityListingContributionsEnabled,
+        statusEffectContributionsEnabled = statusEffectContributionsEnabled,
+        statusEffectConflictCount = statusEffectConflictCount,
+        onStatusEffectContributionsToggled = viewModel::setStatusEffectContributionsEnabled,
         onShareClick = viewModel::beginExport,
         onSaveToFileClick = {
             // Suggest a default filename; the user can change it.
@@ -230,6 +235,9 @@ fun SettingsContent(
     abilityListingContributionsEnabled: Boolean,
     abilityListingConflictCount: Int,
     onAbilityListingContributionsToggled: (Boolean) -> Unit,
+    statusEffectContributionsEnabled: Boolean,
+    statusEffectConflictCount: Int,
+    onStatusEffectContributionsToggled: (Boolean) -> Unit,
     onShareClick: () -> Unit,
     onSaveToFileClick: () -> Unit,
     onPasteClick: () -> Unit,
@@ -264,6 +272,13 @@ fun SettingsContent(
             checked = abilityListingContributionsEnabled,
             conflictCount = abilityListingConflictCount,
             onCheckedChange = onAbilityListingContributionsToggled,
+        )
+        ToggleRow(
+            title = "My Status Effects",
+            subtitle = "Include your submitted status effects",
+            checked = statusEffectContributionsEnabled,
+            conflictCount = statusEffectConflictCount,
+            onCheckedChange = onStatusEffectContributionsToggled,
         )
 
         HorizontalDivider()
@@ -405,6 +420,9 @@ private fun SettingsContentOffPreview() {
         abilityListingContributionsEnabled = false,
         abilityListingConflictCount = 0,
         onAbilityListingContributionsToggled = {},
+        statusEffectContributionsEnabled = true,
+        statusEffectConflictCount = 0,
+        onStatusEffectContributionsToggled = {},
         onShareClick = {},
         onSaveToFileClick = {},
         onPasteClick = {},
@@ -426,6 +444,9 @@ private fun SettingsContentEncodingPreview() {
         abilityListingContributionsEnabled = true,
         abilityListingConflictCount = 0,
         onAbilityListingContributionsToggled = {},
+        statusEffectContributionsEnabled = true,
+        statusEffectConflictCount = 0,
+        onStatusEffectContributionsToggled = {},
         onShareClick = {},
         onSaveToFileClick = {},
         onPasteClick = {},
@@ -447,6 +468,9 @@ private fun SettingsContentConflictPreview() {
         abilityListingContributionsEnabled = true,
         abilityListingConflictCount = 1,
         onAbilityListingContributionsToggled = {},
+        statusEffectContributionsEnabled = true,
+        statusEffectConflictCount = 0,
+        onStatusEffectContributionsToggled = {},
         onShareClick = {},
         onSaveToFileClick = {},
         onPasteClick = {},

@@ -7,9 +7,11 @@ import androidx.datastore.preferences.preferencesDataStore
 import wizardry.compendium.essences.AbilityListingContributionsToggleFlow
 import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.EssenceContributionsToggleFlow
+import wizardry.compendium.essences.StatusEffectContributionsToggleFlow
 import wizardry.compendium.persistence.AbilityListingContributionsToggle
 import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
 import wizardry.compendium.persistence.EssenceContributionsToggle
+import wizardry.compendium.persistence.StatusEffectContributionsToggle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,12 +35,15 @@ class PreferencesRepository @Inject constructor(
     AwakeningStoneContributionsToggle,
     AwakeningStoneContributionsToggleFlow,
     AbilityListingContributionsToggle,
-    AbilityListingContributionsToggleFlow {
+    AbilityListingContributionsToggleFlow,
+    StatusEffectContributionsToggle,
+    StatusEffectContributionsToggleFlow {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val essenceContributionsKey = booleanPreferencesKey("contributions_enabled")
     private val awakeningStoneContributionsKey = booleanPreferencesKey("awakening_stone_contributions_enabled")
     private val abilityListingContributionsKey = booleanPreferencesKey("ability_listing_contributions_enabled")
+    private val statusEffectContributionsKey = booleanPreferencesKey("status_effect_contributions_enabled")
 
     private val essenceContributionsState: StateFlow<Boolean> = context.dataStore.data
         .map { prefs -> prefs[essenceContributionsKey] ?: false }
@@ -64,6 +69,14 @@ class PreferencesRepository @Inject constructor(
             initialValue = false,
         )
 
+    private val statusEffectContributionsState: StateFlow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[statusEffectContributionsKey] ?: true }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = true,
+        )
+
     override val isEssenceContributionsEnabled: Boolean
         get() = essenceContributionsState.value
 
@@ -81,6 +94,12 @@ class PreferencesRepository @Inject constructor(
 
     override val abilityListingContributionsEnabled: Flow<Boolean>
         get() = abilityListingContributionsState
+
+    override val isStatusEffectContributionsEnabled: Boolean
+        get() = statusEffectContributionsState.value
+
+    override val statusEffectContributionsEnabled: Flow<Boolean>
+        get() = statusEffectContributionsState
 
     fun setEssenceContributionsEnabled(enabled: Boolean) {
         scope.launch {
@@ -102,6 +121,14 @@ class PreferencesRepository @Inject constructor(
         scope.launch {
             context.dataStore.edit { prefs ->
                 prefs[abilityListingContributionsKey] = enabled
+            }
+        }
+    }
+
+    fun setStatusEffectContributionsEnabled(enabled: Boolean) {
+        scope.launch {
+            context.dataStore.edit { prefs ->
+                prefs[statusEffectContributionsKey] = enabled
             }
         }
     }

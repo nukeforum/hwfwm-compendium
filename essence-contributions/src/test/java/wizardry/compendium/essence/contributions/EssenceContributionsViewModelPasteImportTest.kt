@@ -21,6 +21,9 @@ import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectConflict
+import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.ConfluenceSet
@@ -53,6 +56,7 @@ class EssenceContributionsViewModelPasteImportTest {
             essenceRepository = essenceRepo,
             awakeningStoneRepository = stoneRepo,
             abilityListingRepository = listingRepo,
+            statusEffectRepository = fakeStatusEffectRepo(),
         )
     }
 
@@ -108,7 +112,7 @@ class EssenceContributionsViewModelPasteImportTest {
                 Essence.of("Sin", "", Rarity.Legendary, false),
             ),
         )
-        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val envelope = exporter.exportSingle(confluence)
         val preview = samplePreview(envelope)
 
@@ -135,7 +139,7 @@ class EssenceContributionsViewModelPasteImportTest {
                 Essence.of("Sin", "", Rarity.Legendary, false),
             ),
         )
-        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val envelope = exporter.exportSingle(confluence)
         val preview = samplePreview(envelope)
         viewModel.startPasteImport(preview)
@@ -166,11 +170,12 @@ class EssenceContributionsViewModelPasteImportTest {
             essenceRepository = throwingRepo,
             awakeningStoneRepository = stoneRepo,
             abilityListingRepository = listingRepo,
+            statusEffectRepository = fakeStatusEffectRepo(),
         )
         // Build an envelope that contains a manifestation so the throwing
         // saveManifestationContribution path is actually reached.
         val manifestation = Essence.of("Wind", "", Rarity.Common, false)
-        val envelope = WireExporter(essenceRepo, stoneRepo, listingRepo)
+        val envelope = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
             .exportSingle(manifestation)
         val preview = samplePreview(envelope)
 
@@ -186,6 +191,20 @@ class EssenceContributionsViewModelPasteImportTest {
             failed.reason.startsWith("Import failed:"),
         )
     }
+}
+
+private fun fakeStatusEffectRepo() = object : StatusEffectRepository {
+    override val statusEffects = kotlinx.coroutines.flow.flowOf(emptyList<StatusEffect>())
+    override val conflicts = kotlinx.coroutines.flow.flowOf(emptyList<StatusEffectConflict>())
+    override suspend fun getStatusEffects() = emptyList<StatusEffect>()
+    override suspend fun getContributions() = emptyList<StatusEffect>()
+    override suspend fun getConflicts() = emptyList<StatusEffectConflict>()
+    override suspend fun saveStatusEffectContribution(effect: StatusEffect) =
+        ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(effect: StatusEffect) =
+        ContributionResult.Success
 }
 
 private class FakeEssenceRepository(
