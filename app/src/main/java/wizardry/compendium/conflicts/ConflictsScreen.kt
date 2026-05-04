@@ -183,5 +183,4 @@ private fun Conflict.editTargetName(): String = when (this) {
     is EssenceConflict.CombinationCollision -> contribution.name
     is AwakeningStoneConflict.NameCollision -> contribution.name
     is AbilityListingConflict.NameCollision -> contribution.name
-    else -> error("Unknown conflict type: $this")
 }
