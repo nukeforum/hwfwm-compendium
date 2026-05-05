@@ -61,9 +61,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import kotlinx.coroutines.launch
 import wizardry.compendium.ability.preview.AbilityPreview
 import wizardry.compendium.ability.preview.LocalStatusEffects
@@ -1019,63 +1021,69 @@ private fun resourceColor(resource: Resource): Color = when (resource) {
     Resource.Health -> Color(0xFFD32F2F)
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun AbilityListingFormEmptyPreview() {
-    AbilityListingForm(
-        initialName = null,
-        isEdit = false,
-        effects = emptyList(),
-        statusEffects = emptyList(),
-        saveState = AbilityListingContributionsViewModel.SaveState.Idle,
-        onUpdateEffect = { _, _ -> },
-        onRemoveEffect = {},
-        onAppendEffect = {},
-        onSave = {},
-        onDelete = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AbilityListingForm(
+            initialName = null,
+            isEdit = false,
+            effects = emptyList(),
+            statusEffects = emptyList(),
+            saveState = AbilityListingContributionsViewModel.SaveState.Idle,
+            onUpdateEffect = { _, _ -> },
+            onRemoveEffect = {},
+            onAppendEffect = {},
+            onSave = {},
+            onDelete = {},
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun AbilityListingFormPopulatedPreview() {
-    AbilityListingForm(
-        initialName = null,
-        isEdit = false,
-        effects = listOf(
-            EffectDraft(
-                rank = Rank.Iron,
-                type = AbilityType.Spell,
-                properties = listOf(Property.Fire, Property.Magic),
-                costs = listOf(Cost.Upfront(Amount.Low, Resource.Mana)),
-                replacementKey = "",
-                description = "Hurls a fireball at the target.",
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AbilityListingForm(
+            initialName = null,
+            isEdit = false,
+            effects = listOf(
+                EffectDraft(
+                    rank = Rank.Iron,
+                    type = AbilityType.Spell,
+                    properties = listOf(Property.Fire, Property.Magic),
+                    costs = listOf(Cost.Upfront(Amount.Low, Resource.Mana)),
+                    replacementKey = "",
+                    description = "Hurls a fireball at the target.",
+                ),
+                EffectDraft(),
             ),
-            EffectDraft(),
-        ),
-        statusEffects = emptyList(),
-        saveState = AbilityListingContributionsViewModel.SaveState.Idle,
-        onUpdateEffect = { _, _ -> },
-        onRemoveEffect = {},
-        onAppendEffect = {},
-        onSave = {},
-        onDelete = {},
-    )
+            statusEffects = emptyList(),
+            saveState = AbilityListingContributionsViewModel.SaveState.Idle,
+            onUpdateEffect = { _, _ -> },
+            onRemoveEffect = {},
+            onAppendEffect = {},
+            onSave = {},
+            onDelete = {},
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun AbilityListingFormErrorPreview() {
-    AbilityListingForm(
-        initialName = null,
-        isEdit = false,
-        effects = emptyList(),
-        statusEffects = emptyList(),
-        saveState = AbilityListingContributionsViewModel.SaveState.Error("Name cannot be empty"),
-        onUpdateEffect = { _, _ -> },
-        onRemoveEffect = {},
-        onAppendEffect = {},
-        onSave = {},
-        onDelete = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AbilityListingForm(
+            initialName = null,
+            isEdit = false,
+            effects = emptyList(),
+            statusEffects = emptyList(),
+            saveState = AbilityListingContributionsViewModel.SaveState.Error("Name cannot be empty"),
+            onUpdateEffect = { _, _ -> },
+            onRemoveEffect = {},
+            onAppendEffect = {},
+            onSave = {},
+            onDelete = {},
+        )
+    }
 }

@@ -11,8 +11,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
@@ -819,54 +821,62 @@ private val previewConfluences = listOf(
     ),
 )
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun ManifestationFormIdlePreview() {
-    ManifestationForm(
-        initial = null,
-        isEdit = false,
-        saveState = EssenceContributionsViewModel.SaveState.Idle,
-        onSave = { _, _, _, _ -> },
-        onDelete = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ManifestationForm(
+            initial = null,
+            isEdit = false,
+            saveState = EssenceContributionsViewModel.SaveState.Idle,
+            onSave = { _, _, _, _ -> },
+            onDelete = {},
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun ManifestationFormErrorPreview() {
-    ManifestationForm(
-        initial = null,
-        isEdit = false,
-        saveState = EssenceContributionsViewModel.SaveState.Error("Name cannot be empty"),
-        onSave = { _, _, _, _ -> },
-        onDelete = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ManifestationForm(
+            initial = null,
+            isEdit = false,
+            saveState = EssenceContributionsViewModel.SaveState.Error("Name cannot be empty"),
+            onSave = { _, _, _, _ -> },
+            onDelete = {},
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun ConfluenceFormNewPreview() {
-    ConfluenceForm(
-        availableManifestations = previewManifestations,
-        availableConfluences = previewConfluences,
-        saveState = EssenceContributionsViewModel.SaveState.Idle,
-        onSaveNew = { _, _, _, _, _ -> },
-        onAddCombination = { _, _, _, _, _ -> },
-        onClearState = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ConfluenceForm(
+            availableManifestations = previewManifestations,
+            availableConfluences = previewConfluences,
+            saveState = EssenceContributionsViewModel.SaveState.Idle,
+            onSaveNew = { _, _, _, _, _ -> },
+            onAddCombination = { _, _, _, _, _ -> },
+            onClearState = {},
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun ConfluenceFormDuplicateErrorPreview() {
-    ConfluenceForm(
-        availableManifestations = previewManifestations,
-        availableConfluences = previewConfluences,
-        saveState = EssenceContributionsViewModel.SaveState.Error("That combination already produces Doom"),
-        onSaveNew = { _, _, _, _, _ -> },
-        onAddCombination = { _, _, _, _, _ -> },
-        onClearState = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ConfluenceForm(
+            availableManifestations = previewManifestations,
+            availableConfluences = previewConfluences,
+            saveState = EssenceContributionsViewModel.SaveState.Error("That combination already produces Doom"),
+            onSaveNew = { _, _, _, _, _ -> },
+            onAddCombination = { _, _, _, _, _ -> },
+            onClearState = {},
+        )
+    }
 }
 
 // endregion

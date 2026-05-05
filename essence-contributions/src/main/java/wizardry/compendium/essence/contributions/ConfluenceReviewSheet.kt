@@ -21,9 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.share.ConfluenceImportPreview
 import wizardry.compendium.share.PreviewCombination
 import wizardry.compendium.share.PreviewEssence
@@ -161,22 +163,28 @@ private val previewUnresolvable = previewTypical.copy(
     unresolvableNames = setOf("phantom"),
 )
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun ConfluenceReviewSheetTypicalPreview() {
-    ConfluenceReviewSheet(preview = previewTypical, saving = false, onSave = {}, onCancel = {})
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ConfluenceReviewSheet(preview = previewTypical, saving = false, onSave = {}, onCancel = {})
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun ConfluenceReviewSheetUnresolvablePreview() {
-    ConfluenceReviewSheet(preview = previewUnresolvable, saving = false, onSave = {}, onCancel = {})
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ConfluenceReviewSheet(preview = previewUnresolvable, saving = false, onSave = {}, onCancel = {})
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun ConfluenceReviewSheetSavingPreview() {
-    ConfluenceReviewSheet(preview = previewTypical, saving = true, onSave = {}, onCancel = {})
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ConfluenceReviewSheet(preview = previewTypical, saving = true, onSave = {}, onCancel = {})
+    }
 }
 
 // endregion

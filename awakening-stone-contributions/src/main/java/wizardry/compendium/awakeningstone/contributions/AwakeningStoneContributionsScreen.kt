@@ -23,9 +23,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.ContributionDropdown
@@ -236,38 +238,44 @@ private fun awakeningStonePreviewText(name: String, rarity: Rarity): String =
         (${rarity.name.lowercase()})
     """.trimIndent()
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun AwakeningStoneFormIdlePreview() {
-    AwakeningStoneForm(
-        initial = null,
-        isEdit = false,
-        saveState = AwakeningStoneContributionsViewModel.SaveState.Idle,
-        onSave = { _, _ -> },
-        onDelete = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AwakeningStoneForm(
+            initial = null,
+            isEdit = false,
+            saveState = AwakeningStoneContributionsViewModel.SaveState.Idle,
+            onSave = { _, _ -> },
+            onDelete = {},
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun AwakeningStoneFormErrorPreview() {
-    AwakeningStoneForm(
-        initial = null,
-        isEdit = false,
-        saveState = AwakeningStoneContributionsViewModel.SaveState.Error("Name cannot be empty"),
-        onSave = { _, _ -> },
-        onDelete = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AwakeningStoneForm(
+            initial = null,
+            isEdit = false,
+            saveState = AwakeningStoneContributionsViewModel.SaveState.Error("Name cannot be empty"),
+            onSave = { _, _ -> },
+            onDelete = {},
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun AwakeningStoneFormEditPreview() {
-    AwakeningStoneForm(
-        initial = AwakeningStone.of("Sample", Rarity.Rare),
-        isEdit = true,
-        saveState = AwakeningStoneContributionsViewModel.SaveState.Idle,
-        onSave = { _, _ -> },
-        onDelete = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AwakeningStoneForm(
+            initial = AwakeningStone.of("Sample", Rarity.Rare),
+            isEdit = true,
+            saveState = AwakeningStoneContributionsViewModel.SaveState.Idle,
+            onSave = { _, _ -> },
+            onDelete = {},
+        )
+    }
 }
