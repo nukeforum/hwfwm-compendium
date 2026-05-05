@@ -495,6 +495,10 @@ private fun descriptionAnnotated(
                         withStyle(SpanStyle(color = errorColor, fontWeight = FontWeight.Medium)) {
                             append(segment.token)
                         }
+                    is DescriptionSegment.StatusLink ->
+                        withStyle(SpanStyle(color = resolvedColor, fontWeight = FontWeight.Medium)) {
+                            append(segment.name)
+                        }
                 }
             }
         }

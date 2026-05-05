@@ -9,13 +9,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.AbilityListingRepository
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import javax.inject.Inject
 
 @HiltViewModel
-class AbilityListingDetailViewModel
-@Inject constructor(
+class AbilityListingDetailViewModel @Inject constructor(
     private val abilityListingRepository: AbilityListingRepository,
+    private val statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
     private val _state = MutableStateFlow<AbilityListingDetailUiState>(AbilityListingDetailUiState.Loading)
     val state = _state.asStateFlow()
@@ -28,19 +29,28 @@ class AbilityListingDetailViewModel
                 _state.emit(refreshed.toSuccess())
             }
         }
+        viewModelScope.launch(Dispatchers.IO) {
+            statusEffectRepository.statusEffects.drop(1).collect { effects ->
+                val currentSuccess = state.value as? AbilityListingDetailUiState.Success ?: return@collect
+                _state.emit(currentSuccess.copy(statusEffects = effects))
+            }
+        }
     }
 
     fun load(listingName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             _state.emit(AbilityListingDetailUiState.Loading)
 
-            abilityListingRepository.getAbilityListings().find { it.name == listingName }
-                ?.let { _state.emit(it.toSuccess()) }
-                ?: _state.emit(
+            val listing = abilityListingRepository.getAbilityListings().find { it.name == listingName }
+            if (listing == null) {
+                _state.emit(
                     AbilityListingDetailUiState.Error(
-                        IllegalArgumentException("no ability listing found with name: $listingName")
-                    )
+                        IllegalArgumentException("no ability listing found with name: $listingName"),
+                    ),
                 )
+                return@launch
+            }
+            _state.emit(listing.toSuccess())
         }
     }
 
@@ -48,6 +58,7 @@ class AbilityListingDetailViewModel
         AbilityListingDetailUiState.Success(
             listing = this,
             isContribution = abilityListingRepository.isContribution(name),
+            statusEffects = statusEffectRepository.getStatusEffects(),
         )
 
     private val currentlyLoadedListing: Ability.Listing?

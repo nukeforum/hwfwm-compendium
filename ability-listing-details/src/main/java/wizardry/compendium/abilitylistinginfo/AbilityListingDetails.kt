@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ability.preview.AbilityPreview
+import wizardry.compendium.ability.preview.LocalStatusEffects
 import wizardry.compendium.essences.model.Ability
 
 @Composable
@@ -62,7 +64,7 @@ fun AbilityListingDetails(
 private fun ErrorMessage(message: String) {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Text(text = message)
     }
@@ -72,7 +74,7 @@ private fun ErrorMessage(message: String) {
 private fun Loading() {
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
         Text(text = "Loading")
     }
@@ -111,9 +113,11 @@ private fun Details(
             modifier = Modifier
                 .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)
                 .border(1.dp, Color.DarkGray)
-                .padding(8.dp)
+                .padding(8.dp),
         ) {
-            AbilityPreview(ability = state.listing)
+            CompositionLocalProvider(LocalStatusEffects provides state.statusEffects) {
+                AbilityPreview(ability = state.listing)
+            }
         }
     }
 }
