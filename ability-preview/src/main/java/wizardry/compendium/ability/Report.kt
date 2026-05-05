@@ -13,10 +13,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import wizardry.compendium.ability.preview.LocalStatusEffects
 import wizardry.compendium.ability.preview.annotatedDescription
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AbilityType
 import wizardry.compendium.essences.model.Amount
@@ -175,38 +177,40 @@ private fun StatusEffect.typeLabel(): String = when (type) {
 private fun Effect.AbilityEffect.cooldownText(): String =
     if (cooldown == Duration.ZERO) "" else cooldown.toString()
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun Foo() {
-    Report(
-        Ability.Listing(
-            "Cloak of Night",
-            listOf(
-                Effect.AbilityEffect(
-                    Rank.Iron,
-                    AbilityType.Conjuration,
-                    listOf(Property.Darkness, Property.Light, Property.Dimension),
-                    listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
-                    Duration.ZERO,
-                    "Conjures a magical cloak that can alter the wearer. Offers limited physical protection. Can generate light or blend into shadows.",
-                ),
-                Effect.AbilityEffect(
-                    Rank.Iron,
-                    AbilityType.Conjuration,
-                    listOf(Property.Darkness, Property.Light, Property.Dimension),
-                    listOf(Cost.Ongoing(Amount.Low, Resource.Mana)),
-                    Duration.ZERO,
-                    "Cloak can reduce the weight of the wearer for a low mana-per-second cost, allowing reduced falling speed and water-walking.",
-                ),
-                Effect.AbilityEffect(
-                    Rank.Iron,
-                    AbilityType.Conjuration,
-                    listOf(Property.Darkness, Property.Light, Property.Dimension),
-                    listOf(Cost.None),
-                    Duration.ZERO,
-                    "Cannot be given or taken away, although effects can be extended to others in very close proximity.",
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Report(
+            Ability.Listing(
+                "Cloak of Night",
+                listOf(
+                    Effect.AbilityEffect(
+                        Rank.Iron,
+                        AbilityType.Conjuration,
+                        listOf(Property.Darkness, Property.Light, Property.Dimension),
+                        listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
+                        Duration.ZERO,
+                        "Conjures a magical cloak that can alter the wearer. Offers limited physical protection. Can generate light or blend into shadows.",
+                    ),
+                    Effect.AbilityEffect(
+                        Rank.Iron,
+                        AbilityType.Conjuration,
+                        listOf(Property.Darkness, Property.Light, Property.Dimension),
+                        listOf(Cost.Ongoing(Amount.Low, Resource.Mana)),
+                        Duration.ZERO,
+                        "Cloak can reduce the weight of the wearer for a low mana-per-second cost, allowing reduced falling speed and water-walking.",
+                    ),
+                    Effect.AbilityEffect(
+                        Rank.Iron,
+                        AbilityType.Conjuration,
+                        listOf(Property.Darkness, Property.Light, Property.Dimension),
+                        listOf(Cost.None),
+                        Duration.ZERO,
+                        "Cannot be given or taken away, although effects can be extended to others in very close proximity.",
+                    ),
                 ),
             ),
-        ),
-    )
+        )
+    }
 }
