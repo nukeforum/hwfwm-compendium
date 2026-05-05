@@ -20,9 +20,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import wizardry.compendium.ui.theme.ThemeMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,6 +56,8 @@ fun SettingsScreen(
     val awakeningStoneConflictCount by viewModel.awakeningStoneConflictCount.collectAsState(initial = 0)
     val abilityListingConflictCount by viewModel.abilityListingConflictCount.collectAsState(initial = 0)
     val statusEffectConflictCount by viewModel.statusEffectConflictCount.collectAsState(initial = 0)
+    val themeMode by viewModel.themeMode.collectAsState()
+    val dynamicColorEnabled by viewModel.dynamicColorEnabled.collectAsState()
     val ioState by viewModel.ioState.collectAsState()
     val context = LocalContext.current
     var showImportDialog by remember { mutableStateOf(false) }
@@ -125,6 +131,11 @@ fun SettingsScreen(
     }
 
     SettingsContent(
+        themeMode = themeMode,
+        onThemeModeSelected = viewModel::setThemeMode,
+        dynamicColorAvailable = viewModel.dynamicColorAvailable,
+        dynamicColorEnabled = dynamicColorEnabled,
+        onDynamicColorToggled = viewModel::setDynamicColorEnabled,
         essenceContributionsEnabled = essenceContributionsEnabled,
         essenceConflictCount = essenceConflictCount,
         onEssenceContributionsToggled = viewModel::setEssenceContributionsEnabled,
@@ -233,6 +244,11 @@ fun SettingsScreen(
 
 @Composable
 fun SettingsContent(
+    themeMode: ThemeMode,
+    onThemeModeSelected: (ThemeMode) -> Unit,
+    dynamicColorAvailable: Boolean,
+    dynamicColorEnabled: Boolean,
+    onDynamicColorToggled: (Boolean) -> Unit,
     essenceContributionsEnabled: Boolean,
     essenceConflictCount: Int,
     onEssenceContributionsToggled: (Boolean) -> Unit,
@@ -261,6 +277,21 @@ fun SettingsContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Text("Appearance", style = MaterialTheme.typography.titleMedium)
+        ThemeModeSelector(
+            selected = themeMode,
+            onSelected = onThemeModeSelected,
+        )
+        if (dynamicColorAvailable) {
+            ToggleRow(
+                title = "Use dynamic colors",
+                subtitle = "Match your wallpaper",
+                checked = dynamicColorEnabled,
+                conflictCount = 0,
+                onCheckedChange = onDynamicColorToggled,
+            )
+        }
+        HorizontalDivider()
         Text("Contributions", style = MaterialTheme.typography.titleMedium)
         ToggleRow(
             title = "My Essences",
@@ -401,6 +432,25 @@ private fun ToggleRow(
 }
 
 @Composable
+private fun ThemeModeSelector(
+    selected: ThemeMode,
+    onSelected: (ThemeMode) -> Unit,
+) {
+    val options = listOf(ThemeMode.System, ThemeMode.Light, ThemeMode.Dark)
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        options.forEachIndexed { index, mode ->
+            SegmentedButton(
+                selected = mode == selected,
+                onClick = { onSelected(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+            ) {
+                Text(mode.name)
+            }
+        }
+    }
+}
+
+@Composable
 private fun ImportSummaryDialog(summary: ImportSummary, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -442,6 +492,11 @@ private fun ImportSummaryDialog(summary: ImportSummary, onDismiss: () -> Unit) {
 @Composable
 private fun SettingsContentOffPreview() {
     SettingsContent(
+        themeMode = ThemeMode.System,
+        onThemeModeSelected = {},
+        dynamicColorAvailable = true,
+        dynamicColorEnabled = true,
+        onDynamicColorToggled = {},
         essenceContributionsEnabled = false,
         essenceConflictCount = 0,
         onEssenceContributionsToggled = {},
@@ -469,6 +524,11 @@ private fun SettingsContentOffPreview() {
 @Composable
 private fun SettingsContentEncodingPreview() {
     SettingsContent(
+        themeMode = ThemeMode.System,
+        onThemeModeSelected = {},
+        dynamicColorAvailable = true,
+        dynamicColorEnabled = true,
+        onDynamicColorToggled = {},
         essenceContributionsEnabled = true,
         essenceConflictCount = 0,
         onEssenceContributionsToggled = {},
@@ -496,6 +556,11 @@ private fun SettingsContentEncodingPreview() {
 @Composable
 private fun SettingsContentConflictPreview() {
     SettingsContent(
+        themeMode = ThemeMode.System,
+        onThemeModeSelected = {},
+        dynamicColorAvailable = true,
+        dynamicColorEnabled = true,
+        onDynamicColorToggled = {},
         essenceContributionsEnabled = true,
         essenceConflictCount = 2,
         onEssenceContributionsToggled = {},
