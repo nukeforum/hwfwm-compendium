@@ -26,11 +26,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.ui.R
+import wizardry.compendium.ui.SearchEmptyState
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
 fun AbilityListingSearch(
     onListingClicked: (Ability.Listing) -> Unit,
+    onAddClicked: () -> Unit,
     viewModel: AbilityListingSearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -47,6 +49,7 @@ fun AbilityListingSearch(
             state = result,
             onFilterTermChanged = viewModel::setFilterTerm,
             onListingClicked = onListingClicked,
+            onAddClicked = onAddClicked,
         )
     }
 }
@@ -57,16 +60,27 @@ private fun Screen(
     state: AbilityListingSearchUiState.Success,
     onFilterTermChanged: (String) -> Unit,
     onListingClicked: (Ability.Listing) -> Unit,
+    onAddClicked: () -> Unit,
 ) {
     Column(modifier = modifier) {
-        LazyColumn(
-            modifier = Modifier.weight(1f, fill = false)
-        ) {
-            items(state.listings, { it.name }) { listing ->
-                AbilityListingListItem(
-                    listing = listing,
-                    modifier = Modifier.clickable { onListingClicked(listing) },
-                )
+        if (state.listings.isEmpty()) {
+            SearchEmptyState(
+                hasFilter = state.filterTerm.isNotEmpty(),
+                onAddClicked = onAddClicked,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f)
+            ) {
+                items(state.listings, { it.name }) { listing ->
+                    AbilityListingListItem(
+                        listing = listing,
+                        modifier = Modifier.clickable { onListingClicked(listing) },
+                    )
+                }
             }
         }
 

@@ -125,6 +125,9 @@ class MainActivity : ComponentActivity() {
                                 onEssenceClicked = { essence ->
                                     navController.navigate(Nav.EssenceDetail.buildRoute(essence))
                                 },
+                                onAddClicked = {
+                                    navController.navigate(Nav.Contributions.newRoute)
+                                },
                             )
                         }
                         composable(Nav.AwakeningStoneSearch.route) { backStackEntry ->
@@ -133,6 +136,9 @@ class MainActivity : ComponentActivity() {
                             AwakeningStoneSearch(
                                 onStoneClicked = { stone ->
                                     navController.navigate(Nav.AwakeningStoneDetail.buildRoute(stone))
+                                },
+                                onAddClicked = {
+                                    navController.navigate(Nav.AwakeningStoneContributions.newRoute)
                                 },
                             )
                         }
@@ -265,6 +271,9 @@ class MainActivity : ComponentActivity() {
                                 onListingClicked = { listing ->
                                     navController.navigate(Nav.AbilityListingDetail.buildRoute(listing))
                                 },
+                                onAddClicked = {
+                                    navController.navigate(Nav.AbilityListingContributions.newRoute)
+                                },
                             )
                         }
                         composable(
@@ -317,6 +326,9 @@ class MainActivity : ComponentActivity() {
                             StatusEffectSearch(
                                 onEffectClicked = { effect ->
                                     navController.navigate(Nav.StatusEffectDetail.buildRoute(effect))
+                                },
+                                onAddClicked = {
+                                    navController.navigate(Nav.StatusEffectContributions.newRoute)
                                 },
                             )
                         }

@@ -24,12 +24,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ui.R
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.ui.SearchEmptyState
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
 fun EssenceSearch(
     viewModel: SearchViewModel = hiltViewModel(),
     onEssenceClicked: (Essence) -> Unit,
+    onAddClicked: () -> Unit,
 ) {
     val state by viewModel.state.collectAsState()
 
@@ -46,6 +48,7 @@ fun EssenceSearch(
             onEssenceClicked = onEssenceClicked,
             onFilterTermChanged = viewModel::setFilterTerm,
             onFilterSelected = viewModel::applyFilter,
+            onAddClicked = onAddClicked,
         )
     }
 }
@@ -57,17 +60,28 @@ private fun Screen(
     onEssenceClicked: (Essence) -> Unit,
     onFilterTermChanged: (String) -> Unit,
     onFilterSelected: (SearchFilter) -> Unit,
+    onAddClicked: () -> Unit,
 ) {
     Column(modifier = modifier) {
-        LazyColumn(
-            modifier = Modifier.weight(1f, fill = false)
-        ) {
-            items(state.essences, { it.name }) { essence ->
-                EssenceListItem(
-                    essence = essence,
-                    modifier = Modifier
-                        .clickable(onClick = { onEssenceClicked(essence) })
-                )
+        if (state.essences.isEmpty()) {
+            SearchEmptyState(
+                hasFilter = state.filterTerm.isNotEmpty() || state.appliedFilters.isNotEmpty(),
+                onAddClicked = onAddClicked,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f)
+            ) {
+                items(state.essences, { it.name }) { essence ->
+                    EssenceListItem(
+                        essence = essence,
+                        modifier = Modifier
+                            .clickable(onClick = { onEssenceClicked(essence) })
+                    )
+                }
             }
         }
 

@@ -39,11 +39,13 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.R
+import wizardry.compendium.ui.SearchEmptyState
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
 fun AwakeningStoneSearch(
     onStoneClicked: (AwakeningStone) -> Unit,
+    onAddClicked: () -> Unit,
     viewModel: AwakeningStoneSearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -61,6 +63,7 @@ fun AwakeningStoneSearch(
             onFilterTermChanged = viewModel::setFilterTerm,
             onFilterSelected = viewModel::applyFilter,
             onStoneClicked = onStoneClicked,
+            onAddClicked = onAddClicked,
         )
     }
 }
@@ -72,16 +75,27 @@ private fun Screen(
     onFilterTermChanged: (String) -> Unit,
     onFilterSelected: (AwakeningStoneSearchFilter) -> Unit,
     onStoneClicked: (AwakeningStone) -> Unit,
+    onAddClicked: () -> Unit,
 ) {
     Column(modifier = modifier) {
-        LazyColumn(
-            modifier = Modifier.weight(1f, fill = false)
-        ) {
-            items(state.stones, { it.name }) { stone ->
-                AwakeningStoneListItem(
-                    stone = stone,
-                    modifier = Modifier.clickable { onStoneClicked(stone) },
-                )
+        if (state.stones.isEmpty()) {
+            SearchEmptyState(
+                hasFilter = state.filterTerm.isNotEmpty() || state.appliedFilters.isNotEmpty(),
+                onAddClicked = onAddClicked,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f)
+            ) {
+                items(state.stones, { it.name }) { stone ->
+                    AwakeningStoneListItem(
+                        stone = stone,
+                        modifier = Modifier.clickable { onStoneClicked(stone) },
+                    )
+                }
             }
         }
 

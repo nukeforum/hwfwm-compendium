@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.ui.SearchEmptyState
 
 private val AfflictionSubtypes: List<StatusType.Affliction> = listOf(
     StatusType.Affliction.Curse, StatusType.Affliction.Disease, StatusType.Affliction.Elemental,
@@ -51,6 +52,7 @@ private enum class TopLevel { Affliction, Boon }
 @Composable
 fun StatusEffectSearch(
     onEffectClicked: (StatusEffect) -> Unit,
+    onAddClicked: () -> Unit,
     viewModel: StatusEffectSearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -64,6 +66,7 @@ fun StatusEffectSearch(
             onFilterTermChanged = viewModel::setFilterTerm,
             onFilterSelected = viewModel::applyFilter,
             onEffectClicked = onEffectClicked,
+            onAddClicked = onAddClicked,
         )
     }
 }
@@ -76,14 +79,25 @@ private fun Screen(
     onFilterTermChanged: (String) -> Unit,
     onFilterSelected: (StatusEffectSearchFilter?) -> Unit,
     onEffectClicked: (StatusEffect) -> Unit,
+    onAddClicked: () -> Unit,
 ) {
     var showFilterSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Column(modifier = modifier) {
-        LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
-            items(state.effects, { it.name }) { effect ->
-                StatusEffectRow(effect = effect, onClick = { onEffectClicked(effect) })
+        if (state.effects.isEmpty()) {
+            SearchEmptyState(
+                hasFilter = state.filterTerm.isNotEmpty() || state.appliedFilter != null,
+                onAddClicked = onAddClicked,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        } else {
+            LazyColumn(modifier = Modifier.weight(1f)) {
+                items(state.effects, { it.name }) { effect ->
+                    StatusEffectRow(effect = effect, onClick = { onEffectClicked(effect) })
+                }
             }
         }
 
