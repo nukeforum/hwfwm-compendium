@@ -37,9 +37,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.wire.ImportSummary
 
 @Composable
@@ -488,98 +489,104 @@ private fun ImportSummaryDialog(summary: ImportSummary, onDismiss: () -> Unit) {
     )
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun SettingsContentOffPreview() {
-    SettingsContent(
-        themeMode = ThemeMode.System,
-        onThemeModeSelected = {},
-        dynamicColorAvailable = true,
-        dynamicColorEnabled = true,
-        onDynamicColorToggled = {},
-        essenceContributionsEnabled = false,
-        essenceConflictCount = 0,
-        onEssenceContributionsToggled = {},
-        awakeningStoneContributionsEnabled = false,
-        awakeningStoneConflictCount = 0,
-        onAwakeningStoneContributionsToggled = {},
-        abilityListingContributionsEnabled = false,
-        abilityListingConflictCount = 0,
-        onAbilityListingContributionsToggled = {},
-        statusEffectContributionsEnabled = true,
-        statusEffectConflictCount = 0,
-        onStatusEffectContributionsToggled = {},
-        essencesAsAwakeningStonesEnabled = false,
-        onEssencesAsAwakeningStonesToggled = {},
-        onShareClick = {},
-        onSaveToFileClick = {},
-        onPasteClick = {},
-        onOpenFileClick = {},
-        onAboutClick = {},
-        ioState = SettingsViewModel.IoState.Idle,
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        SettingsContent(
+            themeMode = ThemeMode.System,
+            onThemeModeSelected = {},
+            dynamicColorAvailable = true,
+            dynamicColorEnabled = true,
+            onDynamicColorToggled = {},
+            essenceContributionsEnabled = false,
+            essenceConflictCount = 0,
+            onEssenceContributionsToggled = {},
+            awakeningStoneContributionsEnabled = false,
+            awakeningStoneConflictCount = 0,
+            onAwakeningStoneContributionsToggled = {},
+            abilityListingContributionsEnabled = false,
+            abilityListingConflictCount = 0,
+            onAbilityListingContributionsToggled = {},
+            statusEffectContributionsEnabled = true,
+            statusEffectConflictCount = 0,
+            onStatusEffectContributionsToggled = {},
+            essencesAsAwakeningStonesEnabled = false,
+            onEssencesAsAwakeningStonesToggled = {},
+            onShareClick = {},
+            onSaveToFileClick = {},
+            onPasteClick = {},
+            onOpenFileClick = {},
+            onAboutClick = {},
+            ioState = SettingsViewModel.IoState.Idle,
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun SettingsContentEncodingPreview() {
-    SettingsContent(
-        themeMode = ThemeMode.System,
-        onThemeModeSelected = {},
-        dynamicColorAvailable = true,
-        dynamicColorEnabled = true,
-        onDynamicColorToggled = {},
-        essenceContributionsEnabled = true,
-        essenceConflictCount = 0,
-        onEssenceContributionsToggled = {},
-        awakeningStoneContributionsEnabled = true,
-        awakeningStoneConflictCount = 0,
-        onAwakeningStoneContributionsToggled = {},
-        abilityListingContributionsEnabled = true,
-        abilityListingConflictCount = 0,
-        onAbilityListingContributionsToggled = {},
-        statusEffectContributionsEnabled = true,
-        statusEffectConflictCount = 0,
-        onStatusEffectContributionsToggled = {},
-        essencesAsAwakeningStonesEnabled = false,
-        onEssencesAsAwakeningStonesToggled = {},
-        onShareClick = {},
-        onSaveToFileClick = {},
-        onPasteClick = {},
-        onOpenFileClick = {},
-        onAboutClick = {},
-        ioState = SettingsViewModel.IoState.Encoding,
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        SettingsContent(
+            themeMode = ThemeMode.System,
+            onThemeModeSelected = {},
+            dynamicColorAvailable = true,
+            dynamicColorEnabled = true,
+            onDynamicColorToggled = {},
+            essenceContributionsEnabled = true,
+            essenceConflictCount = 0,
+            onEssenceContributionsToggled = {},
+            awakeningStoneContributionsEnabled = true,
+            awakeningStoneConflictCount = 0,
+            onAwakeningStoneContributionsToggled = {},
+            abilityListingContributionsEnabled = true,
+            abilityListingConflictCount = 0,
+            onAbilityListingContributionsToggled = {},
+            statusEffectContributionsEnabled = true,
+            statusEffectConflictCount = 0,
+            onStatusEffectContributionsToggled = {},
+            essencesAsAwakeningStonesEnabled = false,
+            onEssencesAsAwakeningStonesToggled = {},
+            onShareClick = {},
+            onSaveToFileClick = {},
+            onPasteClick = {},
+            onOpenFileClick = {},
+            onAboutClick = {},
+            ioState = SettingsViewModel.IoState.Encoding,
+        )
+    }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun SettingsContentConflictPreview() {
-    SettingsContent(
-        themeMode = ThemeMode.System,
-        onThemeModeSelected = {},
-        dynamicColorAvailable = true,
-        dynamicColorEnabled = true,
-        onDynamicColorToggled = {},
-        essenceContributionsEnabled = true,
-        essenceConflictCount = 2,
-        onEssenceContributionsToggled = {},
-        awakeningStoneContributionsEnabled = false,
-        awakeningStoneConflictCount = 0,
-        onAwakeningStoneContributionsToggled = {},
-        abilityListingContributionsEnabled = true,
-        abilityListingConflictCount = 1,
-        onAbilityListingContributionsToggled = {},
-        statusEffectContributionsEnabled = true,
-        statusEffectConflictCount = 0,
-        onStatusEffectContributionsToggled = {},
-        essencesAsAwakeningStonesEnabled = false,
-        onEssencesAsAwakeningStonesToggled = {},
-        onShareClick = {},
-        onSaveToFileClick = {},
-        onPasteClick = {},
-        onOpenFileClick = {},
-        onAboutClick = {},
-        ioState = SettingsViewModel.IoState.Idle,
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        SettingsContent(
+            themeMode = ThemeMode.System,
+            onThemeModeSelected = {},
+            dynamicColorAvailable = true,
+            dynamicColorEnabled = true,
+            onDynamicColorToggled = {},
+            essenceContributionsEnabled = true,
+            essenceConflictCount = 2,
+            onEssenceContributionsToggled = {},
+            awakeningStoneContributionsEnabled = false,
+            awakeningStoneConflictCount = 0,
+            onAwakeningStoneContributionsToggled = {},
+            abilityListingContributionsEnabled = true,
+            abilityListingConflictCount = 1,
+            onAbilityListingContributionsToggled = {},
+            statusEffectContributionsEnabled = true,
+            statusEffectConflictCount = 0,
+            onStatusEffectContributionsToggled = {},
+            essencesAsAwakeningStonesEnabled = false,
+            onEssencesAsAwakeningStonesToggled = {},
+            onShareClick = {},
+            onSaveToFileClick = {},
+            onPasteClick = {},
+            onOpenFileClick = {},
+            onAboutClick = {},
+            ioState = SettingsViewModel.IoState.Idle,
+        )
+    }
 }
