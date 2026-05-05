@@ -17,14 +17,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ui.R
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.SearchEmptyState
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
@@ -191,14 +193,16 @@ fun EssenceListItem(
     }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 fun EssenceListItemPreview() {
-    val essence = Essence.of(
-        name = "sin",
-        restricted = false,
-        description = "Manifested essence of transgression",
-        rarity = Rarity.Legendary
-    )
-    EssenceListItem(essence = essence)
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        val essence = Essence.of(
+            name = "sin",
+            restricted = false,
+            description = "Manifested essence of transgression",
+            rarity = Rarity.Legendary
+        )
+        EssenceListItem(essence = essence)
+    }
 }

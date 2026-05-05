@@ -22,12 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.ui.R
+import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.SearchEmptyState
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
@@ -131,10 +133,12 @@ fun AbilityListingListItem(
     }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun AbilityListingListItemPreview() {
-    AbilityListingListItem(
-        listing = Ability.Listing.of(name = "Flame Bolt"),
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AbilityListingListItem(
+            listing = Ability.Listing.of(name = "Flame Bolt"),
+        )
+    }
 }
