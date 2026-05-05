@@ -1,3 +1,39 @@
+-- ability_listing must be created first because ability_effect.listing_name
+-- carries a foreign-key REFERENCES ability_listing(name). SQLite tolerates a
+-- forward reference at runtime (foreign_keys pragma is OFF by default), but
+-- SQLDelight's verifyMigrations check rejects it. Defining the parent table
+-- first satisfies both. migrations/2.sqm keeps an IF NOT EXISTS create for
+-- ability_listing so that devices currently at user_version=2 (which never
+-- ran this consolidated 1.sqm) still get the table on their 2->3 step.
+CREATE TABLE IF NOT EXISTS ability_listing (
+    name TEXT PRIMARY KEY NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ability_effect (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    listing_name TEXT NOT NULL REFERENCES ability_listing(name),
+    rank TEXT NOT NULL,
+    type TEXT NOT NULL,
+    cooldown_seconds INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    replacement_key TEXT,
+    ordinal INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS effect_property (
+    effect_id INTEGER NOT NULL REFERENCES ability_effect(id),
+    property TEXT NOT NULL,
+    ordinal INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS effect_cost (
+    effect_id INTEGER NOT NULL REFERENCES ability_effect(id),
+    kind TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    ordinal INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS awakening_stone (
     name TEXT PRIMARY KEY NOT NULL,
     rarity TEXT NOT NULL
