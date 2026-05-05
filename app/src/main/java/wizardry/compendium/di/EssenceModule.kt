@@ -10,6 +10,7 @@ import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceContributionsToggleFlow
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.EssencesAsAwakeningStonesToggleFlow
 import wizardry.compendium.essences.StatusEffectContributionsToggleFlow
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.preferences.PreferencesRepository
@@ -37,6 +38,10 @@ interface EssenceModule {
     @Singleton
     @Binds
     fun bindAwakeningStoneContributionsToggleFlow(impl: PreferencesRepository): AwakeningStoneContributionsToggleFlow
+
+    @Singleton
+    @Binds
+    fun bindEssencesAsAwakeningStonesToggleFlow(impl: PreferencesRepository): EssencesAsAwakeningStonesToggleFlow
 
     @Singleton
     @Binds

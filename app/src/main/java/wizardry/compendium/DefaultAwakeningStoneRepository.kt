@@ -4,13 +4,19 @@ import wizardry.compendium.essences.AwakeningStoneConflict
 import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
+import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.EssencesAsAwakeningStonesToggleFlow
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.essences.detectAwakeningStoneConflicts
+import wizardry.compendium.essences.manifestationsNotMatchingStones
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.toAwakeningStone
 import wizardry.compendium.persistence.AwakeningStoneCache
 import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
+import wizardry.compendium.persistence.EssencesAsAwakeningStonesToggle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -27,6 +33,9 @@ class DefaultAwakeningStoneRepository @Inject constructor(
     @param:Contributions private val contributionsCache: AwakeningStoneCache,
     private val toggle: AwakeningStoneContributionsToggle,
     toggleFlow: AwakeningStoneContributionsToggleFlow,
+    private val essenceRepository: EssenceRepository,
+    private val essencesAsStonesToggle: EssencesAsAwakeningStonesToggle,
+    essencesAsStonesToggleFlow: EssencesAsAwakeningStonesToggleFlow,
 ) : AwakeningStoneRepository {
 
     private val writeMutex = Mutex()
@@ -34,8 +43,10 @@ class DefaultAwakeningStoneRepository @Inject constructor(
 
     override val awakeningStones: Flow<List<AwakeningStone>> = combine(
         toggleFlow.awakeningStoneContributionsEnabled,
+        essencesAsStonesToggleFlow.essencesAsAwakeningStonesEnabled,
+        essenceRepository.essences,
         invalidations,
-    ) { _, _ -> getAwakeningStones() }
+    ) { _, _, _, _ -> getAwakeningStones() }
 
     override val conflicts: Flow<List<AwakeningStoneConflict>> = combine(
         toggleFlow.awakeningStoneContributionsEnabled,
@@ -44,6 +55,18 @@ class DefaultAwakeningStoneRepository @Inject constructor(
 
     override suspend fun getAwakeningStones(): List<AwakeningStone> {
         val canonical = ensureCanonicalLoaded()
+        val baseStones = mergedStones(canonical)
+        if (!essencesAsStonesToggle.isEssencesAsAwakeningStonesEnabled) return baseStones
+
+        val manifestations = essenceRepository.getEssences()
+            .filterIsInstance<Essence.Manifestation>()
+        val newcomers = manifestationsNotMatchingStones(manifestations, baseStones)
+        if (newcomers.isEmpty()) return baseStones
+
+        return (baseStones + newcomers.map { it.toAwakeningStone() }).sortedBy { it.name }
+    }
+
+    private fun mergedStones(canonical: List<AwakeningStone>): List<AwakeningStone> {
         if (!toggle.isAwakeningStoneContributionsEnabled) return canonical
         val contributions = contributionsCache.contents
         if (contributions.isEmpty()) return canonical

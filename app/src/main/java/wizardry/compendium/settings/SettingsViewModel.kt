@@ -34,6 +34,7 @@ class SettingsViewModel @Inject constructor(
     val awakeningStoneContributionsEnabled = preferencesRepository.awakeningStoneContributionsEnabled
     val abilityListingContributionsEnabled = preferencesRepository.abilityListingContributionsEnabled
     val statusEffectContributionsEnabled = preferencesRepository.statusEffectContributionsEnabled
+    val essencesAsAwakeningStonesEnabled = preferencesRepository.essencesAsAwakeningStonesEnabled
 
     val essenceConflictCount = essenceRepository.conflicts.map { it.size }
     val awakeningStoneConflictCount = awakeningStoneRepository.conflicts.map { it.size }
@@ -78,6 +79,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setStatusEffectContributionsEnabled(enabled: Boolean) {
         preferencesRepository.setStatusEffectContributionsEnabled(enabled)
+    }
+
+    fun setEssencesAsAwakeningStonesEnabled(enabled: Boolean) {
+        preferencesRepository.setEssencesAsAwakeningStonesEnabled(enabled)
     }
 
     /**

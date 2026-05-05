@@ -18,6 +18,7 @@ import wizardry.compendium.persistence.DatabaseStatusEffectCache
 import wizardry.compendium.persistence.EssenceCache
 import wizardry.compendium.persistence.EssenceContributionsToggle
 import wizardry.compendium.persistence.EssenceDatabase
+import wizardry.compendium.persistence.EssencesAsAwakeningStonesToggle
 import wizardry.compendium.persistence.StatusEffectCache
 import wizardry.compendium.persistence.StatusEffectContributionsToggle
 import wizardry.compendium.persistence.StatusEffectDatabase
@@ -49,6 +50,10 @@ abstract class DatabaseModule {
     @Binds
     @Singleton
     abstract fun bindStatusEffectContributionsToggle(impl: PreferencesRepository): StatusEffectContributionsToggle
+
+    @Binds
+    @Singleton
+    abstract fun bindEssencesAsAwakeningStonesToggle(impl: PreferencesRepository): EssencesAsAwakeningStonesToggle
 
     companion object {
         @Provides

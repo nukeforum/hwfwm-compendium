@@ -44,6 +44,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     val awakeningStoneContributionsEnabled by viewModel.awakeningStoneContributionsEnabled.collectAsState(initial = false)
     val abilityListingContributionsEnabled by viewModel.abilityListingContributionsEnabled.collectAsState(initial = false)
     val statusEffectContributionsEnabled by viewModel.statusEffectContributionsEnabled.collectAsState(initial = true)
+    val essencesAsAwakeningStonesEnabled by viewModel.essencesAsAwakeningStonesEnabled.collectAsState(initial = false)
     val essenceConflictCount by viewModel.essenceConflictCount.collectAsState(initial = 0)
     val awakeningStoneConflictCount by viewModel.awakeningStoneConflictCount.collectAsState(initial = 0)
     val abilityListingConflictCount by viewModel.abilityListingConflictCount.collectAsState(initial = 0)
@@ -133,6 +134,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         statusEffectContributionsEnabled = statusEffectContributionsEnabled,
         statusEffectConflictCount = statusEffectConflictCount,
         onStatusEffectContributionsToggled = viewModel::setStatusEffectContributionsEnabled,
+        essencesAsAwakeningStonesEnabled = essencesAsAwakeningStonesEnabled,
+        onEssencesAsAwakeningStonesToggled = viewModel::setEssencesAsAwakeningStonesEnabled,
         onShareClick = viewModel::beginExport,
         onSaveToFileClick = {
             // Suggest a default filename; the user can change it.
@@ -238,6 +241,8 @@ fun SettingsContent(
     statusEffectContributionsEnabled: Boolean,
     statusEffectConflictCount: Int,
     onStatusEffectContributionsToggled: (Boolean) -> Unit,
+    essencesAsAwakeningStonesEnabled: Boolean,
+    onEssencesAsAwakeningStonesToggled: (Boolean) -> Unit,
     onShareClick: () -> Unit,
     onSaveToFileClick: () -> Unit,
     onPasteClick: () -> Unit,
@@ -279,6 +284,17 @@ fun SettingsContent(
             checked = statusEffectContributionsEnabled,
             conflictCount = statusEffectConflictCount,
             onCheckedChange = onStatusEffectContributionsToggled,
+        )
+
+        HorizontalDivider()
+
+        Text("Awakening Stones", style = MaterialTheme.typography.titleMedium)
+        ToggleRow(
+            title = "Essences as Awakening Stones",
+            subtitle = "Show essences in awakening stone listings",
+            checked = essencesAsAwakeningStonesEnabled,
+            conflictCount = 0,
+            onCheckedChange = onEssencesAsAwakeningStonesToggled,
         )
 
         HorizontalDivider()
@@ -423,6 +439,8 @@ private fun SettingsContentOffPreview() {
         statusEffectContributionsEnabled = true,
         statusEffectConflictCount = 0,
         onStatusEffectContributionsToggled = {},
+        essencesAsAwakeningStonesEnabled = false,
+        onEssencesAsAwakeningStonesToggled = {},
         onShareClick = {},
         onSaveToFileClick = {},
         onPasteClick = {},
@@ -447,6 +465,8 @@ private fun SettingsContentEncodingPreview() {
         statusEffectContributionsEnabled = true,
         statusEffectConflictCount = 0,
         onStatusEffectContributionsToggled = {},
+        essencesAsAwakeningStonesEnabled = false,
+        onEssencesAsAwakeningStonesToggled = {},
         onShareClick = {},
         onSaveToFileClick = {},
         onPasteClick = {},
@@ -471,6 +491,8 @@ private fun SettingsContentConflictPreview() {
         statusEffectContributionsEnabled = true,
         statusEffectConflictCount = 0,
         onStatusEffectContributionsToggled = {},
+        essencesAsAwakeningStonesEnabled = false,
+        onEssencesAsAwakeningStonesToggled = {},
         onShareClick = {},
         onSaveToFileClick = {},
         onPasteClick = {},

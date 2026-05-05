@@ -7,11 +7,18 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
+import wizardry.compendium.essences.ContributionResult
+import wizardry.compendium.essences.EssenceConflict
+import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.EssencesAsAwakeningStonesToggleFlow
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.ConfluenceSet
+import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.persistence.AwakeningStoneCache
 import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
+import wizardry.compendium.persistence.EssencesAsAwakeningStonesToggle
 
 class DefaultAwakeningStoneRepositoryConflictTest {
 
@@ -65,12 +72,100 @@ class DefaultAwakeningStoneRepositoryConflictTest {
         repo.deleteContribution("Granite")
         assertEquals(0, repo.getConflicts().size)
     }
+
+    @Test
+    fun `essences-as-stones off leaves stones unchanged`() = runTest {
+        val canonical = listOf(stone("Granite"))
+        val essences = listOf(manifestation("Magma"))
+        val repo = repository(
+            canonical = canonical,
+            contributions = emptyList(),
+            toggle = false,
+            essencesAsStonesEnabled = false,
+            essences = essences,
+        )
+
+        assertEquals(canonical, repo.getAwakeningStones())
+    }
+
+    @Test
+    fun `essences-as-stones on adds non-overlapping essences`() = runTest {
+        val canonical = listOf(stone("Granite"))
+        val essences = listOf(manifestation("Magma"), manifestation("Wing"))
+        val repo = repository(
+            canonical = canonical,
+            contributions = emptyList(),
+            toggle = false,
+            essencesAsStonesEnabled = true,
+            essences = essences,
+        )
+
+        val result = repo.getAwakeningStones()
+        assertEquals(3, result.size)
+        assertTrue(result.any { it.name == "Granite" })
+        assertTrue(result.any { it.name == "Magma" })
+        assertTrue(result.any { it.name == "Wing" })
+    }
+
+    @Test
+    fun `essences-as-stones dedupes exact name match against canonical`() = runTest {
+        val canonical = listOf(stone("Magma"))
+        val essences = listOf(manifestation("Magma"))
+        val repo = repository(
+            canonical = canonical,
+            contributions = emptyList(),
+            toggle = false,
+            essencesAsStonesEnabled = true,
+            essences = essences,
+        )
+
+        val result = repo.getAwakeningStones()
+        assertEquals(1, result.size)
+        assertEquals("Magma", result.single().name)
+    }
+
+    @Test
+    fun `essences-as-stones dedupes partial name match Dark vs Darkness`() = runTest {
+        val canonical = listOf(stone("Darkness"))
+        val essences = listOf(manifestation("Dark"))
+        val repo = repository(
+            canonical = canonical,
+            contributions = emptyList(),
+            toggle = false,
+            essencesAsStonesEnabled = true,
+            essences = essences,
+        )
+
+        val result = repo.getAwakeningStones()
+        assertEquals(1, result.size)
+        assertEquals("Darkness", result.single().name)
+    }
+
+    @Test
+    fun `essences-as-stones dedupes against contribution stones too`() = runTest {
+        val canonical = emptyList<AwakeningStone>()
+        val contribution = stone("Magma Burst")
+        val essences = listOf(manifestation("Magma"))
+        val repo = repository(
+            canonical = canonical,
+            contributions = listOf(contribution),
+            toggle = true,
+            essencesAsStonesEnabled = true,
+            essences = essences,
+        )
+
+        val result = repo.getAwakeningStones()
+        assertEquals(1, result.size)
+        assertEquals("Magma Burst", result.single().name)
+    }
 }
 
 private fun repository(
     canonical: List<AwakeningStone>,
     contributions: List<AwakeningStone>,
     toggle: Boolean,
+    essencesAsStonesEnabled: Boolean = false,
+    essences: List<Essence> = emptyList(),
 ): DefaultAwakeningStoneRepository {
     return DefaultAwakeningStoneRepository(
         dataLoader = FakeAwakeningStoneDataLoader(canonical),
@@ -78,6 +173,9 @@ private fun repository(
         contributionsCache = FakeAwakeningStoneCache(contributions),
         toggle = FakeAwakeningStoneToggle(toggle),
         toggleFlow = FakeAwakeningStoneToggleFlow(toggle),
+        essenceRepository = FakeEssenceRepository(essences),
+        essencesAsStonesToggle = FakeEssencesAsStonesToggle(essencesAsStonesEnabled),
+        essencesAsStonesToggleFlow = FakeEssencesAsStonesToggleFlow(essencesAsStonesEnabled),
     )
 }
 
@@ -93,9 +191,49 @@ private class FakeAwakeningStoneToggleFlow(initial: Boolean) : AwakeningStoneCon
     override val awakeningStoneContributionsEnabled: Flow<Boolean> = state
 }
 
+private class FakeEssencesAsStonesToggle(
+    override val isEssencesAsAwakeningStonesEnabled: Boolean,
+) : EssencesAsAwakeningStonesToggle
+
+private class FakeEssencesAsStonesToggleFlow(initial: Boolean) :
+    EssencesAsAwakeningStonesToggleFlow {
+    private val state = MutableStateFlow(initial)
+    override val essencesAsAwakeningStonesEnabled: Flow<Boolean> = state
+}
+
 private class FakeAwakeningStoneDataLoader(private val data: List<AwakeningStone>) :
     AwakeningStoneDataLoader {
     override suspend fun loadAwakeningStoneData(): List<AwakeningStone> = data
 }
 
+private class FakeEssenceRepository(private val data: List<Essence>) : EssenceRepository {
+    override val essences: Flow<List<Essence>> = MutableStateFlow(data)
+    override val conflicts: Flow<List<EssenceConflict>> = MutableStateFlow(emptyList())
+    override suspend fun getEssences(): List<Essence> = data
+    override suspend fun getContributions(): List<Essence> = emptyList()
+    override suspend fun getConflicts(): List<EssenceConflict> = emptyList()
+    override suspend fun saveManifestationContribution(manifestation: Essence.Manifestation): ContributionResult =
+        unsupported()
+    override suspend fun saveConfluenceContribution(
+        confluence: Essence.Confluence,
+        referencedManifestations: List<Essence.Manifestation>,
+    ): ContributionResult = unsupported()
+    override suspend fun addCombinationToConfluence(
+        target: Essence.Confluence,
+        combination: ConfluenceSet,
+    ): ContributionResult = unsupported()
+    override suspend fun isContribution(name: String): Boolean = false
+    override suspend fun deleteContribution(name: String): ContributionResult = unsupported()
+    override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation): ContributionResult =
+        unsupported()
+    override suspend fun updateConfluenceContribution(confluence: Essence.Confluence): ContributionResult =
+        unsupported()
+
+    private fun unsupported(): ContributionResult =
+        throw UnsupportedOperationException("not used in this test")
+}
+
 private fun stone(name: String): AwakeningStone = AwakeningStone.of(name, Rarity.Common)
+
+private fun manifestation(name: String): Essence.Manifestation =
+    Essence.of(name = name, description = "$name essence", rarity = Rarity.Common, restricted = false)
