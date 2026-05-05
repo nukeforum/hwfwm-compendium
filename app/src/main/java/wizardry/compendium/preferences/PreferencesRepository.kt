@@ -3,8 +3,10 @@ package wizardry.compendium.preferences
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import wizardry.compendium.essences.AbilityListingContributionsToggleFlow
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.EssenceContributionsToggleFlow
 import wizardry.compendium.essences.EssencesAsAwakeningStonesToggleFlow
@@ -49,6 +51,8 @@ class PreferencesRepository @Inject constructor(
     private val abilityListingContributionsKey = booleanPreferencesKey("ability_listing_contributions_enabled")
     private val statusEffectContributionsKey = booleanPreferencesKey("status_effect_contributions_enabled")
     private val essencesAsAwakeningStonesKey = booleanPreferencesKey("essences_as_awakening_stones_enabled")
+    private val themeModeKey = stringPreferencesKey("theme_mode")
+    private val dynamicColorEnabledKey = booleanPreferencesKey("dynamic_color_enabled")
 
     private val essenceContributionsState: StateFlow<Boolean> = context.dataStore.data
         .map { prefs -> prefs[essenceContributionsKey] ?: false }
@@ -90,6 +94,22 @@ class PreferencesRepository @Inject constructor(
             initialValue = false,
         )
 
+    private val themeModeState: StateFlow<ThemeMode> = context.dataStore.data
+        .map { prefs -> ThemeMode.fromStoredValue(prefs[themeModeKey]) }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = ThemeMode.System,
+        )
+
+    private val dynamicColorEnabledState: StateFlow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[dynamicColorEnabledKey] ?: true }
+        .stateIn(
+            scope = scope,
+            started = SharingStarted.Eagerly,
+            initialValue = true,
+        )
+
     override val isEssenceContributionsEnabled: Boolean
         get() = essenceContributionsState.value
 
@@ -119,6 +139,18 @@ class PreferencesRepository @Inject constructor(
 
     override val essencesAsAwakeningStonesEnabled: Flow<Boolean>
         get() = essencesAsAwakeningStonesState
+
+    val themeMode: Flow<ThemeMode>
+        get() = themeModeState
+
+    val isCurrentThemeMode: ThemeMode
+        get() = themeModeState.value
+
+    val dynamicColorEnabled: Flow<Boolean>
+        get() = dynamicColorEnabledState
+
+    val isDynamicColorEnabled: Boolean
+        get() = dynamicColorEnabledState.value
 
     fun setEssenceContributionsEnabled(enabled: Boolean) {
         scope.launch {
@@ -156,6 +188,22 @@ class PreferencesRepository @Inject constructor(
         scope.launch {
             context.dataStore.edit { prefs ->
                 prefs[essencesAsAwakeningStonesKey] = enabled
+            }
+        }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        scope.launch {
+            context.dataStore.edit { prefs ->
+                prefs[themeModeKey] = mode.storedValue
+            }
+        }
+    }
+
+    fun setDynamicColorEnabled(enabled: Boolean) {
+        scope.launch {
+            context.dataStore.edit { prefs ->
+                prefs[dynamicColorEnabledKey] = enabled
             }
         }
     }
