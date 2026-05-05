@@ -12,8 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 @Composable
 fun SearchEmptyState(
@@ -58,14 +59,18 @@ fun SearchEmptyState(
     }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun SearchEmptyStateNoResultsPreview() {
-    SearchEmptyState(hasFilter = true, onAddClicked = {})
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        SearchEmptyState(hasFilter = true, onAddClicked = {})
+    }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun SearchEmptyStateAddPromptPreview() {
-    SearchEmptyState(hasFilter = false, onAddClicked = {})
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        SearchEmptyState(hasFilter = false, onAddClicked = {})
+    }
 }

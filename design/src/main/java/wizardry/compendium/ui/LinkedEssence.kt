@@ -8,12 +8,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
@@ -33,20 +34,22 @@ fun LinkedEssence(
     )
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 internal fun LinkedEssencePreview() {
-    LinkedEssence(
-        essence = Essence.Manifestation(
-            "Light",
-            Rank.Iron,
-            Rarity.Uncommon,
-            properties = listOf(Property.Light),
-            description = "a description",
-            isRestricted = false
-        ),
-        isLastViewed = true,
-        isRestricted = false,
-        onEssenceClick = {}
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        LinkedEssence(
+            essence = Essence.Manifestation(
+                "Light",
+                Rank.Iron,
+                Rarity.Uncommon,
+                properties = listOf(Property.Light),
+                description = "a description",
+                isRestricted = false
+            ),
+            isLastViewed = true,
+            isRestricted = false,
+            onEssenceClick = {}
+        )
+    }
 }
