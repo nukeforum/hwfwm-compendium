@@ -11,9 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import wizardry.compendium.BuildConfig
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 @Composable
 fun AboutScreen() {
@@ -79,8 +81,10 @@ fun AboutContent(versionName: String) {
     }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun AboutContentPreview() {
-    AboutContent(versionName = "1.0")
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AboutContent(versionName = "1.0")
+    }
 }
