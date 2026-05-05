@@ -28,6 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import wizardry.compendium.about.AboutScreen
 import wizardry.compendium.abilitylisting.contributions.AbilityListingContributionsScreen
 import wizardry.compendium.abilitylisting.search.AbilityListingSearch
 import wizardry.compendium.abilitylistinginfo.AbilityListingDetails
@@ -192,7 +193,14 @@ class MainActivity : ComponentActivity() {
                         composable(Nav.Settings.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
                             title = "Settings"
-                            SettingsScreen()
+                            SettingsScreen(
+                                onAboutClick = { navController.navigate(Nav.About.route) },
+                            )
+                        }
+                        composable(Nav.About.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "About"
+                            AboutScreen()
                         }
                         composable(Nav.Conflicts.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route

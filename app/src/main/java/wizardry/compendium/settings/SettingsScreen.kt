@@ -39,7 +39,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.wire.ImportSummary
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    onAboutClick: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
     val essenceContributionsEnabled by viewModel.essenceContributionsEnabled.collectAsState(initial = false)
     val awakeningStoneContributionsEnabled by viewModel.awakeningStoneContributionsEnabled.collectAsState(initial = false)
     val abilityListingContributionsEnabled by viewModel.abilityListingContributionsEnabled.collectAsState(initial = false)
@@ -151,6 +154,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             // etc. without dragging in binary picker entries.
             openDocumentLauncher.launch(arrayOf("text/*"))
         },
+        onAboutClick = onAboutClick,
         ioState = ioState,
     )
 
@@ -247,6 +251,7 @@ fun SettingsContent(
     onSaveToFileClick: () -> Unit,
     onPasteClick: () -> Unit,
     onOpenFileClick: () -> Unit,
+    onAboutClick: () -> Unit,
     ioState: SettingsViewModel.IoState,
 ) {
     Column(
@@ -348,6 +353,16 @@ fun SettingsContent(
             }
         }
 
+        HorizontalDivider()
+
+        Text("About", style = MaterialTheme.typography.titleMedium)
+        OutlinedButton(
+            onClick = onAboutClick,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("About this app")
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
     }
 }
@@ -445,6 +460,7 @@ private fun SettingsContentOffPreview() {
         onSaveToFileClick = {},
         onPasteClick = {},
         onOpenFileClick = {},
+        onAboutClick = {},
         ioState = SettingsViewModel.IoState.Idle,
     )
 }
@@ -471,6 +487,7 @@ private fun SettingsContentEncodingPreview() {
         onSaveToFileClick = {},
         onPasteClick = {},
         onOpenFileClick = {},
+        onAboutClick = {},
         ioState = SettingsViewModel.IoState.Encoding,
     )
 }
@@ -497,6 +514,7 @@ private fun SettingsContentConflictPreview() {
         onSaveToFileClick = {},
         onPasteClick = {},
         onOpenFileClick = {},
+        onAboutClick = {},
         ioState = SettingsViewModel.IoState.Idle,
     )
 }
