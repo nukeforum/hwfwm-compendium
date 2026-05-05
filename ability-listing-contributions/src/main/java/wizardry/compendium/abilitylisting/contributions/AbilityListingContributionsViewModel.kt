@@ -6,11 +6,16 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.ContributionResult
+import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AbilityType
 import wizardry.compendium.essences.model.Cost
@@ -28,9 +33,14 @@ import kotlin.time.Duration.Companion.seconds
 class AbilityListingContributionsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val abilityListingRepository: AbilityListingRepository,
+    private val statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
 
     private val editName: String? = savedStateHandle.get<String>("name")
+
+    val statusEffects: StateFlow<List<StatusEffect>> =
+        statusEffectRepository.statusEffects
+            .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState = _saveState.asStateFlow()
