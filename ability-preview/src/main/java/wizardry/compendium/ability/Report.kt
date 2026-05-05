@@ -5,9 +5,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import wizardry.compendium.ability.preview.LocalStatusEffects
+import wizardry.compendium.ability.preview.annotatedDescription
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AbilityType
 import wizardry.compendium.essences.model.Amount
@@ -16,7 +24,9 @@ import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Resource
-import wizardry.compendium.essences.model.resolveDescription
+import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.essences.model.collectLinkedStatusEffects
 import kotlin.time.Duration
 
 @Composable
@@ -53,7 +63,7 @@ private fun Report(abilityListing: Ability.Listing) {
 private fun Ability.Report(
     titleSlot: @Composable () -> Unit = {},
     progressSlot: @Composable () -> Unit = {},
-    effectsSlot: @Composable () -> Unit = {}
+    effectsSlot: @Composable () -> Unit = {},
 ) {
     Column {
         titleSlot()
@@ -64,38 +74,29 @@ private fun Ability.Report(
         Spacer(modifier = Modifier.height(12.dp))
         progressSlot()
         effectsSlot()
+        LinkedStatusEffectsSection(effects)
     }
 }
 
-private fun Ability.reportType(): String {
-    return effects.map { it.type }.toSet().joinToString("/")
-}
+private fun Ability.reportType(): String =
+    effects.map { it.type }.toSet().joinToString("/")
 
-private fun Ability.reportProperties(): String {
-    return effects.flatMap { it.properties }.toSet().joinToString(", ")
-}
+private fun Ability.reportProperties(): String =
+    effects.flatMap { it.properties }.toSet().joinToString(", ")
 
-private fun Ability.reportCost(): String {
-    return effects.flatMap { effect -> effect.cost }
+private fun Ability.reportCost(): String =
+    effects.flatMap { it.cost }
         .runCatching { single { it is Cost.Upfront } }
         .getOrNull()
         ?.toString()
         ?: "Varies"
-}
 
-private fun Ability.reportCooldown(): String {
-    return effects.map { it.cooldown }.toSet()
+private fun Ability.reportCooldown(): String =
+    effects.map { it.cooldown }.toSet()
         .takeIf { it.size == 1 }
         ?.first()
-        ?.let {
-            if (it == Duration.ZERO) {
-                "None"
-            } else {
-                it.toString()
-            }
-        }
+        ?.let { if (it == Duration.ZERO) "None" else it.toString() }
         ?: "Varies"
-}
 
 @Composable
 private fun Collection<Effect.AbilityEffect>.Report(rank: Rank = Rank.Diamond) {
@@ -104,10 +105,72 @@ private fun Collection<Effect.AbilityEffect>.Report(rank: Rank = Rank.Diamond) {
         val currentRank = Rank.entries[r]
         val effectsOfRank = effectsByRank.getOrDefault(currentRank, emptyList())
         if (effectsOfRank.isNotEmpty()) {
-            Text(text = "Effect (${currentRank.name}): ${effectsOfRank.joinToString(" ") { it.resolveDescription() }}")
+            Text(text = effectsOfRank.annotatedRankLine(currentRank))
         }
     }
 }
+
+@Composable
+@ReadOnlyComposable
+private fun List<Effect.AbilityEffect>.annotatedRankLine(rank: Rank): AnnotatedString =
+    buildAnnotatedString {
+        append("Effect (${rank.name}): ")
+        forEachIndexed { index, effect ->
+            if (index > 0) append(" ")
+            append(
+                annotatedDescription(
+                    template = effect.description,
+                    costs = effect.cost,
+                    cooldown = effect.cooldownText(),
+                ),
+            )
+        }
+    }
+
+@Composable
+private fun LinkedStatusEffectsSection(effects: List<Effect.AbilityEffect>) {
+    val statusEffects = LocalStatusEffects.current
+    val linked = collectLinkedStatusEffects(effects, statusEffects)
+    if (linked.isEmpty()) return
+    Spacer(modifier = Modifier.height(12.dp))
+    for (statusEffect in linked) {
+        Text(text = statusEffect.annotatedLinkedBlock(statusEffects))
+    }
+}
+
+@Composable
+@ReadOnlyComposable
+private fun StatusEffect.annotatedLinkedBlock(statusEffects: List<StatusEffect>): AnnotatedString =
+    buildAnnotatedString {
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+            append("[")
+            append(name)
+            append("]")
+        }
+        append(" (")
+        append(typeLabel())
+        for (property in properties) {
+            append(", ")
+            append(property.toString().lowercase())
+        }
+        append("): ")
+        append(
+            annotatedDescription(
+                template = description,
+                costs = emptyList(),
+                cooldown = "",
+                statusEffects = statusEffects,
+            ),
+        )
+    }
+
+private fun StatusEffect.typeLabel(): String = when (type) {
+    is StatusType.Affliction -> "affliction"
+    is StatusType.Boon -> "boon"
+}
+
+private fun Effect.AbilityEffect.cooldownText(): String =
+    if (cooldown == Duration.ZERO) "" else cooldown.toString()
 
 @Preview(showBackground = true)
 @Composable
@@ -122,7 +185,7 @@ private fun Foo() {
                     listOf(Property.Darkness, Property.Light, Property.Dimension),
                     listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
                     Duration.ZERO,
-                    "Conjures a magical cloak that can alter the wearer. Offers limited physical protection. Can generate light or blend into shadows."
+                    "Conjures a magical cloak that can alter the wearer. Offers limited physical protection. Can generate light or blend into shadows.",
                 ),
                 Effect.AbilityEffect(
                     Rank.Iron,
@@ -130,7 +193,7 @@ private fun Foo() {
                     listOf(Property.Darkness, Property.Light, Property.Dimension),
                     listOf(Cost.Ongoing(Amount.Low, Resource.Mana)),
                     Duration.ZERO,
-                    "Cloak can reduce the weight of the wearer for a low mana-per-second cost, allowing reduced falling speed and water-walking."
+                    "Cloak can reduce the weight of the wearer for a low mana-per-second cost, allowing reduced falling speed and water-walking.",
                 ),
                 Effect.AbilityEffect(
                     Rank.Iron,
@@ -138,9 +201,9 @@ private fun Foo() {
                     listOf(Property.Darkness, Property.Light, Property.Dimension),
                     listOf(Cost.None),
                     Duration.ZERO,
-                    "Cannot be given or taken away, although effects can be extended to others in very close proximity."
-                )
-            )
-        )
+                    "Cannot be given or taken away, although effects can be extended to others in very close proximity.",
+                ),
+            ),
+        ),
     )
 }
