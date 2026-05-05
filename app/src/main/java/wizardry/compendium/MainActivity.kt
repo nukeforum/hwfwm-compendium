@@ -48,7 +48,14 @@ import wizardry.compendium.essenceinfo.EssenceDetails
 import wizardry.compendium.randomizer.Randomizer
 import wizardry.compendium.search.EssenceSearch
 import wizardry.compendium.settings.SettingsScreen
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import wizardry.compendium.theme.ThemeSettingsViewModel
 import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -63,7 +70,25 @@ class MainActivity : ComponentActivity() {
             var title by remember { mutableStateOf("Magic Society Compendium") }
             val shareViewModel = hiltViewModel<ShareViewModel>()
             val activityContext: Context = this
-            CompendiumTheme {
+            val themeSettingsViewModel = hiltViewModel<ThemeSettingsViewModel>()
+            val themeMode by themeSettingsViewModel.themeMode.collectAsState()
+            val dynamicColor by themeSettingsViewModel.dynamicColorEnabled.collectAsState()
+            CompendiumTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
+                val useDark = when (themeMode) {
+                    ThemeMode.System -> isSystemInDarkTheme()
+                    ThemeMode.Light -> false
+                    ThemeMode.Dark -> true
+                }
+                val view = LocalView.current
+                if (!view.isInEditMode) {
+                    SideEffect {
+                        WindowCompat.setDecorFitsSystemWindows(window, false)
+                        WindowInsetsControllerCompat(window, view).apply {
+                            isAppearanceLightStatusBars = !useDark
+                            isAppearanceLightNavigationBars = !useDark
+                        }
+                    }
+                }
                 Scaffold(
                     topBar = {
                         TopAppBar(
