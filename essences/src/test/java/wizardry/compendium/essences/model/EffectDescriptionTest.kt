@@ -197,4 +197,25 @@ class EffectDescriptionTest {
         val linked = collectLinkedStatusEffects(effects, listOf(bleeding))
         assertEquals(emptyList<StatusEffect>(), linked)
     }
+
+    @Test
+    fun `resolveDescription without statusEffects overload emits raw status tokens`() {
+        val out = resolveDescription(
+            template = "Inflicts {status:Bleeding} now.",
+            costs = emptyList(),
+            cooldown = "",
+        )
+        assertEquals("Inflicts {status:Bleeding} now.", out)
+    }
+
+    @Test
+    fun `resolveDescription with statusEffects substitutes bracketed name for resolved status links`() {
+        val out = resolveDescription(
+            template = "Inflicts {status:Bleeding}, then {status:Unknown}.",
+            costs = emptyList(),
+            cooldown = "",
+            statusEffects = listOf(bleeding),
+        )
+        assertEquals("Inflicts [Bleeding], then {status:Unknown}.", out)
+    }
 }

@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -130,7 +131,9 @@ private fun List<Effect.AbilityEffect>.annotatedRankLine(rank: Rank): AnnotatedS
 @Composable
 private fun LinkedStatusEffectsSection(effects: List<Effect.AbilityEffect>) {
     val statusEffects = LocalStatusEffects.current
-    val linked = collectLinkedStatusEffects(effects, statusEffects)
+    val linked = remember(effects, statusEffects) {
+        collectLinkedStatusEffects(effects, statusEffects)
+    }
     if (linked.isEmpty()) return
     Spacer(modifier = Modifier.height(12.dp))
     for (statusEffect in linked) {
@@ -151,7 +154,7 @@ private fun StatusEffect.annotatedLinkedBlock(statusEffects: List<StatusEffect>)
         append(typeLabel())
         for (property in properties) {
             append(", ")
-            append(property.toString().lowercase())
+            append(property.toString())
         }
         append("): ")
         append(

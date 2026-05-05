@@ -83,6 +83,32 @@ fun resolveDescription(
     }
 }
 
+/**
+ * Like [resolveDescription], but additionally substitutes resolved status links
+ * with `[Name]`. Unresolved tokens still fall back to their raw text. Use this
+ * for plain-text rendering paths where the reader will see linked names but
+ * not the surrounding bracket markup token.
+ */
+fun resolveDescription(
+    template: String,
+    costs: List<Cost>,
+    cooldown: String,
+    statusEffects: List<StatusEffect>,
+): String = buildString {
+    for (segment in parseDescription(template, costs, cooldown, statusEffects)) {
+        when (segment) {
+            is DescriptionSegment.Literal -> append(segment.text)
+            is DescriptionSegment.Resolved -> append(segment.value)
+            is DescriptionSegment.Unresolved -> append(segment.token)
+            is DescriptionSegment.StatusLink -> {
+                append("[")
+                append(segment.name)
+                append("]")
+            }
+        }
+    }
+}
+
 private fun resolveToken(token: String, costs: List<Cost>, cooldown: String): String? = when {
     token == "cooldown" -> cooldown.takeIf { it.isNotBlank() }
     token == "cost" -> costs.getOrNull(0)?.toString()
