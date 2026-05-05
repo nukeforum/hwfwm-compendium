@@ -97,7 +97,9 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                                 ConflictsBadge(navigate = { navController.navigate(Nav.Conflicts.route) })
-                                SettingsButton { navController.navigate(Nav.Settings.route) }
+                                if (currentRoute != Nav.Settings.route) {
+                                    SettingsButton { navController.navigate(Nav.Settings.route) }
+                                }
                             }
                         )
                     },
