@@ -46,6 +46,7 @@ import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -58,27 +59,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import wizardry.compendium.ability.preview.AbilityPreview
+import wizardry.compendium.ability.preview.LocalStatusEffects
+import wizardry.compendium.ability.preview.annotatedDescription
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AbilityType
 import wizardry.compendium.essences.model.Amount
 import wizardry.compendium.essences.model.Cost
-import wizardry.compendium.essences.model.DescriptionSegment
 import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Resource
-import wizardry.compendium.essences.model.parseDescription
+import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.ui.ContributionDropdown
 import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.DeleteContributionButton
@@ -100,6 +98,7 @@ fun AbilityListingContributionsScreen(
     val effects by viewModel.effects.collectAsState()
     val mode by viewModel.mode.collectAsState()
     val importedName by viewModel.importedName.collectAsState()
+    val statusEffects by viewModel.statusEffects.collectAsState()
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -126,6 +125,7 @@ fun AbilityListingContributionsScreen(
             initialName = importedName,
             isEdit = false,
             effects = effects,
+            statusEffects = statusEffects,
             saveState = saveState,
             onUpdateEffect = viewModel::updateEffect,
             onRemoveEffect = viewModel::removeEffect,
@@ -141,6 +141,7 @@ fun AbilityListingContributionsScreen(
             initialName = current.listing.name,
             isEdit = true,
             effects = effects,
+            statusEffects = statusEffects,
             saveState = saveState,
             onUpdateEffect = viewModel::updateEffect,
             onRemoveEffect = viewModel::removeEffect,
@@ -200,6 +201,7 @@ private fun AbilityListingForm(
     initialName: String?,
     isEdit: Boolean,
     effects: List<EffectDraft>,
+    statusEffects: List<StatusEffect>,
     saveState: AbilityListingContributionsViewModel.SaveState,
     onUpdateEffect: (Int, (EffectDraft) -> EffectDraft) -> Unit,
     onRemoveEffect: (Int) -> Unit,
@@ -239,32 +241,36 @@ private fun AbilityListingForm(
         }
 
         if (!preview) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Name *") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                readOnly = isEdit,
-            )
+            CompositionLocalProvider(LocalStatusEffects provides statusEffects) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Name *") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    readOnly = isEdit,
+                )
 
-            effects.forEachIndexed { index, draft ->
-                AbilityEffectContribution(
-                    index = index,
-                    draft = draft,
-                    onUpdate = { transform -> onUpdateEffect(index, transform) },
-                    onRemove = { onRemoveEffect(index) },
+                effects.forEachIndexed { index, draft ->
+                    AbilityEffectContribution(
+                        index = index,
+                        draft = draft,
+                        onUpdate = { transform -> onUpdateEffect(index, transform) },
+                        onRemove = { onRemoveEffect(index) },
+                    )
+                }
+
+                AppendEffectButton(onClick = onAppendEffect)
+            }
+        } else {
+            CompositionLocalProvider(LocalStatusEffects provides statusEffects) {
+                AbilityPreview(
+                    ability = Ability.Listing(
+                        name = name.ifBlank { "(unnamed)" },
+                        effects = effects.toPreviewEffects(),
+                    ),
                 )
             }
-
-            AppendEffectButton(onClick = onAppendEffect)
-        } else {
-            AbilityPreview(
-                ability = Ability.Listing(
-                    name = name.ifBlank { "(unnamed)" },
-                    effects = effects.toPreviewEffects(),
-                ),
-            )
         }
 
         ContributionErrorFeedback(
@@ -318,9 +324,36 @@ private fun AbilityEffectContribution(
 ) {
     var showPropertySheet by remember { mutableStateOf(false) }
     var showCostSheet by remember { mutableStateOf(false) }
+    var showStatusSheet by remember { mutableStateOf(false) }
     val propertySheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val costSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    val statusEffects = LocalStatusEffects.current
+
+    var fieldValue by remember {
+        mutableStateOf(
+            TextFieldValue(text = draft.description, selection = TextRange(draft.description.length)),
+        )
+    }
+    LaunchedEffect(draft.description) {
+        if (fieldValue.text != draft.description) {
+            fieldValue = fieldValue.copy(
+                text = draft.description,
+                selection = TextRange(draft.description.length),
+            )
+        }
+    }
+
+    fun insertAtCursor(token: String) {
+        val start = fieldValue.selection.start.coerceIn(0, fieldValue.text.length)
+        val end = fieldValue.selection.end.coerceIn(0, fieldValue.text.length)
+        val before = fieldValue.text.substring(0, start)
+        val after = fieldValue.text.substring(end)
+        val newText = before + token + after
+        val cursor = before.length + token.length
+        fieldValue = TextFieldValue(text = newText, selection = TextRange(cursor))
+        onUpdate { d -> d.copy(description = newText) }
+    }
 
     if (showPropertySheet) {
         ModalBottomSheet(
@@ -353,6 +386,13 @@ private fun AbilityEffectContribution(
             )
         }
     }
+
+    StatusEffectPickerSheetHost(
+        show = showStatusSheet,
+        statusEffects = statusEffects,
+        onDismiss = { showStatusSheet = false },
+        onPick = { effect -> insertAtCursor("{status:${effect.name}}") },
+    )
 
     var expanded by rememberSaveable(index) { mutableStateOf(true) }
 
@@ -434,16 +474,24 @@ private fun AbilityEffectContribution(
                 )
 
                 DescriptionField(
-                    description = draft.description,
+                    fieldValue = fieldValue,
+                    onFieldValueChange = {
+                        fieldValue = it
+                        if (it.text != draft.description) {
+                            onUpdate { d -> d.copy(description = it.text) }
+                        }
+                    },
                     costs = draft.costs,
                     cooldown = draft.cooldown,
-                    onValueChange = { onUpdate { d -> d.copy(description = it) } },
+                    onInsertToken = ::insertAtCursor,
+                    onPickStatusEffect = { showStatusSheet = true },
                 )
             } else {
                 CollapsedEffectSummary(
                     description = draft.description,
                     costs = draft.costs,
                     cooldown = draft.cooldown,
+                    statusEffects = statusEffects,
                 )
             }
         }
@@ -455,6 +503,7 @@ private fun CollapsedEffectSummary(
     description: String,
     costs: List<Cost>,
     cooldown: String,
+    statusEffects: List<StatusEffect>,
 ) {
     val resolvedCooldown = remember(cooldown) {
         parseCooldown(cooldown)?.let { if (it == Duration.ZERO) "" else it.toString() }.orEmpty()
@@ -464,8 +513,7 @@ private fun CollapsedEffectSummary(
             description = description,
             costs = costs,
             cooldown = resolvedCooldown,
-            resolvedColor = MaterialTheme.colorScheme.primary,
-            errorColor = MaterialTheme.colorScheme.error,
+            statusEffects = statusEffects,
             emptyPlaceholder = "(empty)",
         ),
     )
@@ -476,77 +524,41 @@ private fun descriptionAnnotated(
     description: String,
     costs: List<Cost>,
     cooldown: String,
-    resolvedColor: Color,
-    errorColor: Color,
+    statusEffects: List<StatusEffect>,
     emptyPlaceholder: String,
-): AnnotatedString = remember(description, costs, cooldown, resolvedColor, errorColor, emptyPlaceholder) {
-    if (description.isBlank()) {
-        AnnotatedString(emptyPlaceholder)
-    } else {
-        buildAnnotatedString {
-            for (segment in parseDescription(description, costs, cooldown)) {
-                when (segment) {
-                    is DescriptionSegment.Literal -> append(segment.text)
-                    is DescriptionSegment.Resolved ->
-                        withStyle(SpanStyle(color = resolvedColor, fontWeight = FontWeight.Medium)) {
-                            append(segment.value)
-                        }
-                    is DescriptionSegment.Unresolved ->
-                        withStyle(SpanStyle(color = errorColor, fontWeight = FontWeight.Medium)) {
-                            append(segment.token)
-                        }
-                    is DescriptionSegment.StatusLink ->
-                        withStyle(SpanStyle(color = resolvedColor, fontWeight = FontWeight.Medium)) {
-                            append(segment.name)
-                        }
-                }
-            }
-        }
-    }
+): AnnotatedString {
+    if (description.isBlank()) return AnnotatedString(emptyPlaceholder)
+    return annotatedDescription(
+        template = description,
+        costs = costs,
+        cooldown = cooldown,
+        statusEffects = statusEffects,
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DescriptionField(
-    description: String,
+    fieldValue: TextFieldValue,
+    onFieldValueChange: (TextFieldValue) -> Unit,
     costs: List<Cost>,
     cooldown: String,
-    onValueChange: (String) -> Unit,
+    onInsertToken: (String) -> Unit,
+    onPickStatusEffect: () -> Unit,
 ) {
-    var fieldValue by remember {
-        mutableStateOf(TextFieldValue(text = description, selection = TextRange(description.length)))
-    }
-    LaunchedEffect(description) {
-        if (fieldValue.text != description) {
-            fieldValue = fieldValue.copy(text = description, selection = TextRange(description.length))
-        }
-    }
-
     val resolvedCooldown = remember(cooldown) {
         parseCooldown(cooldown)?.let { if (it == Duration.ZERO) "" else it.toString() }.orEmpty()
     }
-
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         TokenChipRow(
             costs = costs,
             hasCooldown = resolvedCooldown.isNotBlank(),
-            onInsert = { token ->
-                val start = fieldValue.selection.start.coerceIn(0, fieldValue.text.length)
-                val end = fieldValue.selection.end.coerceIn(0, fieldValue.text.length)
-                val before = fieldValue.text.substring(0, start)
-                val after = fieldValue.text.substring(end)
-                val newText = before + token + after
-                val cursor = before.length + token.length
-                fieldValue = TextFieldValue(text = newText, selection = TextRange(cursor))
-                onValueChange(newText)
-            },
+            onInsert = onInsertToken,
+            onPickStatusEffect = onPickStatusEffect,
         )
         OutlinedTextField(
             value = fieldValue,
-            onValueChange = {
-                fieldValue = it
-                if (it.text != description) onValueChange(it.text)
-            },
+            onValueChange = onFieldValueChange,
             label = { Text("Description *") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3,
@@ -560,13 +572,17 @@ private fun TokenChipRow(
     costs: List<Cost>,
     hasCooldown: Boolean,
     onInsert: (String) -> Unit,
+    onPickStatusEffect: () -> Unit,
 ) {
-    if (costs.isEmpty() && !hasCooldown) return
     FlowRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        AssistChip(
+            onClick = onPickStatusEffect,
+            label = { Text("+ Status Effect") },
+        )
         if (hasCooldown) {
             AssistChip(
                 onClick = { onInsert("{cooldown}") },
@@ -578,6 +594,119 @@ private fun TokenChipRow(
             AssistChip(
                 onClick = { onInsert(token) },
                 label = { Text(token) },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StatusEffectPickerSheetHost(
+    show: Boolean,
+    statusEffects: List<StatusEffect>,
+    onDismiss: () -> Unit,
+    onPick: (StatusEffect) -> Unit,
+) {
+    if (!show) return
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        StatusEffectPickerSheet(
+            statusEffects = statusEffects,
+            onPick = { effect ->
+                onPick(effect)
+                scope.launch { sheetState.hide() }.invokeOnCompletion { onDismiss() }
+            },
+        )
+    }
+}
+
+@Composable
+private fun StatusEffectPickerSheet(
+    statusEffects: List<StatusEffect>,
+    onPick: (StatusEffect) -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    val filtered = remember(query, statusEffects) {
+        if (query.isBlank()) {
+            statusEffects.sortedBy { it.name }
+        } else {
+            statusEffects
+                .filter {
+                    it.name.contains(query, ignoreCase = true) ||
+                        it.type.toString().contains(query, ignoreCase = true) ||
+                        it.description.contains(query, ignoreCase = true)
+                }
+                .sortedBy { it.name }
+        }
+    }
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .heightIn(max = 600.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = { query = it },
+            label = { Text("Filter") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        if (statusEffects.isEmpty()) {
+            Text(
+                text = "No status effects available. Contribute one from the Status Effects screen first.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        } else if (filtered.isEmpty()) {
+            Text(
+                text = "No matches.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            filtered.forEach { effect ->
+                StatusEffectPickerRow(effect = effect, onClick = { onPick(effect) })
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StatusEffectPickerRow(
+    effect: StatusEffect,
+    onClick: () -> Unit,
+) {
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        onClick = onClick,
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(text = effect.name, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = effect.type.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = effect.description,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
         }
     }
@@ -897,6 +1026,7 @@ private fun AbilityListingFormEmptyPreview() {
         initialName = null,
         isEdit = false,
         effects = emptyList(),
+        statusEffects = emptyList(),
         saveState = AbilityListingContributionsViewModel.SaveState.Idle,
         onUpdateEffect = { _, _ -> },
         onRemoveEffect = {},
@@ -923,6 +1053,7 @@ private fun AbilityListingFormPopulatedPreview() {
             ),
             EffectDraft(),
         ),
+        statusEffects = emptyList(),
         saveState = AbilityListingContributionsViewModel.SaveState.Idle,
         onUpdateEffect = { _, _ -> },
         onRemoveEffect = {},
@@ -939,6 +1070,7 @@ private fun AbilityListingFormErrorPreview() {
         initialName = null,
         isEdit = false,
         effects = emptyList(),
+        statusEffects = emptyList(),
         saveState = AbilityListingContributionsViewModel.SaveState.Error("Name cannot be empty"),
         onUpdateEffect = { _, _ -> },
         onRemoveEffect = {},
