@@ -98,3 +98,26 @@ fun Effect.AbilityEffect.resolveDescription(): String =
 
 private fun cooldownDisplay(cooldown: Duration): String =
     if (cooldown == Duration.ZERO) "" else cooldown.toString()
+
+/**
+ * Walks each effect description and returns the unique `StatusEffect`s referenced
+ * by `{status:Name}` tokens, in first-appearance order. Unresolved references are
+ * skipped.
+ */
+fun collectLinkedStatusEffects(
+    effects: List<Effect.AbilityEffect>,
+    statusEffects: List<StatusEffect>,
+): List<StatusEffect> {
+    if (statusEffects.isEmpty()) return emptyList()
+    val seen = LinkedHashSet<String>()
+    val result = mutableListOf<StatusEffect>()
+    for (effect in effects) {
+        val cooldownText = if (effect.cooldown == Duration.ZERO) "" else effect.cooldown.toString()
+        for (segment in parseDescription(effect.description, effect.cost, cooldownText, statusEffects)) {
+            if (segment is DescriptionSegment.StatusLink && seen.add(segment.target.name)) {
+                result += segment.target
+            }
+        }
+    }
+    return result
+}

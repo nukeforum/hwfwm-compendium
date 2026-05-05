@@ -157,4 +157,44 @@ class EffectDescriptionTest {
             segments,
         )
     }
+
+    @Test
+    fun `collectLinkedStatusEffects dedupes by name in first-appearance order`() {
+        val effects = listOf(
+            Effect.AbilityEffect(
+                rank = Rank.Iron,
+                type = AbilityType.Spell,
+                properties = listOf(Property.Holy),
+                cost = listOf(Cost.None),
+                cooldown = kotlin.time.Duration.ZERO,
+                description = "Inflicts {status:Bleeding} and applies {status:Penance}.",
+            ),
+            Effect.AbilityEffect(
+                rank = Rank.Bronze,
+                type = AbilityType.Spell,
+                properties = listOf(Property.Holy),
+                cost = listOf(Cost.None),
+                cooldown = kotlin.time.Duration.ZERO,
+                description = "Adds another {status:Bleeding} stack.",
+            ),
+        )
+        val linked = collectLinkedStatusEffects(effects, listOf(penance, bleeding))
+        assertEquals(listOf(bleeding, penance), linked)
+    }
+
+    @Test
+    fun `collectLinkedStatusEffects ignores unresolved references`() {
+        val effects = listOf(
+            Effect.AbilityEffect(
+                rank = Rank.Iron,
+                type = AbilityType.Spell,
+                properties = listOf(Property.Holy),
+                cost = listOf(Cost.None),
+                cooldown = kotlin.time.Duration.ZERO,
+                description = "Tries to inflict {status:Unknown}.",
+            ),
+        )
+        val linked = collectLinkedStatusEffects(effects, listOf(bleeding))
+        assertEquals(emptyList<StatusEffect>(), linked)
+    }
 }
