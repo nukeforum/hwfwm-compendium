@@ -1,19 +1,23 @@
 package wizardry.compendium.settings
 
+import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.preferences.PreferencesRepository
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.ImportSummary
 import wizardry.compendium.wire.WireDecodeException
@@ -35,6 +39,20 @@ class SettingsViewModel @Inject constructor(
     val abilityListingContributionsEnabled = preferencesRepository.abilityListingContributionsEnabled
     val statusEffectContributionsEnabled = preferencesRepository.statusEffectContributionsEnabled
     val essencesAsAwakeningStonesEnabled = preferencesRepository.essencesAsAwakeningStonesEnabled
+
+    val themeMode: StateFlow<ThemeMode> = preferencesRepository.themeMode.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = preferencesRepository.isCurrentThemeMode,
+    )
+
+    val dynamicColorEnabled: StateFlow<Boolean> = preferencesRepository.dynamicColorEnabled.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly,
+        initialValue = preferencesRepository.isDynamicColorEnabled,
+    )
+
+    val dynamicColorAvailable: Boolean = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
     val essenceConflictCount = essenceRepository.conflicts.map { it.size }
     val awakeningStoneConflictCount = awakeningStoneRepository.conflicts.map { it.size }
@@ -83,6 +101,14 @@ class SettingsViewModel @Inject constructor(
 
     fun setEssencesAsAwakeningStonesEnabled(enabled: Boolean) {
         preferencesRepository.setEssencesAsAwakeningStonesEnabled(enabled)
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        preferencesRepository.setThemeMode(mode)
+    }
+
+    fun setDynamicColorEnabled(enabled: Boolean) {
+        preferencesRepository.setDynamicColorEnabled(enabled)
     }
 
     /**
