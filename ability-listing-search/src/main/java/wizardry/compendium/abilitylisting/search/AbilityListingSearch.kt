@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -62,7 +63,7 @@ private fun Screen(
     onListingClicked: (Ability.Listing) -> Unit,
     onAddClicked: () -> Unit,
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         if (state.listings.isEmpty()) {
             SearchEmptyState(
                 hasFilter = state.filterTerm.isNotEmpty(),

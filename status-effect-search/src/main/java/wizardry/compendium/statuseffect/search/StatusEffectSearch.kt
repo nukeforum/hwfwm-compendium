@@ -1,5 +1,6 @@
 package wizardry.compendium.statuseffect.search
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -84,7 +85,7 @@ private fun Screen(
     var showFilterSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Column(modifier = modifier) {
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         if (state.effects.isEmpty()) {
             SearchEmptyState(
                 hasFilter = state.filterTerm.isNotEmpty() || state.appliedFilter != null,

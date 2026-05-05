@@ -77,7 +77,7 @@ private fun Screen(
     onStoneClicked: (AwakeningStone) -> Unit,
     onAddClicked: () -> Unit,
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         if (state.stones.isEmpty()) {
             SearchEmptyState(
                 hasFilter = state.filterTerm.isNotEmpty() || state.appliedFilters.isNotEmpty(),

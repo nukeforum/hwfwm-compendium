@@ -62,7 +62,7 @@ private fun Screen(
     onFilterSelected: (SearchFilter) -> Unit,
     onAddClicked: () -> Unit,
 ) {
-    Column(modifier = modifier) {
+    Column(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         if (state.essences.isEmpty()) {
             SearchEmptyState(
                 hasFilter = state.filterTerm.isNotEmpty() || state.appliedFilters.isNotEmpty(),
