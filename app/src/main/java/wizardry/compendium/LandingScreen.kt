@@ -16,8 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 @Composable
 fun LandingScreen(
@@ -109,13 +111,15 @@ private fun PanelButton(
     }
 }
 
-@Preview(showBackground = true)
+@PreviewLightDark
 @Composable
 private fun LandingScreenPreview() {
-    LandingScreen(
-        onEssenceClicked = {},
-        onAwakeningStoneClicked = {},
-        onAbilityListingClicked = {},
-        onStatusEffectClicked = {},
-    )
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        LandingScreen(
+            onEssenceClicked = {},
+            onAwakeningStoneClicked = {},
+            onAbilityListingClicked = {},
+            onStatusEffectClicked = {},
+        )
+    }
 }
