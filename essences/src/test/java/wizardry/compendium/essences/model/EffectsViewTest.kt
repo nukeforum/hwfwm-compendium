@@ -50,4 +50,27 @@ class EffectsViewTest {
             view,
         )
     }
+
+    @Test
+    fun `replacement-key group collapses to highest rank effect at lowest rank slot`() {
+        val ironCloak = effect(Rank.Iron, "iron-cloak", replacementKey = "cloak")
+        val ironWeight = effect(Rank.Iron, "iron-weight", replacementKey = "weight")
+        val silverCloak = effect(Rank.Silver, "silver-cloak", replacementKey = "cloak")
+        val silverFireballs = effect(Rank.Silver, "silver-fireballs")
+
+        val view = listOf(ironCloak, ironWeight, silverCloak, silverFireballs)
+            .viewAt(ceiling = null)
+
+        assertEquals(
+            listOf(
+                // Iron line: silver-cloak replaces iron-cloak at iron-cloak's slot,
+                // iron-weight stays.
+                RankedEffectLine(Rank.Iron, listOf(silverCloak, ironWeight)),
+                // Silver line: only the un-keyed silver-fireballs remains;
+                // silver-cloak was consumed into the Iron line.
+                RankedEffectLine(Rank.Silver, listOf(silverFireballs)),
+            ),
+            view,
+        )
+    }
 }
