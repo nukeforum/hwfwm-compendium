@@ -13,7 +13,7 @@ import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.EssencesAsAwakeningStonesToggleFlow
 import wizardry.compendium.essences.StatusEffectContributionsToggleFlow
 import wizardry.compendium.essences.StatusEffectRepository
-import wizardry.compendium.preferences.PreferencesRepository
+import wizardry.compendium.preferences.DataStorePreferencesRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -33,15 +33,15 @@ interface EssenceModule {
 
     @Singleton
     @Binds
-    fun bindEssenceContributionsToggleFlow(impl: PreferencesRepository): EssenceContributionsToggleFlow
+    fun bindEssenceContributionsToggleFlow(impl: DataStorePreferencesRepository): EssenceContributionsToggleFlow
 
     @Singleton
     @Binds
-    fun bindAwakeningStoneContributionsToggleFlow(impl: PreferencesRepository): AwakeningStoneContributionsToggleFlow
+    fun bindAwakeningStoneContributionsToggleFlow(impl: DataStorePreferencesRepository): AwakeningStoneContributionsToggleFlow
 
     @Singleton
     @Binds
-    fun bindEssencesAsAwakeningStonesToggleFlow(impl: PreferencesRepository): EssencesAsAwakeningStonesToggleFlow
+    fun bindEssencesAsAwakeningStonesToggleFlow(impl: DataStorePreferencesRepository): EssencesAsAwakeningStonesToggleFlow
 
     @Singleton
     @Binds
@@ -49,7 +49,7 @@ interface EssenceModule {
 
     @Singleton
     @Binds
-    fun bindAbilityListingContributionsToggleFlow(impl: PreferencesRepository): AbilityListingContributionsToggleFlow
+    fun bindAbilityListingContributionsToggleFlow(impl: DataStorePreferencesRepository): AbilityListingContributionsToggleFlow
 
     @Singleton
     @Binds
@@ -57,5 +57,5 @@ interface EssenceModule {
 
     @Singleton
     @Binds
-    fun bindStatusEffectContributionsToggleFlow(impl: PreferencesRepository): StatusEffectContributionsToggleFlow
+    fun bindStatusEffectContributionsToggleFlow(impl: DataStorePreferencesRepository): StatusEffectContributionsToggleFlow
 }

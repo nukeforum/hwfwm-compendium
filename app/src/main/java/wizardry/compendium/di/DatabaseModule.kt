@@ -22,6 +22,7 @@ import wizardry.compendium.persistence.EssencesAsAwakeningStonesToggle
 import wizardry.compendium.persistence.StatusEffectCache
 import wizardry.compendium.persistence.StatusEffectContributionsToggle
 import wizardry.compendium.persistence.StatusEffectDatabase
+import wizardry.compendium.preferences.DataStorePreferencesRepository
 import wizardry.compendium.preferences.PreferencesRepository
 import dagger.Binds
 import dagger.Module
@@ -37,23 +38,27 @@ abstract class DatabaseModule {
 
     @Binds
     @Singleton
-    abstract fun bindEssenceContributionsToggle(impl: PreferencesRepository): EssenceContributionsToggle
+    abstract fun bindPreferencesRepository(impl: DataStorePreferencesRepository): PreferencesRepository
 
     @Binds
     @Singleton
-    abstract fun bindAwakeningStoneContributionsToggle(impl: PreferencesRepository): AwakeningStoneContributionsToggle
+    abstract fun bindEssenceContributionsToggle(impl: DataStorePreferencesRepository): EssenceContributionsToggle
 
     @Binds
     @Singleton
-    abstract fun bindAbilityListingContributionsToggle(impl: PreferencesRepository): AbilityListingContributionsToggle
+    abstract fun bindAwakeningStoneContributionsToggle(impl: DataStorePreferencesRepository): AwakeningStoneContributionsToggle
 
     @Binds
     @Singleton
-    abstract fun bindStatusEffectContributionsToggle(impl: PreferencesRepository): StatusEffectContributionsToggle
+    abstract fun bindAbilityListingContributionsToggle(impl: DataStorePreferencesRepository): AbilityListingContributionsToggle
 
     @Binds
     @Singleton
-    abstract fun bindEssencesAsAwakeningStonesToggle(impl: PreferencesRepository): EssencesAsAwakeningStonesToggle
+    abstract fun bindStatusEffectContributionsToggle(impl: DataStorePreferencesRepository): StatusEffectContributionsToggle
+
+    @Binds
+    @Singleton
+    abstract fun bindEssencesAsAwakeningStonesToggle(impl: DataStorePreferencesRepository): EssencesAsAwakeningStonesToggle
 
     companion object {
         @Provides

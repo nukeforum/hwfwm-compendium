@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,24 +17,38 @@ import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.preferences.PreferencesRepository
+import wizardry.compendium.ui.DomainPickerRow
 import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.wire.ContributionDomain
+import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.ImportSummary
 import wizardry.compendium.wire.WireDecodeException
 import wizardry.compendium.wire.WireExporter
 import wizardry.compendium.wire.WireImporter
 import wizardry.compendium.wire.WireVersionUnsupported
+import wizardry.compendium.wire.filteredTo
 import javax.inject.Inject
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
-    essenceRepository: EssenceRepository,
-    awakeningStoneRepository: AwakeningStoneRepository,
-    abilityListingRepository: AbilityListingRepository,
-    statusEffectRepository: StatusEffectRepository,
+    private val essenceRepository: EssenceRepository,
+    private val awakeningStoneRepository: AwakeningStoneRepository,
+    private val abilityListingRepository: AbilityListingRepository,
+    private val statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
+    /**
+     * Background dispatcher for encode/decode/import work. Visible for
+     * testing so unit tests can substitute the runTest dispatcher; defaults
+     * to [Dispatchers.IO] in production. Constructor stays Hilt-friendly by
+     * exposing this only as a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     val essenceContributionsEnabled = preferencesRepository.essenceContributionsEnabled
     val awakeningStoneContributionsEnabled = preferencesRepository.awakeningStoneContributionsEnabled
     val abilityListingContributionsEnabled = preferencesRepository.abilityListingContributionsEnabled
@@ -59,22 +74,43 @@ class SettingsViewModel @Inject constructor(
     val abilityListingConflictCount = abilityListingRepository.conflicts.map { it.size }
     val statusEffectConflictCount = statusEffectRepository.conflicts.map { it.size }
 
-    private val exporter = WireExporter(essenceRepository, awakeningStoneRepository, abilityListingRepository, statusEffectRepository)
-    private val importer = WireImporter(essenceRepository, awakeningStoneRepository, abilityListingRepository, statusEffectRepository)
+    private val exporter = WireExporter(
+        essenceRepository,
+        awakeningStoneRepository,
+        abilityListingRepository,
+        statusEffectRepository,
+    )
+    private val importer = WireImporter(
+        essenceRepository,
+        awakeningStoneRepository,
+        abilityListingRepository,
+        statusEffectRepository,
+    )
 
     /**
-     * Modal states for the share/import flows.
+     * Modal state machine for the multi-step export and import flows.
      *
-     * The ViewModel owns these because both export and import are
-     * multi-step: export goes through encode → check size → emit share
-     * intent; import goes through decode → run importer → show summary.
-     * Each step emits a new state, the screen reacts.
+     * Export: `Idle` → `ExportPickerOpen` → `Encoding` → `ReadyToShare` /
+     * `ShareTooLarge`. The screen consumes `ReadyToShare` and routes the
+     * payload to a share intent or a SAF file write, then calls
+     * `dismissPicker()` (or `resetIoState()`).
+     *
+     * Import: `Idle` → `ImportSourceOpen` → `Decoding` →
+     * `ImportPreviewOpen` → `Importing` → `ImportComplete` /
+     * `ImportFailed`.
      */
     sealed interface IoState {
         data object Idle : IoState
+        data class ExportPickerOpen(val rows: List<DomainPickerRow<ContributionDomain>>) : IoState
         data object Encoding : IoState
         data class ReadyToShare(val text: String, val byteSize: Int) : IoState
         data class ShareTooLarge(val byteSize: Int, val limit: Int) : IoState
+        data object ImportSourceOpen : IoState
+        data object Decoding : IoState
+        data class ImportPreviewOpen(
+            val envelope: Envelope,
+            val rows: List<DomainPickerRow<ContributionDomain>>,
+        ) : IoState
         data object Importing : IoState
         data class ImportComplete(val summary: ImportSummary) : IoState
         data class ImportFailed(val message: String) : IoState
@@ -83,46 +119,42 @@ class SettingsViewModel @Inject constructor(
     private val _ioState = MutableStateFlow<IoState>(IoState.Idle)
     val ioState: StateFlow<IoState> = _ioState.asStateFlow()
 
-    fun setEssenceContributionsEnabled(enabled: Boolean) {
+    fun setEssenceContributionsEnabled(enabled: Boolean) =
         preferencesRepository.setEssenceContributionsEnabled(enabled)
-    }
-
-    fun setAwakeningStoneContributionsEnabled(enabled: Boolean) {
+    fun setAwakeningStoneContributionsEnabled(enabled: Boolean) =
         preferencesRepository.setAwakeningStoneContributionsEnabled(enabled)
-    }
-
-    fun setAbilityListingContributionsEnabled(enabled: Boolean) {
+    fun setAbilityListingContributionsEnabled(enabled: Boolean) =
         preferencesRepository.setAbilityListingContributionsEnabled(enabled)
-    }
-
-    fun setStatusEffectContributionsEnabled(enabled: Boolean) {
+    fun setStatusEffectContributionsEnabled(enabled: Boolean) =
         preferencesRepository.setStatusEffectContributionsEnabled(enabled)
-    }
-
-    fun setEssencesAsAwakeningStonesEnabled(enabled: Boolean) {
+    fun setEssencesAsAwakeningStonesEnabled(enabled: Boolean) =
         preferencesRepository.setEssencesAsAwakeningStonesEnabled(enabled)
-    }
-
-    fun setThemeMode(mode: ThemeMode) {
-        preferencesRepository.setThemeMode(mode)
-    }
-
-    fun setDynamicColorEnabled(enabled: Boolean) {
+    fun setThemeMode(mode: ThemeMode) = preferencesRepository.setThemeMode(mode)
+    fun setDynamicColorEnabled(enabled: Boolean) =
         preferencesRepository.setDynamicColorEnabled(enabled)
+
+    fun openExportPicker() {
+        viewModelScope.launch(ioDispatcher) {
+            val rows = buildExportRows()
+            _ioState.value = IoState.ExportPickerOpen(rows)
+        }
     }
 
-    /**
-     * Build an envelope of every user contribution, encode it, and surface
-     * the result for the screen to launch a share intent.
-     *
-     * If the encoded payload exceeds the share-size limit, the state moves
-     * to `ShareTooLarge` instead — the screen prompts the user to use
-     * file export (tier 4c).
-     */
-    fun beginExport() {
+    fun toggleExportDomain(domain: ContributionDomain) {
+        val current = _ioState.value as? IoState.ExportPickerOpen ?: return
+        val flipped = current.rows.map { row ->
+            if (row.key == domain && row.enabled) row.copy(selected = !row.selected) else row
+        }
+        _ioState.value = IoState.ExportPickerOpen(flipped)
+    }
+
+    fun confirmExport() {
+        val current = _ioState.value as? IoState.ExportPickerOpen ?: return
+        val selection = current.rows.filter { it.selected }.map { it.key }.toSet()
+        if (selection.isEmpty()) return  // button should already be disabled
         _ioState.value = IoState.Encoding
-        viewModelScope.launch(Dispatchers.IO) {
-            val envelope = exporter.exportAll()
+        viewModelScope.launch(ioDispatcher) {
+            val envelope = exporter.exportFiltered(selection)
             val encoded = EnvelopeCodec.encode(envelope)
             _ioState.value = if (encoded.fitsInShareLimit) {
                 IoState.ReadyToShare(text = encoded.text, byteSize = encoded.byteSize)
@@ -133,24 +165,39 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Decode a pasted share string, apply it via the importer, and surface
-     * the per-entry summary.
-     *
-     * Decode-time errors (bad base64, corrupt gzip, future version) become
-     * `ImportFailed` with a user-friendly message. Per-entry import results
-     * are surfaced via `ImportComplete`.
+     * Encode the given domain selection without going through the picker
+     * state. Used by the "Save to File" path where the SAF launcher fires
+     * after the picker sheet has dismissed.
      */
-    fun importFromText(text: String) {
+    fun encodeForFile(selection: Set<ContributionDomain>) {
+        if (selection.isEmpty()) return
+        _ioState.value = IoState.Encoding
+        viewModelScope.launch(ioDispatcher) {
+            val envelope = exporter.exportFiltered(selection)
+            val encoded = EnvelopeCodec.encode(envelope)
+            _ioState.value = if (encoded.fitsInShareLimit) {
+                IoState.ReadyToShare(text = encoded.text, byteSize = encoded.byteSize)
+            } else {
+                IoState.ShareTooLarge(byteSize = encoded.byteSize, limit = EnvelopeCodec.ShareSizeLimitBytes)
+            }
+        }
+    }
+
+    fun openImportSource() {
+        _ioState.value = IoState.ImportSourceOpen
+    }
+
+    fun pasteImport(text: String) {
         if (text.isBlank()) {
             _ioState.value = IoState.ImportFailed("Paste is empty.")
             return
         }
-        _ioState.value = IoState.Importing
-        viewModelScope.launch(Dispatchers.IO) {
+        _ioState.value = IoState.Decoding
+        viewModelScope.launch(ioDispatcher) {
             try {
                 val envelope = EnvelopeCodec.decode(text)
-                val summary = importer.import(envelope)
-                _ioState.value = IoState.ImportComplete(summary)
+                val rows = buildImportRows(envelope)
+                _ioState.value = IoState.ImportPreviewOpen(envelope = envelope, rows = rows)
             } catch (e: WireVersionUnsupported) {
                 _ioState.value = IoState.ImportFailed(
                     "This share was created with a newer version of the app. Update the app to import it.",
@@ -165,7 +212,87 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun toggleImportDomain(domain: ContributionDomain) {
+        val current = _ioState.value as? IoState.ImportPreviewOpen ?: return
+        val flipped = current.rows.map { row ->
+            if (row.key == domain && row.enabled) row.copy(selected = !row.selected) else row
+        }
+        _ioState.value = current.copy(rows = flipped)
+    }
+
+    fun confirmImport() {
+        val current = _ioState.value as? IoState.ImportPreviewOpen ?: return
+        val selection = current.rows.filter { it.selected }.map { it.key }.toSet()
+        if (selection.isEmpty()) return
+        val filtered = current.envelope.filteredTo(selection)
+        _ioState.value = IoState.Importing
+        viewModelScope.launch(ioDispatcher) {
+            try {
+                val summary = importer.import(filtered)
+                _ioState.value = IoState.ImportComplete(summary)
+            } catch (e: Exception) {
+                _ioState.value = IoState.ImportFailed("Import failed: ${e.message}")
+            }
+        }
+    }
+
+    fun dismissPicker() {
+        _ioState.value = IoState.Idle
+    }
+
     fun resetIoState() {
         _ioState.value = IoState.Idle
     }
+
+    private suspend fun buildExportRows(): List<DomainPickerRow<ContributionDomain>> {
+        val essences = essenceRepository.getContributions()
+        val mfns = essences.count { it is Essence.Manifestation }
+        val confs = essences.count { it is Essence.Confluence }
+        val stones = awakeningStoneRepository.getContributions().size
+        val listings = abilityListingRepository.getContributions().size
+        val effects = statusEffectRepository.getContributions().size
+        return listOf(
+            row(ContributionDomain.Essences, "Essences", mfns),
+            row(ContributionDomain.Confluences, "Confluences", confs),
+            row(ContributionDomain.AwakeningStones, "Awakening Stones", stones),
+            row(ContributionDomain.AbilityListings, "Ability Listings", listings),
+            row(ContributionDomain.StatusEffects, "Status Effects", effects),
+        )
+    }
+
+    private fun row(
+        key: ContributionDomain,
+        label: String,
+        count: Int,
+    ): DomainPickerRow<ContributionDomain> = DomainPickerRow(
+        key = key,
+        label = label,
+        count = count,
+        countSuffix = "",
+        selected = count > 0,
+        enabled = count > 0,
+    )
+
+    private fun buildImportRows(envelope: Envelope): List<DomainPickerRow<ContributionDomain>> {
+        return listOf(
+            importRow(ContributionDomain.Essences, "Essences", envelope.manifestations.size),
+            importRow(ContributionDomain.Confluences, "Confluences", envelope.confluences.size),
+            importRow(ContributionDomain.AwakeningStones, "Awakening Stones", envelope.stones.size),
+            importRow(ContributionDomain.AbilityListings, "Ability Listings", envelope.listings.size),
+            importRow(ContributionDomain.StatusEffects, "Status Effects", envelope.statusEffects.size),
+        )
+    }
+
+    private fun importRow(
+        key: ContributionDomain,
+        label: String,
+        count: Int,
+    ): DomainPickerRow<ContributionDomain> = DomainPickerRow(
+        key = key,
+        label = label,
+        count = count,
+        countSuffix = " in bundle",
+        selected = count > 0,
+        enabled = count > 0,
+    )
 }
