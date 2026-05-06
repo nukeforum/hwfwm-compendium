@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -31,6 +32,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ability.preview.AbilityPreview
 import wizardry.compendium.ability.preview.LocalStatusEffects
 import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.essences.model.Rank
 
 @Composable
 fun AbilityListingDetails(
@@ -55,6 +57,7 @@ fun AbilityListingDetails(
                 state = details,
                 onEdit = { onEditContribution(details.listing) },
                 onShare = { onShareContribution(details.listing) },
+                onSelectRank = viewModel::selectRank,
             )
         }
     }
@@ -85,6 +88,7 @@ private fun Details(
     state: AbilityListingDetailUiState.Success,
     onEdit: () -> Unit,
     onShare: () -> Unit,
+    onSelectRank: (Rank?) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -116,8 +120,17 @@ private fun Details(
                 .padding(8.dp),
         ) {
             CompositionLocalProvider(LocalStatusEffects provides state.statusEffects) {
-                AbilityPreview(ability = state.listing)
+                AbilityPreview(
+                    ability = state.listing,
+                    rankCeiling = state.selectedRank,
+                )
             }
         }
+        Spacer(modifier = Modifier.height(8.dp))
+        RankFilterRow(
+            effects = state.listing.effects,
+            selectedRank = state.selectedRank,
+            onSelect = onSelectRank,
+        )
     }
 }
