@@ -26,6 +26,7 @@ import wizardry.compendium.essences.model.Cost
 import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.essences.model.RankedEffectLine
 import wizardry.compendium.essences.model.Resource
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
@@ -47,28 +48,33 @@ internal fun Report(ability: Ability, ceiling: Rank? = null) {
 
 @Composable
 private fun Report(acquiredAbility: Ability.Acquired) {
+    val rankedLines = acquiredAbility.effects.viewAt(acquiredAbility.rank)
+    val visibleEffects = rankedLines.flatMap { it.effects }
     acquiredAbility.Report(
+        visibleEffects = visibleEffects,
         titleSlot = { Text(text = "Ability: ${acquiredAbility.name} (${acquiredAbility.boundEssence.name})") },
         progressSlot = {
             Text(text = "Current Rank: ${acquiredAbility.rank} ${acquiredAbility.tier}(${acquiredAbility.progress * 100}%)")
             Spacer(modifier = Modifier.height(12.dp))
         },
-        effectsSlot = { acquiredAbility.effects.Report(acquiredAbility.rank) },
+        effectsSlot = { rankedLines.RenderRankLines() },
     )
 }
 
 @Composable
 private fun Report(abilityListing: Ability.Listing, ceiling: Rank?) {
+    val rankedLines = abilityListing.effects.viewAt(ceiling)
+    val visibleEffects = rankedLines.flatMap { it.effects }
     abilityListing.Report(
-        titleSlot = {
-            Text(text = "Ability: ${abilityListing.name}")
-        },
-        effectsSlot = { abilityListing.effects.Report(ceiling) },
+        visibleEffects = visibleEffects,
+        titleSlot = { Text(text = "Ability: ${abilityListing.name}") },
+        effectsSlot = { rankedLines.RenderRankLines() },
     )
 }
 
 @Composable
 private fun Ability.Report(
+    visibleEffects: List<Effect.AbilityEffect>,
     titleSlot: @Composable () -> Unit = {},
     progressSlot: @Composable () -> Unit = {},
     effectsSlot: @Composable () -> Unit = {},
@@ -76,39 +82,39 @@ private fun Ability.Report(
     Column {
         titleSlot()
         Spacer(modifier = Modifier.height(12.dp))
-        Text(text = "${reportType()} (${reportProperties()})")
-        Text(text = "Cost: ${reportCost()}.")
-        Text(text = "Cooldown: ${reportCooldown()}.")
+        Text(text = "${visibleEffects.reportType()} (${visibleEffects.reportProperties()})")
+        Text(text = "Cost: ${visibleEffects.reportCost()}.")
+        Text(text = "Cooldown: ${visibleEffects.reportCooldown()}.")
         Spacer(modifier = Modifier.height(12.dp))
         progressSlot()
         effectsSlot()
-        LinkedStatusEffectsSection(effects)
+        LinkedStatusEffectsSection(visibleEffects)
     }
 }
 
-private fun Ability.reportType(): String =
-    effects.map { it.type }.toSet().joinToString("/")
+private fun List<Effect.AbilityEffect>.reportType(): String =
+    map { it.type }.toSet().joinToString("/")
 
-private fun Ability.reportProperties(): String =
-    effects.flatMap { it.properties }.toSet().joinToString(", ")
+private fun List<Effect.AbilityEffect>.reportProperties(): String =
+    flatMap { it.properties }.toSet().joinToString(", ")
 
-private fun Ability.reportCost(): String =
-    effects.flatMap { it.cost }
+private fun List<Effect.AbilityEffect>.reportCost(): String =
+    flatMap { it.cost }
         .runCatching { single { it is Cost.Upfront } }
         .getOrNull()
         ?.toString()
         ?: "Varies"
 
-private fun Ability.reportCooldown(): String =
-    effects.map { it.cooldown }.toSet()
+private fun List<Effect.AbilityEffect>.reportCooldown(): String =
+    map { it.cooldown }.toSet()
         .takeIf { it.size == 1 }
         ?.first()
         ?.let { if (it == Duration.ZERO) "None" else it.toString() }
         ?: "Varies"
 
 @Composable
-private fun List<Effect.AbilityEffect>.Report(ceiling: Rank?) {
-    for (line in viewAt(ceiling)) {
+private fun List<RankedEffectLine>.RenderRankLines() {
+    for (line in this) {
         Text(text = line.effects.annotatedRankLine(line.rank))
     }
 }
