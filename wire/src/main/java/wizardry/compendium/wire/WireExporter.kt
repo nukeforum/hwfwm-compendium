@@ -25,11 +25,10 @@ import wizardry.compendium.essences.model.StatusEffect as ModelStatusEffect
  * omits empty defaults on the wire, so this costs nothing in size and keeps
  * the data shape uniform for the importer.
  *
- * # Per-table exports come later
+ * # Per-table exports
  *
- * Tier 4 starts with a single "export everything" path. Per-table variants
- * (just essences, just stones, etc.) are easy to add as a filter step on
- * top of `exportAll` and will land alongside the per-table UI.
+ * `exportFiltered` trims the result of `exportAll` to a caller-supplied
+ * subset of `ContributionDomain`s, used by the Settings export picker.
  */
 class WireExporter(
     private val essenceRepository: EssenceRepository,
