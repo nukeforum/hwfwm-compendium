@@ -29,11 +29,14 @@ import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Resource
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
-import wizardry.compendium.essences.model.RankedEffectLine
 import wizardry.compendium.essences.model.collectLinkedStatusEffects
 import wizardry.compendium.essences.model.viewAt
 import kotlin.time.Duration
 
+/**
+ * `ceiling` is honored for [Ability.Listing]. For [Ability.Acquired] it is ignored —
+ * an acquired ability's own rank is always its ceiling.
+ */
 @Composable
 internal fun Report(ability: Ability, ceiling: Rank? = null) {
     when (ability) {
