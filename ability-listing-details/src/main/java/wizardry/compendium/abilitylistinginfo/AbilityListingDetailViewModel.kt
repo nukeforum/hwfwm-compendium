@@ -11,6 +11,7 @@ import kotlinx.coroutines.launch
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.essences.model.Rank
 import javax.inject.Inject
 
 @HiltViewModel
@@ -60,6 +61,11 @@ class AbilityListingDetailViewModel @Inject constructor(
             isContribution = abilityListingRepository.isContribution(name),
             statusEffects = statusEffectRepository.getStatusEffects(),
         )
+
+    fun selectRank(rank: Rank?) {
+        val current = state.value as? AbilityListingDetailUiState.Success ?: return
+        _state.value = current.copy(selectedRank = rank)
+    }
 
     private val currentlyLoadedListing: Ability.Listing?
         get() = (state.value as? AbilityListingDetailUiState.Success)?.listing
