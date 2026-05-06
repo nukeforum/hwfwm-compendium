@@ -103,8 +103,16 @@ class SettingsViewModel @Inject constructor(
         data object Idle : IoState
         data class ExportPickerOpen(val rows: List<DomainPickerRow<ContributionDomain>>) : IoState
         data object Encoding : IoState
-        data class ReadyToShare(val text: String, val byteSize: Int) : IoState
-        data class ShareTooLarge(val byteSize: Int, val limit: Int) : IoState
+        data class ReadyToShare(
+            val text: String,
+            val byteSize: Int,
+            val selection: Set<ContributionDomain>,
+        ) : IoState
+        data class ShareTooLarge(
+            val byteSize: Int,
+            val limit: Int,
+            val selection: Set<ContributionDomain>,
+        ) : IoState
         data object ImportSourceOpen : IoState
         data object Decoding : IoState
         data class ImportPreviewOpen(
@@ -157,9 +165,13 @@ class SettingsViewModel @Inject constructor(
             val envelope = exporter.exportFiltered(selection)
             val encoded = EnvelopeCodec.encode(envelope)
             _ioState.value = if (encoded.fitsInShareLimit) {
-                IoState.ReadyToShare(text = encoded.text, byteSize = encoded.byteSize)
+                IoState.ReadyToShare(text = encoded.text, byteSize = encoded.byteSize, selection = selection)
             } else {
-                IoState.ShareTooLarge(byteSize = encoded.byteSize, limit = EnvelopeCodec.ShareSizeLimitBytes)
+                IoState.ShareTooLarge(
+                    byteSize = encoded.byteSize,
+                    limit = EnvelopeCodec.ShareSizeLimitBytes,
+                    selection = selection,
+                )
             }
         }
     }
@@ -176,9 +188,13 @@ class SettingsViewModel @Inject constructor(
             val envelope = exporter.exportFiltered(selection)
             val encoded = EnvelopeCodec.encode(envelope)
             _ioState.value = if (encoded.fitsInShareLimit) {
-                IoState.ReadyToShare(text = encoded.text, byteSize = encoded.byteSize)
+                IoState.ReadyToShare(text = encoded.text, byteSize = encoded.byteSize, selection = selection)
             } else {
-                IoState.ShareTooLarge(byteSize = encoded.byteSize, limit = EnvelopeCodec.ShareSizeLimitBytes)
+                IoState.ShareTooLarge(
+                    byteSize = encoded.byteSize,
+                    limit = EnvelopeCodec.ShareSizeLimitBytes,
+                    selection = selection,
+                )
             }
         }
     }

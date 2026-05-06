@@ -173,11 +173,13 @@ fun SettingsScreen(
                 onToggle = viewModel::toggleExportDomain,
                 onShare = {
                     pendingExportUri = null
+                    pendingExportSelection = emptySet()
                     viewModel.confirmExport()
                 },
                 onSaveToFile = {
                     val selection = state.rows.filter { it.selected }.map { it.key }.toSet()
                     if (selection.isNotEmpty()) {
+                        pendingExportUri = null
                         pendingExportSelection = selection
                         viewModel.dismissPicker()
                         createDocumentLauncher.launch("contributions.compendium")
@@ -190,9 +192,13 @@ fun SettingsScreen(
             ImportSourceSheet(
                 onPaste = {
                     pasteText = ""
+                    viewModel.dismissPicker()
                     showPasteDialog = true
                 },
-                onOpenFile = { openDocumentLauncher.launch(arrayOf("text/*")) },
+                onOpenFile = {
+                    viewModel.dismissPicker()
+                    openDocumentLauncher.launch(arrayOf("text/*"))
+                },
                 onDismiss = viewModel::dismissPicker,
             )
         }
@@ -217,6 +223,7 @@ fun SettingsScreen(
                 },
                 confirmButton = {
                     Button(onClick = {
+                        pendingExportSelection = state.selection
                         viewModel.resetIoState()
                         createDocumentLauncher.launch("contributions.compendium")
                     }) { Text("Save to File") }
@@ -517,7 +524,7 @@ private fun ExportPickerSheet(
         confirmValueChange = { false },
     )
     androidx.compose.material3.ModalBottomSheet(
-        onDismissRequest = { /* drag-dismiss is blocked by confirmValueChange */ },
+        onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
         Column(
@@ -571,7 +578,7 @@ private fun ImportSourceSheet(
         confirmValueChange = { false },
     )
     androidx.compose.material3.ModalBottomSheet(
-        onDismissRequest = { },
+        onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
         Column(
@@ -620,7 +627,7 @@ private fun ImportPreviewSheet(
     )
     val totalCount = rows.sumOf { it.count }
     androidx.compose.material3.ModalBottomSheet(
-        onDismissRequest = { },
+        onDismissRequest = onDismiss,
         sheetState = sheetState,
     ) {
         Column(
