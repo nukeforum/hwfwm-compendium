@@ -8,5 +8,5 @@ val RestrictedRed = Color.Red.copy(alpha = 0.5f)
 
 @Composable
 fun essenceHighlight(isRestricted: Boolean): Color {
-    return if (isRestricted) RestrictedRed else MaterialTheme.colorScheme.onSurfaceVariant
+    return if (isRestricted) RestrictedRed else MaterialTheme.colorScheme.surfaceVariant
 }
