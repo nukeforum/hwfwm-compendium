@@ -171,6 +171,31 @@ class EffectsViewTest {
     }
 
     @Test
+    fun `flatMap of viewAt is the visible effect set used by summary lines and linked statuses`() {
+        val ironCloak = effect(Rank.Iron, "iron-cloak", replacementKey = "cloak")
+        val silverCloak = effect(Rank.Silver, "silver-cloak", replacementKey = "cloak")
+        val goldFlair = effect(Rank.Gold, "gold-flair")
+
+        // Iron ceiling: only the Iron-cloak effect (winner-within-ceiling) is visible.
+        val ironVisible = listOf(ironCloak, silverCloak, goldFlair)
+            .viewAt(Rank.Iron)
+            .flatMap { it.effects }
+        assertEquals(listOf(ironCloak), ironVisible)
+
+        // Silver ceiling: silver-cloak (winner) supersedes iron-cloak; gold-flair filtered out.
+        val silverVisible = listOf(ironCloak, silverCloak, goldFlair)
+            .viewAt(Rank.Silver)
+            .flatMap { it.effects }
+        assertEquals(listOf(silverCloak), silverVisible)
+
+        // Null ceiling: silverCloak winner + goldFlair.
+        val fullVisible = listOf(ironCloak, silverCloak, goldFlair)
+            .viewAt(ceiling = null)
+            .flatMap { it.effects }
+        assertEquals(listOf(silverCloak, goldFlair), fullVisible)
+    }
+
+    @Test
     fun `ungrouped effect between two grouped members renders in declaration order on the same line`() {
         val ironCloak = effect(Rank.Iron, "iron-cloak", replacementKey = "cloak")
         val ironWeight = effect(Rank.Iron, "iron-weight")
