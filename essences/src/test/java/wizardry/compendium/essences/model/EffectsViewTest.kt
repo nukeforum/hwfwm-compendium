@@ -36,4 +36,18 @@ class EffectsViewTest {
             view,
         )
     }
+
+    @Test
+    fun `ceiling = Iron drops Silver and higher`() {
+        val iron = effect(Rank.Iron, "iron")
+        val silver = effect(Rank.Silver, "silver")
+        val gold = effect(Rank.Gold, "gold")
+
+        val view = listOf(iron, silver, gold).viewAt(ceiling = Rank.Iron)
+
+        assertEquals(
+            listOf(RankedEffectLine(Rank.Iron, listOf(iron))),
+            view,
+        )
+    }
 }
