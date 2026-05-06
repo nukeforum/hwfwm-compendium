@@ -60,6 +60,14 @@ class WireExporter(
     }
 
     /**
+     * Like `exportAll`, but trims the resulting envelope to only the domains
+     * named in [selection]. Used by the Settings export picker to honor the
+     * user's per-domain checkbox state.
+     */
+    suspend fun exportFiltered(selection: Set<ContributionDomain>): Envelope =
+        exportAll().filteredTo(selection)
+
+    /**
      * Wraps a single manifestation in an envelope.
      *
      * Used by the detail-screen "Share" action. The receiver imports the
