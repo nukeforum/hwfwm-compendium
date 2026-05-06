@@ -29,14 +29,16 @@ import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Resource
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.essences.model.RankedEffectLine
 import wizardry.compendium.essences.model.collectLinkedStatusEffects
+import wizardry.compendium.essences.model.viewAt
 import kotlin.time.Duration
 
 @Composable
-internal fun Report(ability: Ability) {
+internal fun Report(ability: Ability, ceiling: Rank? = null) {
     when (ability) {
         is Ability.Acquired -> Report(ability)
-        is Ability.Listing -> Report(ability)
+        is Ability.Listing -> Report(ability, ceiling)
     }
 }
 
@@ -53,12 +55,12 @@ private fun Report(acquiredAbility: Ability.Acquired) {
 }
 
 @Composable
-private fun Report(abilityListing: Ability.Listing) {
+private fun Report(abilityListing: Ability.Listing, ceiling: Rank?) {
     abilityListing.Report(
         titleSlot = {
             Text(text = "Ability: ${abilityListing.name}")
         },
-        effectsSlot = { abilityListing.effects.Report() },
+        effectsSlot = { abilityListing.effects.Report(ceiling) },
     )
 }
 
@@ -102,14 +104,9 @@ private fun Ability.reportCooldown(): String =
         ?: "Varies"
 
 @Composable
-private fun Collection<Effect.AbilityEffect>.Report(rank: Rank = Rank.Diamond) {
-    val effectsByRank = groupBy { it.rank }
-    for (r in Rank.Unranked.ordinal..rank.ordinal) {
-        val currentRank = Rank.entries[r]
-        val effectsOfRank = effectsByRank.getOrDefault(currentRank, emptyList())
-        if (effectsOfRank.isNotEmpty()) {
-            Text(text = effectsOfRank.annotatedRankLine(currentRank))
-        }
+private fun List<Effect.AbilityEffect>.Report(ceiling: Rank?) {
+    for (line in viewAt(ceiling)) {
+        Text(text = line.effects.annotatedRankLine(line.rank))
     }
 }
 
