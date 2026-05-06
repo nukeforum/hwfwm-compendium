@@ -156,4 +156,34 @@ class EffectsViewTest {
         assertEquals(30.seconds, emitted.cooldown)
         assertEquals(listOf(Property.Light, Property.Darkness), emitted.properties)
     }
+
+    @Test
+    fun `slot rank uses lowest rank in group even when higher-rank member is declared first`() {
+        val goldCloak = effect(Rank.Gold, "gold-cloak", replacementKey = "cloak")
+        val ironCloak = effect(Rank.Iron, "iron-cloak", replacementKey = "cloak")
+
+        val view = listOf(goldCloak, ironCloak).viewAt(ceiling = null)
+
+        assertEquals(
+            listOf(RankedEffectLine(Rank.Iron, listOf(goldCloak))),
+            view,
+        )
+    }
+
+    @Test
+    fun `ungrouped effect between two grouped members renders in declaration order on the same line`() {
+        val ironCloak = effect(Rank.Iron, "iron-cloak", replacementKey = "cloak")
+        val ironWeight = effect(Rank.Iron, "iron-weight")
+        val silverCloak = effect(Rank.Silver, "silver-cloak", replacementKey = "cloak")
+
+        val view = listOf(ironCloak, ironWeight, silverCloak).viewAt(ceiling = null)
+
+        assertEquals(
+            listOf(
+                // Iron line: winner-of-cloak (silverCloak) fires at ironCloak's position, then ironWeight.
+                RankedEffectLine(Rank.Iron, listOf(silverCloak, ironWeight)),
+            ),
+            view,
+        )
+    }
 }
