@@ -20,11 +20,16 @@ Three import/export entry points, all sharing the same wire format:
 | --- | --- | --- |
 | Detail screen (essence / awakening stone / ability listing) | Share | One entity (a contribution being viewed). Confluence shares include their referenced manifestations. |
 | Contribute screen (awakening stone) | Import | Paste a one-stone share; pre-fills the form. Other domains' contribute imports are deferred. |
-| Settings screen | Share / Save to File / Paste / Open File | Full database (all four domains). |
+| Settings screen | Export… → Share / Save to File; Import… → Paste / Open file | Per-domain subset of all five domains (essences, confluences, awakening stones, ability listings, status effects). |
 
-The Settings screen exposes four buttons: Share (ACTION_SEND with text),
-Save to File (SAF CreateDocument), Paste (text dialog), Open File (SAF
-OpenDocument). The encoded payload is identical regardless of transport.
+The Settings screen exposes two buttons (Export…, Import…), each opening
+a non-dismissible `ModalBottomSheet`. The export sheet shows DB counts
+per domain in a `ContributionDomainPicker` (from `:design`) and routes
+the filtered envelope to either Share (`ACTION_SEND` text) or Save to
+File (SAF `CreateDocument`). The import flow is two-stage: a source
+sheet (Paste / Open file), then a preview sheet that shows the bundle's
+counts in the same picker so the user can deselect domains before
+applying. The encoded payload is identical regardless of transport.
 
 ## Transport
 
@@ -439,8 +444,13 @@ When you add a new contribution domain (call it `X`):
    results; mapper errors become `Failed`.
 7. **UI surfaces**:
    - Settings screen: existing exports/imports cover the new domain
-     automatically since they go through `WireExporter.exportAll()` /
-     `WireImporter.import()`. Per-table UI is a future add.
+     automatically since `WireExporter.exportFiltered` works off
+     `exportAll()` and the picker is generated from
+     `ContributionDomain.entries`. Add a new entry to
+     `ContributionDomain` for the new domain and update
+     `Envelope.filteredTo` and `WireExporter.exportFiltered` to map it
+     to the new envelope list field; `SettingsViewModel.buildExportRows`
+     and `buildImportRows` need a label and count source.
    - Detail screen: add a `Share` button that calls
      `ShareViewModel.encode(modelX)` and fires `fireShareIntent`.
    - Contribute screen: optionally add a paste-import dialog (see
