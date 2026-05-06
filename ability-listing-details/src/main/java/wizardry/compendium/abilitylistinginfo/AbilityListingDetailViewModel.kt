@@ -63,8 +63,10 @@ class AbilityListingDetailViewModel @Inject constructor(
         )
 
     fun selectRank(rank: Rank?) {
-        val current = state.value as? AbilityListingDetailUiState.Success ?: return
-        _state.value = current.copy(selectedRank = rank)
+        viewModelScope.launch {
+            val current = _state.value as? AbilityListingDetailUiState.Success ?: return@launch
+            _state.emit(current.copy(selectedRank = rank))
+        }
     }
 
     private val currentlyLoadedListing: Ability.Listing?
