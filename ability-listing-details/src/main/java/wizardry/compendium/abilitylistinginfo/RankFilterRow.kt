@@ -9,6 +9,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -33,7 +34,9 @@ fun RankFilterRow(
     onSelect: (Rank?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val ranks = effects.map { it.rank }.distinct().sortedBy { it.ordinal }
+    val ranks = remember(effects) {
+        effects.map { it.rank }.distinct().sortedBy { it.ordinal }
+    }
     if (ranks.size < 2) return
 
     Row(
