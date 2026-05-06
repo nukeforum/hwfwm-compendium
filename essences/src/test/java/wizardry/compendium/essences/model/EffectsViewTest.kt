@@ -73,4 +73,87 @@ class EffectsViewTest {
             view,
         )
     }
+
+    @Test
+    fun `replacement-key group whose lowest rank is above ceiling is hidden`() {
+        val silverA = effect(Rank.Silver, "silver-a", replacementKey = "shared")
+        val goldA = effect(Rank.Gold, "gold-a", replacementKey = "shared")
+
+        val view = listOf(silverA, goldA).viewAt(ceiling = Rank.Iron)
+
+        assertEquals(emptyList<RankedEffectLine>(), view)
+    }
+
+    @Test
+    fun `replacement-key winner respects ceiling — lower-rank winner picked when higher is filtered out`() {
+        val ironA = effect(Rank.Iron, "iron-a", replacementKey = "shared")
+        val silverA = effect(Rank.Silver, "silver-a", replacementKey = "shared")
+        val goldA = effect(Rank.Gold, "gold-a", replacementKey = "shared")
+
+        val view = listOf(ironA, silverA, goldA).viewAt(ceiling = Rank.Silver)
+
+        assertEquals(
+            listOf(RankedEffectLine(Rank.Iron, listOf(silverA))),
+            view,
+        )
+    }
+
+    @Test
+    fun `contributor-authored order preserved within a rank line`() {
+        val a = effect(Rank.Iron, "first")
+        val b = effect(Rank.Iron, "second")
+        val c = effect(Rank.Iron, "third")
+
+        val view = listOf(c, a, b).viewAt(ceiling = null)
+
+        assertEquals(
+            listOf(RankedEffectLine(Rank.Iron, listOf(c, a, b))),
+            view,
+        )
+    }
+
+    @Test
+    fun `blank replacementKey does not group`() {
+        val a = effect(Rank.Iron, "iron-a", replacementKey = "")
+        val b = effect(Rank.Iron, "iron-b", replacementKey = "")
+
+        val view = listOf(a, b).viewAt(ceiling = null)
+
+        assertEquals(
+            listOf(RankedEffectLine(Rank.Iron, listOf(a, b))),
+            view,
+        )
+    }
+
+    @Test
+    fun `winner inherits its own cost cooldown and properties — not the lower effect's`() {
+        val ironCloak = Effect.AbilityEffect(
+            rank = Rank.Iron,
+            type = AbilityType.Conjuration,
+            properties = listOf(Property.Light),
+            cost = listOf(Cost.Upfront(Amount.Low, Resource.Mana)),
+            cooldown = 5.seconds,
+            description = "iron",
+            replacementKey = "cloak",
+        )
+        val silverCloak = Effect.AbilityEffect(
+            rank = Rank.Silver,
+            type = AbilityType.Conjuration,
+            properties = listOf(Property.Light, Property.Darkness),
+            cost = listOf(Cost.Upfront(Amount.High, Resource.Mana)),
+            cooldown = 30.seconds,
+            description = "silver",
+            replacementKey = "cloak",
+        )
+
+        val view = listOf(ironCloak, silverCloak).viewAt(ceiling = null)
+
+        assertEquals(
+            listOf(RankedEffectLine(Rank.Iron, listOf(silverCloak))),
+            view,
+        )
+        val emitted = view.single().effects.single()
+        assertEquals(30.seconds, emitted.cooldown)
+        assertEquals(listOf(Property.Light, Property.Darkness), emitted.properties)
+    }
 }
