@@ -521,7 +521,6 @@ private fun ExportPickerSheet(
 ) {
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { false },
     )
     androidx.compose.material3.ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -530,6 +529,7 @@ private fun ExportPickerSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -575,7 +575,6 @@ private fun ImportSourceSheet(
 ) {
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { false },
     )
     androidx.compose.material3.ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -584,6 +583,7 @@ private fun ImportSourceSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -623,7 +623,6 @@ private fun ImportPreviewSheet(
 ) {
     val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { false },
     )
     val totalCount = rows.sumOf { it.count }
     androidx.compose.material3.ModalBottomSheet(
@@ -633,6 +632,7 @@ private fun ImportPreviewSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
