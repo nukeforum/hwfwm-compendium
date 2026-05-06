@@ -39,8 +39,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import wizardry.compendium.ui.ContributionDomainPicker
+import wizardry.compendium.ui.DomainPickerRow
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.ImportSummary
 
 @Composable
@@ -61,23 +64,30 @@ fun SettingsScreen(
     val dynamicColorEnabled by viewModel.dynamicColorEnabled.collectAsState()
     val ioState by viewModel.ioState.collectAsState()
     val context = LocalContext.current
-    var showImportDialog by remember { mutableStateOf(false) }
+    var showPasteDialog by remember { mutableStateOf(false) }
     var pasteText by remember { mutableStateOf("") }
 
-    // Tracks whether the user requested file-export. When non-null, an
-    // encoder result should be written to this URI rather than fired into
-    // a share intent. Cleared once the write completes.
+    // When non-null, an encoder result should be written to this URI rather
+    // than fired into a share intent. Set by the SAF launcher callback;
+    // cleared after the file write completes.
     var pendingExportUri by remember { mutableStateOf<Uri?>(null) }
-
-    // SAF launcher: "Save to File". `text/plain` MIME so any text editor
-    // can open the file. The default filename `contributions.compendium`
-    // is suggested but the user can change it in the picker.
+    // Capture the selection at the moment the user taps "Save to File" so
+    // the SAF launcher's callback can re-invoke confirmExport with the same
+    // set after the picker sheet has dismissed.
+    var pendingExportSelection by remember {
+        mutableStateOf<Set<ContributionDomain>>(emptySet())
+    }
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/plain"),
     ) { uri: Uri? ->
         if (uri != null) {
             pendingExportUri = uri
-            viewModel.beginExport()
+            // Re-enter encoding for the captured selection. The picker
+            // sheet has already dismissed; we transition straight to
+            // Encoding via a tiny shim.
+            viewModel.encodeForFile(pendingExportSelection)
+        } else {
+            pendingExportSelection = emptySet()
         }
     }
 
@@ -94,17 +104,42 @@ fun SettingsScreen(
                     .orEmpty()
             } catch (e: Exception) {
                 viewModel.resetIoState()
-                viewModel.importFromText("")  // surface the empty-paste error path
+                viewModel.pasteImport("")  // surface the empty-paste error path
                 return@rememberLauncherForActivityResult
             }
-            viewModel.importFromText(text)
+            viewModel.pasteImport(text)
         }
     }
 
-    // When encoding finishes and the result fits in the share limit, route
-    // it to either the share intent OR the pending file URI based on what
-    // the user originally clicked. Doing the routing in a LaunchedEffect
-    // keeps the ViewModel ignorant of which transport was chosen.
+    SettingsContent(
+        themeMode = themeMode,
+        onThemeModeSelected = viewModel::setThemeMode,
+        dynamicColorAvailable = viewModel.dynamicColorAvailable,
+        dynamicColorEnabled = dynamicColorEnabled,
+        onDynamicColorToggled = viewModel::setDynamicColorEnabled,
+        essenceContributionsEnabled = essenceContributionsEnabled,
+        essenceConflictCount = essenceConflictCount,
+        onEssenceContributionsToggled = viewModel::setEssenceContributionsEnabled,
+        awakeningStoneContributionsEnabled = awakeningStoneContributionsEnabled,
+        awakeningStoneConflictCount = awakeningStoneConflictCount,
+        onAwakeningStoneContributionsToggled = viewModel::setAwakeningStoneContributionsEnabled,
+        abilityListingContributionsEnabled = abilityListingContributionsEnabled,
+        abilityListingConflictCount = abilityListingConflictCount,
+        onAbilityListingContributionsToggled = viewModel::setAbilityListingContributionsEnabled,
+        statusEffectContributionsEnabled = statusEffectContributionsEnabled,
+        statusEffectConflictCount = statusEffectConflictCount,
+        onStatusEffectContributionsToggled = viewModel::setStatusEffectContributionsEnabled,
+        essencesAsAwakeningStonesEnabled = essencesAsAwakeningStonesEnabled,
+        onEssencesAsAwakeningStonesToggled = viewModel::setEssencesAsAwakeningStonesEnabled,
+        onExportClick = viewModel::openExportPicker,
+        onImportClick = viewModel::openImportSource,
+        onAboutClick = onAboutClick,
+        ioState = ioState,
+    )
+
+    // Routing effect: when encoding finishes with a fittable payload, route
+    // to either the share intent OR the pending file URI. The VM stays
+    // ignorant of which transport was chosen.
     LaunchedEffect(ioState) {
         val state = ioState
         if (state is SettingsViewModel.IoState.ReadyToShare) {
@@ -131,79 +166,44 @@ fun SettingsScreen(
         }
     }
 
-    SettingsContent(
-        themeMode = themeMode,
-        onThemeModeSelected = viewModel::setThemeMode,
-        dynamicColorAvailable = viewModel.dynamicColorAvailable,
-        dynamicColorEnabled = dynamicColorEnabled,
-        onDynamicColorToggled = viewModel::setDynamicColorEnabled,
-        essenceContributionsEnabled = essenceContributionsEnabled,
-        essenceConflictCount = essenceConflictCount,
-        onEssenceContributionsToggled = viewModel::setEssenceContributionsEnabled,
-        awakeningStoneContributionsEnabled = awakeningStoneContributionsEnabled,
-        awakeningStoneConflictCount = awakeningStoneConflictCount,
-        onAwakeningStoneContributionsToggled = viewModel::setAwakeningStoneContributionsEnabled,
-        abilityListingContributionsEnabled = abilityListingContributionsEnabled,
-        abilityListingConflictCount = abilityListingConflictCount,
-        onAbilityListingContributionsToggled = viewModel::setAbilityListingContributionsEnabled,
-        statusEffectContributionsEnabled = statusEffectContributionsEnabled,
-        statusEffectConflictCount = statusEffectConflictCount,
-        onStatusEffectContributionsToggled = viewModel::setStatusEffectContributionsEnabled,
-        essencesAsAwakeningStonesEnabled = essencesAsAwakeningStonesEnabled,
-        onEssencesAsAwakeningStonesToggled = viewModel::setEssencesAsAwakeningStonesEnabled,
-        onShareClick = viewModel::beginExport,
-        onSaveToFileClick = {
-            // Suggest a default filename; the user can change it.
-            createDocumentLauncher.launch("contributions.compendium")
-        },
-        onPasteClick = {
-            pasteText = ""
-            showImportDialog = true
-        },
-        onOpenFileClick = {
-            // Don't constrain to a single MIME type — `*/*` would be too
-            // permissive but `text/*` covers .txt, .compendium-as-text-plain,
-            // etc. without dragging in binary picker entries.
-            openDocumentLauncher.launch(arrayOf("text/*"))
-        },
-        onAboutClick = onAboutClick,
-        ioState = ioState,
-    )
-
-    if (showImportDialog) {
-        AlertDialog(
-            onDismissRequest = { showImportDialog = false },
-            title = { Text("Import Contributions") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "Paste a contribution share you received.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    OutlinedTextField(
-                        value = pasteText,
-                        onValueChange = { pasteText = it },
-                        label = { Text("Paste here") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(160.dp),
-                        minLines = 6,
-                    )
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    showImportDialog = false
-                    viewModel.importFromText(pasteText)
-                }) { Text("Import") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showImportDialog = false }) { Text("Cancel") }
-            },
-        )
-    }
-
     when (val state = ioState) {
+        is SettingsViewModel.IoState.ExportPickerOpen -> {
+            ExportPickerSheet(
+                rows = state.rows,
+                onToggle = viewModel::toggleExportDomain,
+                onShare = {
+                    pendingExportUri = null
+                    viewModel.confirmExport()
+                },
+                onSaveToFile = {
+                    val selection = state.rows.filter { it.selected }.map { it.key }.toSet()
+                    if (selection.isNotEmpty()) {
+                        pendingExportSelection = selection
+                        viewModel.dismissPicker()
+                        createDocumentLauncher.launch("contributions.compendium")
+                    }
+                },
+                onDismiss = viewModel::dismissPicker,
+            )
+        }
+        is SettingsViewModel.IoState.ImportSourceOpen -> {
+            ImportSourceSheet(
+                onPaste = {
+                    pasteText = ""
+                    showPasteDialog = true
+                },
+                onOpenFile = { openDocumentLauncher.launch(arrayOf("text/*")) },
+                onDismiss = viewModel::dismissPicker,
+            )
+        }
+        is SettingsViewModel.IoState.ImportPreviewOpen -> {
+            ImportPreviewSheet(
+                rows = state.rows,
+                onToggle = viewModel::toggleImportDomain,
+                onConfirm = viewModel::confirmImport,
+                onDismiss = viewModel::dismissPicker,
+            )
+        }
         is SettingsViewModel.IoState.ShareTooLarge -> {
             AlertDialog(
                 onDismissRequest = viewModel::resetIoState,
@@ -241,6 +241,39 @@ fun SettingsScreen(
         }
         else -> {}
     }
+
+    if (showPasteDialog) {
+        AlertDialog(
+            onDismissRequest = { showPasteDialog = false },
+            title = { Text("Paste import") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "Paste a contribution share you received.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    OutlinedTextField(
+                        value = pasteText,
+                        onValueChange = { pasteText = it },
+                        label = { Text("Paste here") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(160.dp),
+                        minLines = 6,
+                    )
+                }
+            },
+            confirmButton = {
+                Button(onClick = {
+                    showPasteDialog = false
+                    viewModel.pasteImport(pasteText)
+                }) { Text("Continue") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPasteDialog = false }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
 @Composable
@@ -264,10 +297,8 @@ fun SettingsContent(
     onStatusEffectContributionsToggled: (Boolean) -> Unit,
     essencesAsAwakeningStonesEnabled: Boolean,
     onEssencesAsAwakeningStonesToggled: (Boolean) -> Unit,
-    onShareClick: () -> Unit,
-    onSaveToFileClick: () -> Unit,
-    onPasteClick: () -> Unit,
-    onOpenFileClick: () -> Unit,
+    onExportClick: () -> Unit,
+    onImportClick: () -> Unit,
     onAboutClick: () -> Unit,
     ioState: SettingsViewModel.IoState,
 ) {
@@ -338,50 +369,33 @@ fun SettingsContent(
 
         Text("Backup & Share", style = MaterialTheme.typography.titleMedium)
         Text(
-            "Share your contributions as a text blob (Discord, email, etc.) or " +
-                "save them to a file for larger backups.",
+            "Export any subset of your contributions as a text blob (Discord, " +
+                "email, etc.) or to a file. Import bundles you've received.",
             style = MaterialTheme.typography.bodySmall,
         )
-        val encoding = ioState is SettingsViewModel.IoState.Encoding
-        val importing = ioState is SettingsViewModel.IoState.Importing
-        Text("Export", style = MaterialTheme.typography.labelMedium)
+        val encoding = ioState is SettingsViewModel.IoState.Encoding ||
+            ioState is SettingsViewModel.IoState.ExportPickerOpen
+        val importing = ioState is SettingsViewModel.IoState.Importing ||
+            ioState is SettingsViewModel.IoState.Decoding ||
+            ioState is SettingsViewModel.IoState.ImportPreviewOpen ||
+            ioState is SettingsViewModel.IoState.ImportSourceOpen
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Button(
-                onClick = onShareClick,
+                onClick = onExportClick,
                 enabled = !encoding,
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (encoding) "Encoding…" else "Share")
+                Text("Export…")
             }
-            OutlinedButton(
-                onClick = onSaveToFileClick,
-                enabled = !encoding,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Save to File")
-            }
-        }
-        Text("Import", style = MaterialTheme.typography.labelMedium)
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
             Button(
-                onClick = onPasteClick,
+                onClick = onImportClick,
                 enabled = !importing,
                 modifier = Modifier.weight(1f),
             ) {
-                Text(if (importing) "Importing…" else "Paste")
-            }
-            OutlinedButton(
-                onClick = onOpenFileClick,
-                enabled = !importing,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Open File")
+                Text("Import…")
             }
         }
 
@@ -489,6 +503,155 @@ private fun ImportSummaryDialog(summary: ImportSummary, onDismiss: () -> Unit) {
     )
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ExportPickerSheet(
+    rows: List<DomainPickerRow<ContributionDomain>>,
+    onToggle: (ContributionDomain) -> Unit,
+    onShare: () -> Unit,
+    onSaveToFile: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { false },
+    )
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = { /* drag-dismiss is blocked by confirmValueChange */ },
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Export contributions", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "Pick which contributions to include.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            ContributionDomainPicker(
+                rows = rows,
+                onToggle = onToggle,
+            )
+            val anySelected = rows.any { it.selected }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = onShare,
+                    enabled = anySelected,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Share") }
+                OutlinedButton(
+                    onClick = onSaveToFile,
+                    enabled = anySelected,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Save to File") }
+            }
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End),
+            ) { Text("Cancel") }
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ImportSourceSheet(
+    onPaste: () -> Unit,
+    onOpenFile: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { false },
+    )
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = { },
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Import contributions", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "Paste a share you received, or open a saved .compendium file.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = onPaste,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Paste text") }
+                OutlinedButton(
+                    onClick = onOpenFile,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Open file") }
+            }
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End),
+            ) { Text("Cancel") }
+        }
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ImportPreviewSheet(
+    rows: List<DomainPickerRow<ContributionDomain>>,
+    onToggle: (ContributionDomain) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { false },
+    )
+    val totalCount = rows.sumOf { it.count }
+    androidx.compose.material3.ModalBottomSheet(
+        onDismissRequest = { },
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("Review import", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "$totalCount entries in this bundle. Pick which to keep.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            ContributionDomainPicker(
+                rows = rows,
+                onToggle = onToggle,
+            )
+            val anySelected = rows.any { it.selected && it.enabled }
+            Button(
+                onClick = onConfirm,
+                enabled = anySelected,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Import") }
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.End),
+            ) { Text("Cancel") }
+        }
+    }
+}
+
 @PreviewLightDark
 @Composable
 private fun SettingsContentOffPreview() {
@@ -513,10 +676,8 @@ private fun SettingsContentOffPreview() {
             onStatusEffectContributionsToggled = {},
             essencesAsAwakeningStonesEnabled = false,
             onEssencesAsAwakeningStonesToggled = {},
-            onShareClick = {},
-            onSaveToFileClick = {},
-            onPasteClick = {},
-            onOpenFileClick = {},
+            onExportClick = {},
+            onImportClick = {},
             onAboutClick = {},
             ioState = SettingsViewModel.IoState.Idle,
         )
@@ -547,10 +708,8 @@ private fun SettingsContentEncodingPreview() {
             onStatusEffectContributionsToggled = {},
             essencesAsAwakeningStonesEnabled = false,
             onEssencesAsAwakeningStonesToggled = {},
-            onShareClick = {},
-            onSaveToFileClick = {},
-            onPasteClick = {},
-            onOpenFileClick = {},
+            onExportClick = {},
+            onImportClick = {},
             onAboutClick = {},
             ioState = SettingsViewModel.IoState.Encoding,
         )
@@ -581,10 +740,8 @@ private fun SettingsContentConflictPreview() {
             onStatusEffectContributionsToggled = {},
             essencesAsAwakeningStonesEnabled = false,
             onEssencesAsAwakeningStonesToggled = {},
-            onShareClick = {},
-            onSaveToFileClick = {},
-            onPasteClick = {},
-            onOpenFileClick = {},
+            onExportClick = {},
+            onImportClick = {},
             onAboutClick = {},
             ioState = SettingsViewModel.IoState.Idle,
         )
