@@ -2,12 +2,14 @@ package wizardry.compendium.di
 
 import wizardry.compendium.DefaultAbilityListingRepository
 import wizardry.compendium.DefaultAwakeningStoneRepository
+import wizardry.compendium.DefaultCharacterBuildRepository
 import wizardry.compendium.DefaultEssenceRepository
 import wizardry.compendium.DefaultStatusEffectRepository
 import wizardry.compendium.essences.AbilityListingContributionsToggleFlow
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.AwakeningStoneRepository
+import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.EssenceContributionsToggleFlow
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.EssencesAsAwakeningStonesToggleFlow
@@ -58,4 +60,8 @@ interface EssenceModule {
     @Singleton
     @Binds
     fun bindStatusEffectContributionsToggleFlow(impl: DataStorePreferencesRepository): StatusEffectContributionsToggleFlow
+
+    @Singleton
+    @Binds
+    fun bindCharacterBuildRepository(impl: DefaultCharacterBuildRepository): CharacterBuildRepository
 }

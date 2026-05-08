@@ -9,10 +9,13 @@ import wizardry.compendium.persistence.AwakeningStoneCache
 import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
 import wizardry.compendium.persistence.AwakeningStoneDatabase
 import wizardry.compendium.persistence.Canonical
+import wizardry.compendium.persistence.CharacterBuildCache
+import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.DatabaseAbilityListingCache
 import wizardry.compendium.persistence.DatabaseAwakeningStoneCache
+import wizardry.compendium.persistence.DatabaseCharacterBuildCache
 import wizardry.compendium.persistence.DatabaseEssenceCache
 import wizardry.compendium.persistence.DatabaseStatusEffectCache
 import wizardry.compendium.persistence.EssenceCache
@@ -137,6 +140,16 @@ abstract class DatabaseModule {
         fun provideContributionsStatusEffectCache(@ApplicationContext context: Context): StatusEffectCache =
             DatabaseStatusEffectCache(
                 StatusEffectDatabase(
+                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
+                )
+            )
+
+        @Provides
+        @Singleton
+        @Contributions
+        fun provideContributionsCharacterBuildCache(@ApplicationContext context: Context): CharacterBuildCache =
+            DatabaseCharacterBuildCache(
+                CharacterBuildDatabase(
                     AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
                 )
             )
