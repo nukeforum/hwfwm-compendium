@@ -1,0 +1,31 @@
+CREATE TABLE IF NOT EXISTS character_build (
+    name TEXT PRIMARY KEY NOT NULL,
+    race TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS character_build_racial_ability (
+    build_name TEXT NOT NULL REFERENCES character_build(name),
+    listing_name TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (build_name, ordinal)
+);
+
+CREATE TABLE IF NOT EXISTS character_build_attribute (
+    build_name TEXT NOT NULL REFERENCES character_build(name),
+    kind TEXT NOT NULL,
+    essence_name TEXT NOT NULL,
+    PRIMARY KEY (build_name, kind)
+);
+
+CREATE TABLE IF NOT EXISTS character_build_acquired_ability (
+    build_name TEXT NOT NULL,
+    attribute_kind TEXT NOT NULL,
+    listing_name TEXT NOT NULL,
+    rank TEXT NOT NULL,
+    tier INTEGER NOT NULL,
+    progress REAL NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (build_name, attribute_kind, ordinal),
+    FOREIGN KEY (build_name, attribute_kind)
+        REFERENCES character_build_attribute(build_name, kind)
+);
