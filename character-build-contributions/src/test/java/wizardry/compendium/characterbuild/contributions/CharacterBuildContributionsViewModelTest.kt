@@ -32,6 +32,7 @@ import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
+import org.junit.Assert.assertFalse
 import kotlin.time.Duration
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -203,6 +204,90 @@ class CharacterBuildContributionsViewModelTest {
     }
 
     @Test
+    fun `confluence essence assignment is preserved through save and reload`() = runTest {
+        val sin = manifestation("Sin")
+        val doom = manifestation("Doom")
+        val magic = manifestation("Magic")
+        val balance = confluence("Balance", setOf(sin, doom, magic))
+        val repo = FakeBuildRepo(emptyList())
+        val vm = create(
+            savedName = null,
+            essences = listOf(sin, doom, magic, balance),
+            repo = repo,
+        )
+        advanceUntilIdle()
+
+        vm.setName("Confluencer")
+        vm.setRace("Outworlder")
+        vm.requestEssenceChange(CharacterBuildContributionsViewModel.Slot.Power, balance)
+        advanceUntilIdle()
+
+        val slotEssence = vm.formState.value
+            .attributes[CharacterBuildContributionsViewModel.Slot.Power]?.essence
+        assertTrue("expected confluence in slot, got $slotEssence", slotEssence is Essence.Confluence)
+        assertEquals("Balance", slotEssence?.name)
+
+        vm.save()
+        advanceUntilIdle()
+
+        val saved = repo.allBuilds().single()
+        val savedEssence = saved.Power.essence?.essence
+        assertTrue("expected saved confluence, got $savedEssence", savedEssence is Essence.Confluence)
+        assertEquals("Balance", savedEssence?.name)
+    }
+
+    @Test
+    fun `isFinalEssencePick true when 3 other slots have manifestations`() = runTest {
+        val sin = manifestation("Sin")
+        val doom = manifestation("Doom")
+        val magic = manifestation("Magic")
+        val fire = manifestation("Fire")
+        val build = build("Jason", "Outworlder").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(sin)),
+                Attribute.Speed(essence = AbsorbedEssence(doom)),
+                Attribute.Spirit(essence = AbsorbedEssence(magic)),
+                Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "Jason",
+            existingBuilds = listOf(build),
+            essences = listOf(sin, doom, magic, fire),
+        )
+        advanceUntilIdle()
+
+        assertTrue(vm.isFinalEssencePick(CharacterBuildContributionsViewModel.Slot.Recovery))
+        // The Power slot itself has a manifestation but the others list includes
+        // the empty Recovery slot — so it's not a final pick.
+        assertFalse(vm.isFinalEssencePick(CharacterBuildContributionsViewModel.Slot.Power))
+    }
+
+    @Test
+    fun `isFinalEssencePick false when one of the other slots holds a confluence`() = runTest {
+        val sin = manifestation("Sin")
+        val doom = manifestation("Doom")
+        val magic = manifestation("Magic")
+        val balance = confluence("Balance", setOf(sin, doom, magic))
+        val build = build("Jason", "Outworlder").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(sin)),
+                Attribute.Speed(essence = AbsorbedEssence(doom)),
+                Attribute.Spirit(essence = AbsorbedEssence(balance)),
+                Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "Jason",
+            existingBuilds = listOf(build),
+            essences = listOf(sin, doom, magic, balance),
+        )
+        advanceUntilIdle()
+
+        assertFalse(vm.isFinalEssencePick(CharacterBuildContributionsViewModel.Slot.Recovery))
+    }
+
+    @Test
     fun `addRacialAbility enforces 6-cap`() = runTest {
         val racials = (1..7).map { racialListing("r$it") }
         val vm = create(savedName = null, listings = racials)
@@ -265,6 +350,13 @@ class CharacterBuildContributionsViewModelTest {
         properties = emptyList(), description = "", isRestricted = false,
     )
 
+    private fun confluence(name: String, members: Set<Essence.Manifestation>) =
+        Essence.Confluence(
+            name = name,
+            confluenceSets = setOf(ConfluenceSet(set = members)),
+            isRestricted = false,
+        )
+
     private fun listing(name: String): Ability.Listing = Ability.Listing(
         name = name,
         effects = listOf(
@@ -305,6 +397,7 @@ class CharacterBuildContributionsViewModelTest {
             return ContributionResult.Success
         }
         fun allNames(): List<String> = flow.value.map { it.name }
+        fun allBuilds(): List<CharacterBuild> = flow.value
     }
 
     private class FakeEssenceRepo(private val data: List<Essence>) : EssenceRepository {

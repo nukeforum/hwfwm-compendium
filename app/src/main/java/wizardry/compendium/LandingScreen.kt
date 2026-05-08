@@ -81,26 +81,13 @@ fun LandingScreen(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Row(
+        PanelButton(
+            label = "Character Builds",
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PanelButton(
-                label = "Builds",
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize(),
-                onClick = onCharacterBuildClicked,
-            )
-            Spacer(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxSize(),
-            )
-        }
+            onClick = onCharacterBuildClicked,
+        )
         Spacer(modifier = Modifier.height(16.dp))
     }
 }

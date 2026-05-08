@@ -48,7 +48,7 @@ class CharacterBuildContributionsViewModel @Inject constructor(
     }
 
     data class SlotState(
-        val essence: Essence.Manifestation?,
+        val essence: Essence?,
         val abilities: List<Ability.Listing>,
     )
 
@@ -61,7 +61,7 @@ class CharacterBuildContributionsViewModel @Inject constructor(
 
     data class EssenceChangePrompt(
         val slot: Slot,
-        val target: Essence.Manifestation?,
+        val target: Essence?,
     )
 
     private val editName: String? = savedStateHandle.get<String>("name")
@@ -81,13 +81,20 @@ class CharacterBuildContributionsViewModel @Inject constructor(
     private val _availableEssences = MutableStateFlow<List<Essence.Manifestation>>(emptyList())
     val availableEssences = _availableEssences.asStateFlow()
 
+    private val _availableConfluences = MutableStateFlow<List<Essence.Confluence>>(emptyList())
+    val availableConfluences = _availableConfluences.asStateFlow()
+
     private val _availableListings = MutableStateFlow<List<Ability.Listing>>(emptyList())
     val availableListings = _availableListings.asStateFlow()
 
     init {
         viewModelScope.launch {
+            val essences = essenceRepository.getEssences()
             _availableEssences.emit(
-                essenceRepository.getEssences().filterIsInstance<Essence.Manifestation>().sortedBy { it.name },
+                essences.filterIsInstance<Essence.Manifestation>().sortedBy { it.name },
+            )
+            _availableConfluences.emit(
+                essences.filterIsInstance<Essence.Confluence>().sortedBy { it.name },
             )
             _availableListings.emit(abilityListingRepository.getAbilityListings().sortedBy { it.name })
         }
@@ -135,12 +142,26 @@ class CharacterBuildContributionsViewModel @Inject constructor(
         }
     }
 
-    fun requestEssenceChange(slot: Slot, target: Essence.Manifestation?) {
+    fun requestEssenceChange(slot: Slot, target: Essence?) {
         val current = _formState.value.attributes[slot] ?: return
         if (current.abilities.isEmpty()) {
             _formState.update { it.withSlot(slot) { existing -> existing.copy(essence = target) } }
         } else {
             _essenceChangePrompt.value = EssenceChangePrompt(slot = slot, target = target)
+        }
+    }
+
+    /**
+     * The "final pick" condition: the user is choosing the essence for the last
+     * remaining slot, so a Confluence becomes a valid choice. Returns true iff
+     * every OTHER slot has a non-Confluence essence assigned.
+     */
+    fun isFinalEssencePick(slot: Slot): Boolean {
+        val others = Slot.entries - slot
+        val attributes = _formState.value.attributes
+        return others.all { other ->
+            val essence = attributes[other]?.essence
+            essence != null && essence !is Essence.Confluence
         }
     }
 
@@ -213,7 +234,7 @@ class CharacterBuildContributionsViewModel @Inject constructor(
             }
             val absorbed = attribute.essence
             SlotState(
-                essence = absorbed?.essence as? Essence.Manifestation,
+                essence = absorbed?.essence,
                 abilities = absorbed?.abilities?.map { Ability.Listing.of(it.name) } ?: emptyList(),
             )
         }

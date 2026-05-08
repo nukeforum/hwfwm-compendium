@@ -62,6 +62,7 @@ fun CharacterBuildContributionsScreen(
     val form by viewModel.formState.collectAsState()
     val prompt by viewModel.essenceChangePrompt.collectAsState()
     val availableEssences by viewModel.availableEssences.collectAsState()
+    val availableConfluences by viewModel.availableConfluences.collectAsState()
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -77,6 +78,7 @@ fun CharacterBuildContributionsScreen(
             startCollapsed = true,
             form = form,
             availableEssences = availableEssences,
+            availableConfluences = availableConfluences,
             saveState = saveState,
             viewModel = viewModel,
         )
@@ -87,6 +89,7 @@ fun CharacterBuildContributionsScreen(
             startCollapsed = false,
             form = form,
             availableEssences = availableEssences,
+            availableConfluences = availableConfluences,
             saveState = saveState,
             viewModel = viewModel,
         )
@@ -107,6 +110,7 @@ private fun Form(
     startCollapsed: Boolean,
     form: CharacterBuildContributionsViewModel.FormState,
     availableEssences: List<Essence.Manifestation>,
+    availableConfluences: List<Essence.Confluence>,
     saveState: SaveState,
     viewModel: CharacterBuildContributionsViewModel,
 ) {
@@ -240,17 +244,15 @@ private fun Form(
     }
 
     essencePickerSlot?.let { slot ->
-        SearchableSelectionSheet(
+        EssencePickerSheet(
             title = "$slot essence",
-            options = availableEssences,
-            initiallySelected = setOfNotNull(form.attributes[slot]?.essence),
-            multiSelect = false,
-            maxSelections = 1,
-            labelOf = { it.name },
-            sublabelOf = { it.rarity.toString() },
+            manifestations = availableEssences,
+            confluences = availableConfluences,
+            initiallySelected = form.attributes[slot]?.essence,
+            showSegmentedControl = viewModel.isFinalEssencePick(slot),
             onDismiss = { essencePickerSlot = null },
-            onConfirm = { picks ->
-                viewModel.requestEssenceChange(slot, picks.firstOrNull())
+            onConfirm = { pick ->
+                viewModel.requestEssenceChange(slot, pick)
                 essencePickerSlot = null
             },
         )

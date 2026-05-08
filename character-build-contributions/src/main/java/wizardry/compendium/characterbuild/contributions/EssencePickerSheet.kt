@@ -1,4 +1,4 @@
-package wizardry.compendium.ui
+package wizardry.compendium.characterbuild.contributions
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,12 +13,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -29,36 +31,37 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import wizardry.compendium.essences.model.Essence
 
 /**
- * Bottom-sheet picker reused across the build editor for essence, ability, and
- * racial-ability selection. Filters [options] by case-insensitive substring on
- * [labelOf].
+ * Essence picker. Shows Manifestations always; switches to Confluence list when the
+ * user is picking their FINAL essence (the other three slots are filled with
+ * non-Confluence essences). The segmented control only appears in that final-pick
+ * state.
  *
- * @param multiSelect when true, taps toggle membership in the selection (capped at
- *   [maxSelections]); the user confirms with the Done button. When false, tap
- *   immediately confirms a single selection and dismisses.
+ * Confluences are flagged with a "Confluence" sublabel so they're distinguishable
+ * even if a future caller decides to mix them into a single list.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun <T> SearchableSelectionSheet(
+fun EssencePickerSheet(
     title: String,
-    options: List<T>,
-    initiallySelected: Set<T>,
-    multiSelect: Boolean,
-    maxSelections: Int,
-    labelOf: (T) -> String,
-    sublabelOf: (T) -> String? = { null },
+    manifestations: List<Essence.Manifestation>,
+    confluences: List<Essence.Confluence>,
+    initiallySelected: Essence?,
+    showSegmentedControl: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (Set<T>) -> Unit,
+    onConfirm: (Essence) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var query by remember { mutableStateOf("") }
-    var selected by remember { mutableStateOf(initiallySelected) }
+    var segmentIndex by remember { mutableStateOf(0) } // 0 = Essence, 1 = Confluence
 
-    val filtered = remember(options, query) {
-        if (query.isBlank()) options
-        else options.filter { labelOf(it).contains(query, ignoreCase = true) }
+    val showingConfluences = showSegmentedControl && segmentIndex == 1
+    val source: List<Essence> = if (showingConfluences) confluences else manifestations
+    val filtered = remember(source, query) {
+        if (query.isBlank()) source
+        else source.filter { it.name.contains(query, ignoreCase = true) }
     }
 
     ModalBottomSheet(
@@ -72,6 +75,21 @@ fun <T> SearchableSelectionSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(text = title, style = MaterialTheme.typography.titleMedium)
+
+            if (showSegmentedControl) {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    SegmentedButton(
+                        selected = segmentIndex == 0,
+                        onClick = { segmentIndex = 0 },
+                        shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                    ) { Text("Essence") }
+                    SegmentedButton(
+                        selected = segmentIndex == 1,
+                        onClick = { segmentIndex = 1 },
+                        shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                    ) { Text("Confluence") }
+                }
+            }
 
             OutlinedTextField(
                 value = query,
@@ -94,42 +112,30 @@ fun <T> SearchableSelectionSheet(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            text = if (options.isEmpty()) "Nothing to choose from" else "No matches",
+                            text = if (source.isEmpty()) "Nothing to choose from" else "No matches",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                        items(filtered, key = { labelOf(it) }) { option ->
-                            val isSelected = option in selected
-                            val canSelectMore = selected.size < maxSelections
-                            val rowEnabled = isSelected || canSelectMore || !multiSelect
-
+                        items(filtered, key = { it.name }) { option ->
+                            val isSelected = option.name == initiallySelected?.name
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable(enabled = rowEnabled) {
-                                        if (multiSelect) {
-                                            selected = if (isSelected) selected - option
-                                            else selected + option
-                                        } else {
-                                            onConfirm(setOf(option))
-                                        }
-                                    }
+                                    .clickable { onConfirm(option) }
                                     .padding(vertical = 8.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = labelOf(option),
+                                        text = option.name,
                                         style = MaterialTheme.typography.bodyLarge,
-                                        color = if (rowEnabled) MaterialTheme.colorScheme.onSurface
-                                        else MaterialTheme.colorScheme.outline,
                                     )
-                                    sublabelOf(option)?.let {
+                                    if (option is Essence.Confluence) {
                                         Text(
-                                            text = it,
+                                            text = "Confluence",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -139,15 +145,6 @@ fun <T> SearchableSelectionSheet(
                             }
                         }
                     }
-                }
-            }
-
-            if (multiSelect) {
-                Button(
-                    onClick = { onConfirm(selected) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Done (${selected.size}${if (maxSelections < Int.MAX_VALUE) "/$maxSelections" else ""})")
                 }
             }
         }
