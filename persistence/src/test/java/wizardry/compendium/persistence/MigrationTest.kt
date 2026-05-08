@@ -7,6 +7,13 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import wizardry.compendium.essences.model.AbsorbedEssence
+import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.essences.model.Attribute
+import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.essences.model.Rarity
 
 /**
  * Migration safety tests. User-contributed data can take hours to craft, so a failed
@@ -16,12 +23,12 @@ import org.junit.Test
 class MigrationTest {
 
     @Test
-    fun `schema version is 4`() {
-        assertEquals(4L, CompendiumDatabase.Schema.version)
+    fun `schema version is 5`() {
+        assertEquals(5L, CompendiumDatabase.Schema.version)
     }
 
     @Test
-    fun `fresh create at v4 produces all current tables`() {
+    fun `fresh create at v5 produces all current tables`() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         CompendiumDatabase.Schema.create(driver)
 
@@ -32,7 +39,7 @@ class MigrationTest {
     }
 
     @Test
-    fun `upgrade from v1 (Essences-only) to v4 preserves manifestation rows`() {
+    fun `upgrade from v1 (Essences-only) to v5 preserves manifestation rows`() {
         // The very first persistent schema (commit 618b3a9): only the Essences tables.
         // No subsequent migration touches Essences columns, so any rows here must
         // round-trip untouched.
@@ -40,14 +47,14 @@ class MigrationTest {
         seedV1Schema(driver)
         seedSampleEssenceData(driver)
 
-        migrate(driver, from = 1, to = 4)
+        migrate(driver, from = 1, to = 5)
 
         assertHasAllCurrentTables(driver)
         assertEssenceDataIntact(driver)
     }
 
     @Test
-    fun `upgrade from v2 (post-1_sqm) to v4 preserves rows in all v2 tables`() {
+    fun `upgrade from v2 (post-1_sqm) to v5 preserves rows in all v2 tables`() {
         // After 1.sqm: essences + ability_effect family + awakening_stone.
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         seedV1Schema(driver)
@@ -56,7 +63,7 @@ class MigrationTest {
         seedSampleAwakeningStone(driver)
         seedSampleAbilityEffect(driver, listingName = null)  // ability_listing doesn't exist yet at v2
 
-        migrate(driver, from = 2, to = 4)
+        migrate(driver, from = 2, to = 5)
 
         assertHasAllCurrentTables(driver)
         assertEssenceDataIntact(driver)
@@ -77,7 +84,7 @@ class MigrationTest {
         seedSampleAbilityListing(driver)
         seedSampleAbilityEffect(driver, listingName = "UserListing")
 
-        migrate(driver, from = 3, to = 4)
+        migrate(driver, from = 3, to = 5)
 
         assertHasAllCurrentTables(driver)
         assertEssenceDataIntact(driver)
@@ -103,6 +110,146 @@ class MigrationTest {
     }
 
     @Test
+    fun `upgrade from v4 to v5 creates character_build tables and preserves rows in every pre-existing table`() {
+        // Seed every table that exists at v4 with a recognizable user-row, run the
+        // 4->5 migration, and assert the new character_build family appears empty
+        // while every pre-existing user row survives untouched.
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        seedV1Schema(driver)
+        seedV1ToV2Tables(driver)
+        seedV2ToV3Tables(driver)
+        seedV3ToV4Tables(driver)
+        seedSampleEssenceData(driver)
+        seedSampleAwakeningStone(driver)
+        seedSampleAbilityListing(driver)
+        seedSampleAbilityEffect(driver, listingName = "UserListing")
+        driver.execute(null, "INSERT INTO status_effect VALUES ('UserStatus', 'Affliction.Elemental', 0, 'desc', '')", 0)
+
+        migrate(driver, from = 4, to = 5)
+
+        assertHasAllCurrentTables(driver)
+        assertEssenceDataIntact(driver)
+        assertEquals(listOf("UserStone"), selectColumn(driver, "SELECT name FROM awakening_stone"))
+        assertEquals(listOf("UserListing"), selectColumn(driver, "SELECT name FROM ability_listing"))
+        assertEquals(listOf("AbilityEffectRank"), selectColumn(driver, "SELECT rank FROM ability_effect"))
+        assertEquals(listOf("UserStatus"), selectColumn(driver, "SELECT name FROM status_effect"))
+        // The four new tables exist and are empty.
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT name FROM character_build"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT build_name FROM character_build_racial_ability"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT build_name FROM character_build_attribute"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT build_name FROM character_build_acquired_ability"))
+    }
+
+    @Test
+    fun `upgrade from v4 already populated with the character_build tables is a safe no-op`() {
+        // c17eae3-style scenario: a device drifted into the v5 table layout before the
+        // migration shipped. The 4->5 migration uses CREATE TABLE IF NOT EXISTS, so
+        // pre-existing seeded rows in those tables MUST survive without duplication.
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        seedV1Schema(driver)
+        seedV1ToV2Tables(driver)
+        seedV2ToV3Tables(driver)
+        seedV3ToV4Tables(driver)
+        seedV4ToV5Tables(driver)
+        driver.execute(null, "INSERT INTO character_build(name, race) VALUES ('PreExistingBuild', 'Human')", 0)
+        driver.execute(null, "INSERT INTO character_build_racial_ability(build_name, listing_name, ordinal) VALUES ('PreExistingBuild', 'PreExistingRacial', 0)", 0)
+        driver.execute(null, "INSERT INTO character_build_attribute(build_name, kind, essence_name) VALUES ('PreExistingBuild', 'Power', 'PreExistingEssence')", 0)
+        driver.execute(null, "INSERT INTO character_build_acquired_ability(build_name, attribute_kind, listing_name, rank, tier, progress, ordinal) VALUES ('PreExistingBuild', 'Power', 'PreExistingAbility', 'Iron', 1, 0.5, 0)", 0)
+
+        migrate(driver, from = 4, to = 5)
+
+        assertEquals(listOf("PreExistingBuild"), selectColumn(driver, "SELECT name FROM character_build"))
+        assertEquals(listOf("PreExistingRacial"), selectColumn(driver, "SELECT listing_name FROM character_build_racial_ability"))
+        assertEquals(listOf("PreExistingEssence"), selectColumn(driver, "SELECT essence_name FROM character_build_attribute"))
+        assertEquals(listOf("PreExistingAbility"), selectColumn(driver, "SELECT listing_name FROM character_build_acquired_ability"))
+        assertEquals(listOf("Iron"), selectColumn(driver, "SELECT rank FROM character_build_acquired_ability"))
+    }
+
+    @Test
+    fun `CharacterBuild round trips through CharacterBuildDatabase against the migrated v5 schema`() {
+        // Walk the migration ladder up to v5, then exercise CharacterBuildDatabase
+        // writeAll/readAll with a build that populates name, race, racial abilities,
+        // and a Power attribute with two acquired abilities at distinct rank/tier/progress.
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        seedV1Schema(driver)
+        migrate(driver, from = 1, to = 2)
+        migrate(driver, from = 2, to = 3)
+        migrate(driver, from = 3, to = 4)
+        migrate(driver, from = 4, to = 5)
+
+        val placeholderEssence = Essence.Manifestation(
+            name = "Fire",
+            rank = Rank.Unranked,
+            rarity = Rarity.Unknown,
+            properties = emptyList(),
+            description = "",
+            isRestricted = false,
+        )
+        val acquiredA = Ability.Acquired(
+            name = "Flame Bolt",
+            effects = emptyList(),
+            rank = Rank.Iron,
+            tier = 2,
+            progress = 0.25f,
+            boundEssence = placeholderEssence,
+            listing = Ability.Listing.of("Flame Bolt"),
+        )
+        val acquiredB = Ability.Acquired(
+            name = "Inferno",
+            effects = emptyList(),
+            rank = Rank.Bronze,
+            tier = 0,
+            progress = 0.75f,
+            boundEssence = placeholderEssence,
+            listing = Ability.Listing.of("Inferno"),
+        )
+        val build = CharacterBuild(
+            name = "Hero",
+            race = "Human",
+            racialAbilities = listOf(Ability.Listing.of("Trait1"), Ability.Listing.of("Trait2")),
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(placeholderEssence, listOf(acquiredA, acquiredB))),
+                Attribute.Speed(),
+                Attribute.Spirit(),
+                Attribute.Recovery(),
+            ),
+        )
+
+        val db = CharacterBuildDatabase(driver)
+        db.writeAll(listOf(build))
+        val read = db.readAll()
+
+        assertEquals(1, read.size)
+        val roundTripped = read.single()
+        assertEquals("Hero", roundTripped.name)
+        assertEquals("Human", roundTripped.race)
+        assertEquals(listOf("Trait1", "Trait2"), roundTripped.racialAbilities.map { it.name })
+
+        val power = roundTripped.Power
+        val absorbed = power.essence
+        assertTrue("expected Power attribute to carry an essence", absorbed != null)
+        assertEquals("Fire", absorbed!!.essence.name)
+        assertEquals(2, absorbed.abilities.size)
+
+        val first = absorbed.abilities[0]
+        assertEquals("Flame Bolt", first.name)
+        assertEquals(Rank.Iron, first.rank)
+        assertEquals(2, first.tier)
+        assertEquals(0.25f, first.progress, 0.0001f)
+
+        val second = absorbed.abilities[1]
+        assertEquals("Inferno", second.name)
+        assertEquals(Rank.Bronze, second.rank)
+        assertEquals(0, second.tier)
+        assertEquals(0.75f, second.progress, 0.0001f)
+
+        // Unset attributes must round-trip as essence-less placeholders.
+        assertEquals(null, roundTripped.Speed.essence)
+        assertEquals(null, roundTripped.Spirit.essence)
+        assertEquals(null, roundTripped.Recovery.essence)
+    }
+
+    @Test
     fun `applying every migration step incrementally yields the same schema as fresh create`() {
         // Belt-and-braces: walk the migration ladder one step at a time and confirm we
         // arrive at the same set of tables a fresh install produces.
@@ -111,6 +258,7 @@ class MigrationTest {
         migrate(migrated, from = 1, to = 2)
         migrate(migrated, from = 2, to = 3)
         migrate(migrated, from = 3, to = 4)
+        migrate(migrated, from = 4, to = 5)
 
         val fresh = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         CompendiumDatabase.Schema.create(fresh)
@@ -144,6 +292,15 @@ class MigrationTest {
 
     private fun seedV3ToV4Tables(driver: SqlDriver) {
         driver.execute(null, "CREATE TABLE status_effect (name TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, stackable INTEGER NOT NULL, description TEXT NOT NULL, properties TEXT NOT NULL)", 0)
+    }
+
+    private fun seedV4ToV5Tables(driver: SqlDriver) {
+        // No IF NOT EXISTS — historical helpers represent a clean state at a specific
+        // version. Mirrors the column definitions in CharacterBuilds.sq.
+        driver.execute(null, "CREATE TABLE character_build (name TEXT PRIMARY KEY NOT NULL, race TEXT NOT NULL)", 0)
+        driver.execute(null, "CREATE TABLE character_build_racial_ability (build_name TEXT NOT NULL REFERENCES character_build(name), listing_name TEXT NOT NULL, ordinal INTEGER NOT NULL, PRIMARY KEY (build_name, ordinal))", 0)
+        driver.execute(null, "CREATE TABLE character_build_attribute (build_name TEXT NOT NULL REFERENCES character_build(name), kind TEXT NOT NULL, essence_name TEXT NOT NULL, PRIMARY KEY (build_name, kind))", 0)
+        driver.execute(null, "CREATE TABLE character_build_acquired_ability (build_name TEXT NOT NULL, attribute_kind TEXT NOT NULL, listing_name TEXT NOT NULL, rank TEXT NOT NULL, tier INTEGER NOT NULL, progress REAL NOT NULL, ordinal INTEGER NOT NULL, PRIMARY KEY (build_name, attribute_kind, ordinal), FOREIGN KEY (build_name, attribute_kind) REFERENCES character_build_attribute(build_name, kind))", 0)
     }
 
     private fun seedSampleEssenceData(driver: SqlDriver) {
@@ -213,6 +370,8 @@ class MigrationTest {
             "awakening_stone",
             "ability_listing", "ability_effect", "effect_property", "effect_cost",
             "status_effect",
+            "character_build", "character_build_racial_ability",
+            "character_build_attribute", "character_build_acquired_ability",
         )
     }
 }
