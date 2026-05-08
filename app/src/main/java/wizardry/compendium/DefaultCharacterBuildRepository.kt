@@ -89,7 +89,7 @@ class DefaultCharacterBuildRepository @Inject constructor(
 
         val rebornAttrs = setOf(Power, Speed, Spirit, Recovery).map { attr ->
             val absorbed = attr.essence ?: return@map attr
-            val resolvedEssence = essencesByName[absorbed.essence.name] as? Essence.Manifestation
+            val resolvedEssence: Essence? = essencesByName[absorbed.essence.name]
             if (resolvedEssence == null) {
                 Log.w(TAG, "build '$name' references unknown essence '${absorbed.essence.name}' — dropping slot")
                 return@map attr.cleared()

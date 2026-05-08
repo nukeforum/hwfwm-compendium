@@ -136,6 +136,48 @@ class DefaultCharacterBuildRepositoryTest {
     }
 
     @Test
+    fun `confluence essence assignment hydrates intact`() = runBlocking {
+        val sin = manifestation("Sin")
+        val doom = manifestation("Doom")
+        val dark = manifestation("Dark")
+        val confluence = Essence.Confluence(
+            name = "Sinister",
+            confluenceSets = setOf(
+                ConfluenceSet(setOf(sin, doom, dark), isRestricted = false),
+            ),
+            isRestricted = false,
+        )
+        val recoveryAbsorbed = AbsorbedEssence(
+            essence = confluence,
+            abilities = emptyList(),
+        )
+        val stored = CharacterBuild(
+            name = "Jason",
+            race = "Human",
+            racialAbilities = emptyList(),
+            attributes = setOf(
+                Attribute.Power(),
+                Attribute.Speed(),
+                Attribute.Spirit(),
+                Attribute.Recovery(essence = recoveryAbsorbed),
+            ),
+        )
+
+        val repo = repository(
+            stored = listOf(stored),
+            essences = listOf(sin, doom, dark, confluence),
+            listings = emptyList(),
+        )
+
+        val result = repo.getBuilds().single()
+        assertEquals("Sinister", result.Recovery.essence?.essence?.name)
+        assertTrue(
+            "expected Confluence, got ${result.Recovery.essence?.essence?.javaClass?.simpleName}",
+            result.Recovery.essence?.essence is Essence.Confluence,
+        )
+    }
+
+    @Test
     fun `getBuild returns null for unknown name`() = runBlocking {
         val repo = repository(
             stored = emptyList(),
