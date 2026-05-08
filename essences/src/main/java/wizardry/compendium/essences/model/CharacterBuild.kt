@@ -2,11 +2,11 @@ package wizardry.compendium.essences.model
 
 import kotlin.collections.filter
 
-public class CharacterBuild(
+public data class CharacterBuild(
     public val name: String,
     public val race: String,
     public val racialAbilities: List<Ability.Listing>,
-    private var attributes: Set<Attribute> = setOf(
+    public val attributes: Set<Attribute> = setOf(
         Attribute.Power(),
         Attribute.Speed(),
         Attribute.Spirit(),
