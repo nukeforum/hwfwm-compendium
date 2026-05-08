@@ -1,0 +1,84 @@
+CREATE TABLE character_build (
+    name TEXT PRIMARY KEY NOT NULL,
+    race TEXT NOT NULL
+);
+
+CREATE TABLE character_build_racial_ability (
+    build_name TEXT NOT NULL REFERENCES character_build(name),
+    listing_name TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (build_name, ordinal)
+);
+
+CREATE TABLE character_build_attribute (
+    build_name TEXT NOT NULL REFERENCES character_build(name),
+    kind TEXT NOT NULL,
+    essence_name TEXT NOT NULL,
+    PRIMARY KEY (build_name, kind)
+);
+
+CREATE TABLE character_build_acquired_ability (
+    build_name TEXT NOT NULL,
+    attribute_kind TEXT NOT NULL,
+    listing_name TEXT NOT NULL,
+    rank TEXT NOT NULL,
+    tier INTEGER NOT NULL,
+    progress REAL NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (build_name, attribute_kind, ordinal),
+    FOREIGN KEY (build_name, attribute_kind)
+        REFERENCES character_build_attribute(build_name, kind)
+);
+
+insertCharacterBuild:
+INSERT OR REPLACE INTO character_build(name, race) VALUES (?, ?);
+
+insertRacialAbility:
+INSERT INTO character_build_racial_ability(build_name, listing_name, ordinal)
+VALUES (?, ?, ?);
+
+insertAttribute:
+INSERT INTO character_build_attribute(build_name, kind, essence_name)
+VALUES (?, ?, ?);
+
+insertAcquiredAbility:
+INSERT INTO character_build_acquired_ability(
+    build_name, attribute_kind, listing_name, rank, tier, progress, ordinal
+) VALUES (?, ?, ?, ?, ?, ?, ?);
+
+selectAllCharacterBuilds:
+SELECT * FROM character_build ORDER BY name;
+
+selectAllRacialAbilities:
+SELECT * FROM character_build_racial_ability ORDER BY build_name, ordinal;
+
+selectAllAttributes:
+SELECT * FROM character_build_attribute ORDER BY build_name, kind;
+
+selectAllAcquiredAbilities:
+SELECT * FROM character_build_acquired_ability
+ORDER BY build_name, attribute_kind, ordinal;
+
+deleteAllAcquiredAbilities:
+DELETE FROM character_build_acquired_ability;
+
+deleteAllAttributes:
+DELETE FROM character_build_attribute;
+
+deleteAllRacialAbilities:
+DELETE FROM character_build_racial_ability;
+
+deleteAllCharacterBuilds:
+DELETE FROM character_build;
+
+deleteCharacterBuildByName:
+DELETE FROM character_build WHERE name = ?;
+
+deleteRacialAbilitiesForBuild:
+DELETE FROM character_build_racial_ability WHERE build_name = ?;
+
+deleteAttributesForBuild:
+DELETE FROM character_build_attribute WHERE build_name = ?;
+
+deleteAcquiredAbilitiesForBuild:
+DELETE FROM character_build_acquired_ability WHERE build_name = ?;
