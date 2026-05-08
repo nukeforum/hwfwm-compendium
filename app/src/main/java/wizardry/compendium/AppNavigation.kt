@@ -3,6 +3,7 @@ package wizardry.compendium
 import android.net.Uri
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
 
@@ -51,5 +52,15 @@ sealed class Nav(val route: String) {
     object StatusEffectDetail : Nav("statusEffectDetail/{statusEffectName}") {
         const val ARG_NAME = "statusEffectName"
         fun buildRoute(effect: StatusEffect) = "statusEffectDetail/${Uri.encode(effect.name)}"
+    }
+    object CharacterBuildSearch : Nav("characterBuildSearch")
+    object CharacterBuildContributions : Nav("characterBuildContributions?name={name}") {
+        const val ARG_NAME = "name"
+        const val newRoute = "characterBuildContributions"
+        fun buildEditRoute(build: CharacterBuild) = "characterBuildContributions?name=${Uri.encode(build.name)}"
+    }
+    object CharacterBuildDetail : Nav("characterBuildDetail/{buildName}") {
+        const val ARG_NAME = "buildName"
+        fun buildRoute(build: CharacterBuild) = "characterBuildDetail/${Uri.encode(build.name)}"
     }
 }

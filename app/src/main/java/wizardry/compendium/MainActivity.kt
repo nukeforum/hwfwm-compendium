@@ -40,6 +40,9 @@ import android.content.Intent as AndroidIntent
 import android.content.Context
 import wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
 import wizardry.compendium.awakeningstoneinfo.AwakeningStoneDetails
+import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsScreen
+import wizardry.compendium.characterbuild.search.CharacterBuildSearch
+import wizardry.compendium.characterbuilddetails.CharacterBuildDetails
 import wizardry.compendium.essence.contributions.EssenceContributionsScreen
 import wizardry.compendium.statuseffect.contributions.StatusEffectContributionsScreen
 import wizardry.compendium.statuseffect.details.StatusEffectDetails
@@ -122,6 +125,11 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(Nav.StatusEffectContributions.newRoute)
                                     }
                                 }
+                                if (currentRoute == Nav.CharacterBuildSearch.route) {
+                                    ContributeButton {
+                                        navController.navigate(Nav.CharacterBuildContributions.newRoute)
+                                    }
+                                }
                                 ConflictsBadge(navigate = { navController.navigate(Nav.Conflicts.route) })
                                 if (currentRoute != Nav.Settings.route) {
                                     SettingsButton { navController.navigate(Nav.Settings.route) }
@@ -144,6 +152,7 @@ class MainActivity : ComponentActivity() {
                                 onAwakeningStoneClicked = { navController.navigate(Nav.AwakeningStoneSearch.route) },
                                 onAbilityListingClicked = { navController.navigate(Nav.AbilityListingSearch.route) },
                                 onStatusEffectClicked = { navController.navigate(Nav.StatusEffectSearch.route) },
+                                onCharacterBuildClicked = { navController.navigate(Nav.CharacterBuildSearch.route) },
                             )
                         }
                         composable(Nav.EssenceSearch.route) { backStackEntry ->
@@ -409,6 +418,53 @@ class MainActivity : ComponentActivity() {
                                         is ShareViewModel.DecodedSingle.Failed -> null to result.reason
                                     }
                                 },
+                            )
+                        }
+                        composable(Nav.CharacterBuildSearch.route) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            title = "Character Build Search"
+                            CharacterBuildSearch(
+                                onBuildClicked = { build ->
+                                    navController.navigate(Nav.CharacterBuildDetail.buildRoute(build))
+                                },
+                                onAddClicked = {
+                                    navController.navigate(Nav.CharacterBuildContributions.newRoute)
+                                },
+                            )
+                        }
+                        composable(
+                            Nav.CharacterBuildDetail.route,
+                            arguments = listOf(
+                                navArgument(Nav.CharacterBuildDetail.ARG_NAME) { type = NavType.StringType }
+                            ),
+                        ) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            val buildName = backStackEntry.arguments!!.getString(Nav.CharacterBuildDetail.ARG_NAME)!!
+                            title = buildName
+                            CharacterBuildDetails(
+                                buildName = buildName,
+                                onBuildLoaded = { title = it.name },
+                                onEditContribution = { build ->
+                                    navController.navigate(Nav.CharacterBuildContributions.buildEditRoute(build))
+                                },
+                            )
+                        }
+                        composable(
+                            Nav.CharacterBuildContributions.route,
+                            arguments = listOf(
+                                navArgument(Nav.CharacterBuildContributions.ARG_NAME) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            ),
+                        ) { backStackEntry ->
+                            currentRoute = backStackEntry.destination.route
+                            val editName = backStackEntry.arguments?.getString(Nav.CharacterBuildContributions.ARG_NAME)
+                            title = if (editName != null) "Edit Build" else "Add Build"
+                            CharacterBuildContributionsScreen(
+                                onContributionSaved = { navController.popBackStack() },
+                                onContributionDeleted = { navController.popBackStack(Nav.CharacterBuildSearch.route, false) },
                             )
                         }
                     }
