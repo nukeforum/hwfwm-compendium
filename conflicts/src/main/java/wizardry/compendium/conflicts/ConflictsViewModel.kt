@@ -3,6 +3,7 @@ package wizardry.compendium.conflicts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +39,15 @@ class ConflictsViewModel @Inject constructor(
     private val statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
 
+    /**
+     * Background dispatcher for repository writes. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as a
+     * settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     val state: StateFlow<ConflictsState> = combine(
         essenceRepository.conflicts,
         awakeningStoneRepository.conflicts,
@@ -48,25 +58,25 @@ class ConflictsViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ConflictsState())
 
     fun deleteEssenceContribution(name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             essenceRepository.deleteContribution(name)
         }
     }
 
     fun deleteAwakeningStoneContribution(name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             awakeningStoneRepository.deleteContribution(name)
         }
     }
 
     fun deleteAbilityListingContribution(name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             abilityListingRepository.deleteContribution(name)
         }
     }
 
     fun deleteStatusEffectContribution(name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             statusEffectRepository.deleteContribution(name)
         }
     }
@@ -75,7 +85,7 @@ class ConflictsViewModel @Inject constructor(
         contribution: Essence.Confluence,
         combination: ConfluenceSet,
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val remaining = contribution.confluenceSets - combination
             if (remaining.isEmpty()) {
                 essenceRepository.deleteContribution(contribution.name)

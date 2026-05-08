@@ -66,6 +66,7 @@ class ConflictsViewModelTest {
             ),
         )
         val vm = ConflictsViewModel(essenceRepo, stoneRepo, abilityRepo, FakeStatusEffectRepo())
+            .also { it.ioDispatcher = dispatcher }
 
         // Subscribe so stateIn starts collecting
         val collector = launch { vm.state.collect {} }
@@ -84,6 +85,7 @@ class ConflictsViewModelTest {
     fun `delete essence contribution dispatches to repository`() = runTest {
         val essenceRepo = FakeEssenceRepo()
         val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
+            .also { it.ioDispatcher = dispatcher }
 
         vm.deleteEssenceContribution("Wind")
         advanceUntilIdle()
@@ -95,6 +97,7 @@ class ConflictsViewModelTest {
     fun `remove single combination keeps remaining combinations on contribution`() = runTest {
         val essenceRepo = FakeEssenceRepo()
         val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
+            .also { it.ioDispatcher = dispatcher }
 
         val original = confluence(
             "Doom",
@@ -112,6 +115,7 @@ class ConflictsViewModelTest {
     fun `remove last combination deletes the contribution entirely`() = runTest {
         val essenceRepo = FakeEssenceRepo()
         val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
+            .also { it.ioDispatcher = dispatcher }
 
         val original = confluence("Doom", setOf(set("A", "B", "C")))
         vm.removeCombinationFromContribution(original, set("A", "B", "C"))
