@@ -3,6 +3,7 @@ package wizardry.compendium.abilitylisting.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,6 +20,15 @@ class AbilityListingSearchViewModel
 @Inject constructor(
     abilityListingRepository: AbilityListingRepository,
 ) : ViewModel() {
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private val listingsFlow = MutableStateFlow(emptyList<Ability.Listing>())
     private val filterTermFlow = MutableStateFlow("")
 
@@ -40,7 +50,7 @@ class AbilityListingSearchViewModel
                 .collect()
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             abilityListingRepository.abilityListings.collect { listingsFlow.emit(it) }
         }
     }

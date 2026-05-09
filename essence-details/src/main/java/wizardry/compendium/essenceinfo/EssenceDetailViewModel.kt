@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.model.Essence
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,12 +18,21 @@ class EssenceDetailViewModel
 @Inject constructor(
     private val essenceRepository: EssenceRepository,
 ) : ViewModel() {
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private val history = ArrayDeque<Essence>()
     private val _state = MutableStateFlow<EssenceDetailUiState>(EssenceDetailUiState.Loading)
     val state = _state.asStateFlow()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             // Re-resolve the current essence by name when the data set changes.
             // drop(1) avoids double-loading on first composition since load() is called
             // by the composable via LaunchedEffect.
@@ -36,7 +46,7 @@ class EssenceDetailViewModel
 
     fun load(essenceName: String) {
         currentlyLoadedEssence?.let { history.addFirst(it) }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _state.emit(EssenceDetailUiState.Loading)
 
             essenceRepository.getEssences().find { it.name == essenceName }
@@ -47,7 +57,7 @@ class EssenceDetailViewModel
 
     fun load(essence: Essence) {
         currentlyLoadedEssence?.let { history.addFirst(it) }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _state.emit(EssenceDetailUiState.Loading)
 
             buildState(essence)
@@ -96,7 +106,7 @@ class EssenceDetailViewModel
         }
 
     fun goBack() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             when (val essence = history.removeFirst()) {
                 is Essence.Manifestation -> buildManifestationState(essence)
                 is Essence.Confluence -> buildConfluenceState(essence)

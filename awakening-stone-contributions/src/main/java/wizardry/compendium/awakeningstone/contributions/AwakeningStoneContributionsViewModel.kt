@@ -9,6 +9,7 @@ import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Rarity
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,15 @@ class AwakeningStoneContributionsViewModel @Inject constructor(
     private val awakeningStoneRepository: AwakeningStoneRepository,
 ) : ViewModel() {
 
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private val editName: String? = savedStateHandle.get<String>("name")
 
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
@@ -31,7 +41,7 @@ class AwakeningStoneContributionsViewModel @Inject constructor(
 
     init {
         if (editName != null) {
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(ioDispatcher) {
                 val stone = awakeningStoneRepository.getAwakeningStones().find { it.name == editName }
                 if (stone != null && awakeningStoneRepository.isContribution(stone.name)) {
                     _mode.emit(Mode.Edit.Ready(stone))
@@ -47,7 +57,7 @@ class AwakeningStoneContributionsViewModel @Inject constructor(
             viewModelScope.launch { _saveState.emit(SaveState.Error("Name cannot be empty")) }
             return
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             val stone = AwakeningStone.of(name = name.trim(), rarity = rarity)
             val result = if (editName != null) {
@@ -64,7 +74,7 @@ class AwakeningStoneContributionsViewModel @Inject constructor(
 
     fun deleteContribution() {
         val target = (mode.value as? Mode.Edit.Ready)?.stone ?: return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             when (val result = awakeningStoneRepository.deleteContribution(target.name)) {
                 is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)

@@ -15,6 +15,7 @@ import wizardry.compendium.share.ConfluenceImportPreview
 import wizardry.compendium.wire.ImportSummary
 import wizardry.compendium.wire.WireImporter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,15 @@ class EssenceContributionsViewModel @Inject constructor(
     abilityListingRepository: AbilityListingRepository,
     statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
+
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 
     private val wireImporter = WireImporter(
         essenceRepository,
@@ -94,14 +104,14 @@ class EssenceContributionsViewModel @Inject constructor(
     val mode = _mode.asStateFlow()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             essenceRepository.essences.collect { essences ->
                 _availableManifestations.emit(essences.filterIsInstance<Essence.Manifestation>())
                 _availableConfluences.emit(essences.filterIsInstance<Essence.Confluence>())
             }
         }
         if (editName != null) {
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(ioDispatcher) {
                 val essence = essenceRepository.getEssences().find { it.name == editName }
                 val isContribution = essence != null && essenceRepository.isContribution(essence.name)
                 if (essence == null || !isContribution) {
@@ -124,7 +134,7 @@ class EssenceContributionsViewModel @Inject constructor(
             viewModelScope.launch { _saveState.emit(SaveState.Error("Name cannot be empty")) }
             return
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             val manifestation = Essence.of(
                 name = name.trim(),
@@ -146,7 +156,7 @@ class EssenceContributionsViewModel @Inject constructor(
         isRestricted: Boolean,
     ) {
         val source = (mode.value as? Mode.Edit.ConfluenceReady)?.confluence ?: return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             val updated = source.copy(name = name.trim(), isRestricted = isRestricted)
             essenceRepository.updateConfluenceContribution(updated).emit()
@@ -168,7 +178,7 @@ class EssenceContributionsViewModel @Inject constructor(
             viewModelScope.launch { _saveState.emit(SaveState.Error("All three essences must be different")) }
             return
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             val confluence = Essence.of(
                 name = name.trim(),
@@ -193,7 +203,7 @@ class EssenceContributionsViewModel @Inject constructor(
             viewModelScope.launch { _saveState.emit(SaveState.Error("All three essences must be different")) }
             return
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             val combination = ConfluenceSet(manifestation1, manifestation2, manifestation3, isRestricted)
             essenceRepository.addCombinationToConfluence(target, combination).emit()
@@ -206,7 +216,7 @@ class EssenceContributionsViewModel @Inject constructor(
             is Mode.Edit.ConfluenceReady -> m.confluence.name
             else -> return
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             when (val result = essenceRepository.deleteContribution(name)) {
                 is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)

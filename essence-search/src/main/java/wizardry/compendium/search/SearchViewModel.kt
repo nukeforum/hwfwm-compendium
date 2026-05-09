@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.model.Essence
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -16,6 +17,15 @@ class SearchViewModel
 @Inject constructor(
     essenceRepository: EssenceRepository,
 ) : ViewModel() {
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private val essencesFlow = MutableStateFlow(emptyList<Essence>())
     private val filtersFlow = MutableStateFlow(SearchFilter.options.associateBy { it.name })
     private val filterTermFlow = MutableStateFlow("")
@@ -40,7 +50,7 @@ class SearchViewModel
                 .collect()
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             essenceRepository.essences.collect { essencesFlow.emit(it) }
         }
     }

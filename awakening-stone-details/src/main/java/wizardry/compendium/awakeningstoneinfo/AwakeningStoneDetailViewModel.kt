@@ -3,6 +3,7 @@ package wizardry.compendium.awakeningstoneinfo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,11 +18,20 @@ class AwakeningStoneDetailViewModel
 @Inject constructor(
     private val awakeningStoneRepository: AwakeningStoneRepository,
 ) : ViewModel() {
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private val _state = MutableStateFlow<AwakeningStoneDetailUiState>(AwakeningStoneDetailUiState.Loading)
     val state = _state.asStateFlow()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             awakeningStoneRepository.awakeningStones.drop(1).collect { stones ->
                 val current = currentlyLoadedStone ?: return@collect
                 val refreshed = stones.find { it.name == current.name } ?: return@collect
@@ -31,7 +41,7 @@ class AwakeningStoneDetailViewModel
     }
 
     fun load(stoneName: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _state.emit(AwakeningStoneDetailUiState.Loading)
 
             awakeningStoneRepository.getAwakeningStones().find { it.name == stoneName }

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.model.AwakeningStone
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +21,15 @@ class AwakeningStoneSearchViewModel
 @Inject constructor(
     awakeningStoneRepository: AwakeningStoneRepository,
 ) : ViewModel() {
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private val stonesFlow = MutableStateFlow(emptyList<AwakeningStone>())
     private val filterTermFlow = MutableStateFlow("")
     private val filtersFlow = MutableStateFlow(
@@ -46,7 +56,7 @@ class AwakeningStoneSearchViewModel
                 .collect()
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             awakeningStoneRepository.awakeningStones.collect { stonesFlow.emit(it) }
         }
     }

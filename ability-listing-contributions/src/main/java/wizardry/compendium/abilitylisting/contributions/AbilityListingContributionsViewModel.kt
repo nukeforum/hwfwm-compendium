@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,6 +37,15 @@ class AbilityListingContributionsViewModel @Inject constructor(
     private val statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
 
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private val editName: String? = savedStateHandle.get<String>("name")
 
     val statusEffects: StateFlow<List<StatusEffect>> =
@@ -61,7 +71,7 @@ class AbilityListingContributionsViewModel @Inject constructor(
 
     init {
         if (editName != null) {
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(ioDispatcher) {
                 val listing = abilityListingRepository.getAbilityListings().find { it.name == editName }
                 if (listing != null && abilityListingRepository.isContribution(listing.name)) {
                     _effects.emit(listing.effects.map { it.toDraft() })
@@ -106,7 +116,7 @@ class AbilityListingContributionsViewModel @Inject constructor(
             if (parseCooldown(draft.cooldown) == null) return fail("$label: cooldown is invalid")
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             val effects = drafts.map { it.toEffect() }
             val listing = Ability.Listing.of(name = name.trim()).copy(effects = effects)
@@ -124,7 +134,7 @@ class AbilityListingContributionsViewModel @Inject constructor(
 
     fun deleteContribution() {
         val target = (mode.value as? Mode.Edit.Ready)?.listing ?: return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             when (val result = abilityListingRepository.deleteContribution(target.name)) {
                 is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)

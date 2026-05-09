@@ -27,9 +27,11 @@ import wizardry.compendium.essences.model.StatusType
 @OptIn(ExperimentalCoroutinesApi::class)
 class AbilityListingContributionsViewModelStatusEffectsTest {
 
+    private val dispatcher = UnconfinedTestDispatcher()
+
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(dispatcher)
     }
 
     @After
@@ -54,7 +56,7 @@ class AbilityListingContributionsViewModelStatusEffectsTest {
             savedStateHandle = SavedStateHandle(),
             abilityListingRepository = NoopAbilityListingRepository,
             statusEffectRepository = repo,
-        )
+        ).also { it.ioDispatcher = dispatcher }
         assertEquals(listOf("Bleeding"), vm.statusEffects.first().map { it.name })
     }
 

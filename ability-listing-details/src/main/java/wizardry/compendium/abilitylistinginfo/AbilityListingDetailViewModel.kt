@@ -3,6 +3,7 @@ package wizardry.compendium.abilitylistinginfo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,18 +20,27 @@ class AbilityListingDetailViewModel @Inject constructor(
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
+    /**
+     * Background dispatcher for repository work. Visible for testing so unit
+     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
+     * in production. Constructor stays Hilt-friendly by exposing this only as
+     * a settable property.
+     */
+    @Suppress("MemberVisibilityCanBePrivate")
+    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
     private val _state = MutableStateFlow<AbilityListingDetailUiState>(AbilityListingDetailUiState.Loading)
     val state = _state.asStateFlow()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             abilityListingRepository.abilityListings.drop(1).collect { listings ->
                 val current = currentlyLoadedListing ?: return@collect
                 val refreshed = listings.find { it.name == current.name } ?: return@collect
                 _state.emit(refreshed.toSuccess())
             }
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             statusEffectRepository.statusEffects.drop(1).collect { effects ->
                 val currentSuccess = state.value as? AbilityListingDetailUiState.Success ?: return@collect
                 _state.emit(currentSuccess.copy(statusEffects = effects))
@@ -39,7 +49,7 @@ class AbilityListingDetailViewModel @Inject constructor(
     }
 
     fun load(listingName: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             _state.emit(AbilityListingDetailUiState.Loading)
 
             val listing = abilityListingRepository.getAbilityListings().find { it.name == listingName }
