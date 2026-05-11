@@ -1,7 +1,10 @@
 package wizardry.compendium.wire
 
 import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.essences.model.AbsorbedEssence
+import wizardry.compendium.essences.model.Attribute
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.CharacterBuild as ModelCharacterBuild
 import wizardry.compendium.essences.model.Cost as ModelCost
 import wizardry.compendium.essences.model.Effect as ModelEffect
 import wizardry.compendium.essences.model.Essence
@@ -273,5 +276,93 @@ object EnvelopeMapper {
         } catch (e: IllegalArgumentException) {
             throw WireDecodeException("Failed to decode status effect '${wire.name}': ${e.message}", e)
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // CharacterBuild
+    // -------------------------------------------------------------------------
+
+    fun toWire(build: ModelCharacterBuild): Build {
+        val slotAttrs = listOf(build.Power, build.Speed, build.Spirit, build.Recovery)
+        val wireAttrs = slotAttrs.map { attr ->
+            val absorbed = attr.essence
+            if (absorbed == null) {
+                BuildAttribute()
+            } else {
+                BuildAttribute(
+                    essenceName = absorbed.essence.name,
+                    confluence = absorbed.essence is Essence.Confluence,
+                    abilities = absorbed.abilities.map { acquired ->
+                        BuildAbility(
+                            name = acquired.name,
+                            rankIndex = acquired.rank.toIndex(),
+                            tier = acquired.tier,
+                            progress = acquired.progress,
+                        )
+                    },
+                )
+            }
+        }
+        return Build(
+            name = build.name,
+            race = build.race,
+            racials = build.racialAbilities.map { it.name },
+            attributes = wireAttrs,
+        )
+    }
+
+    /**
+     * Decode a wire build, looking up name references via the provided
+     * callbacks. Unresolved references are dropped (empty slot if essence
+     * missing; ability omitted if listing missing). The caller is responsible
+     * for surfacing missing-reference info to the user via the preview layer.
+     */
+    fun toModel(
+        wire: Build,
+        manifestationLookup: (name: String) -> Essence.Manifestation?,
+        confluenceLookup: (name: String) -> Essence.Confluence?,
+        listingLookup: (name: String) -> Ability.Listing?,
+    ): ModelCharacterBuild {
+        require(wire.attributes.size == SlotIndex.SLOT_COUNT) {
+            "Build '${wire.name}' has ${wire.attributes.size} attribute entries, expected ${SlotIndex.SLOT_COUNT}"
+        }
+        val racials = wire.racials.mapNotNull { listingLookup(it) }
+        val attrs = wire.attributes.mapIndexed { index, wireAttr ->
+            val absorbed = resolveAbsorbed(wireAttr, manifestationLookup, confluenceLookup, listingLookup)
+            when (index) {
+                0 -> Attribute.Power(essence = absorbed)
+                1 -> Attribute.Speed(essence = absorbed)
+                2 -> Attribute.Spirit(essence = absorbed)
+                3 -> Attribute.Recovery(essence = absorbed)
+                else -> error("unreachable")
+            }
+        }.toSet()
+        return ModelCharacterBuild(
+            name = wire.name,
+            race = wire.race,
+            racialAbilities = racials,
+            attributes = attrs,
+        )
+    }
+
+    private fun resolveAbsorbed(
+        wireAttr: BuildAttribute,
+        manifestationLookup: (name: String) -> Essence.Manifestation?,
+        confluenceLookup: (name: String) -> Essence.Confluence?,
+        listingLookup: (name: String) -> Ability.Listing?,
+    ): AbsorbedEssence? {
+        if (wireAttr.essenceName.isEmpty()) return null
+        val essence: Essence =
+            if (wireAttr.confluence) confluenceLookup(wireAttr.essenceName) ?: return null
+            else manifestationLookup(wireAttr.essenceName) ?: return null
+        val acquired = wireAttr.abilities.mapNotNull { wireAbility ->
+            val listing = listingLookup(wireAbility.name) ?: return@mapNotNull null
+            listing.acquire(essence).copy(
+                rank = rankFromIndex(wireAbility.rankIndex),
+                tier = wireAbility.tier,
+                progress = wireAbility.progress,
+            )
+        }
+        return AbsorbedEssence(essence = essence, abilities = acquired)
     }
 }
