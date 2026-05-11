@@ -75,17 +75,18 @@ A `.compendium` file is literally the share string written to disk. Any text
 editor can open it; the importer accepts both file picker and pasted text
 through the same code path.
 
-## Wire format v1
+## Wire format v2
 
 ### Envelope
 
 ```json
 {
-  "v": 1,
+  "v": 2,
   "e": [ /* manifestations */ ],
   "c": [ /* confluences */ ],
   "s": [ /* awakening stones */ ],
-  "a": [ /* ability listings */ ]
+  "a": [ /* ability listings */ ],
+  "b": [ /* character builds */ ]
 }
 ```
 
@@ -96,6 +97,7 @@ through the same code path.
 | `c` | List | Essence confluences. Omit when empty. |
 | `s` | List | Awakening stones. Omit when empty. |
 | `a` | List | Ability listings. Omit when empty. |
+| `b` | List | Character builds. Omit when empty. |
 
 ### Manifestation
 
@@ -182,6 +184,37 @@ A `Cost` is a 3-element tuple: `[String, Int, Int]` →
 (Ongoing). `Cost.None` is never serialized — empty cost list at runtime is
 encoded as omitted `c`, and the receiver materializes `[Cost.None]` on decode
 the same way the contribute-form draft does.
+
+### Build
+
+```json
+{ "n": "Frosty", "r": "Human", "y": ["Tough Skin"], "a": [ /* 4 attribute slots */ ] }
+```
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `n` | String | Build name. Required. |
+| `r` | String | Race name. Required. |
+| `y` | List<String> | Racial ability listing names. Omit when empty. |
+| `a` | List<BuildAttribute> | Exactly 4 entries, positional: [Power, Speed, Spirit, Recovery]. |
+
+### BuildAttribute
+
+```json
+{ "e": "Wind", "c": false, "b": [ /* abilities */ ] }
+```
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `e` | String | Essence name. Empty (default) means the slot is empty. |
+| `c` | Boolean | True if `e` should be looked up as a Confluence; false (default) means Manifestation. Omit when `false`. |
+| `b` | List<BuildAbility> | Filled ability slots (max 5). Omit when empty. |
+
+### BuildAbility
+
+A `BuildAbility` is a 4-element tuple: `[String, Int, Int, Float]` →
+`[name, rankIndex, tier, progress]`. Tuples save ~25 chars per ability vs.
+an object form; a Diamond-rank build has 20 of them.
 
 ## Enum index tables
 
@@ -340,6 +373,15 @@ guidance — read it carefully before writing the body.
 Old test fixtures from prior versions should stay around as regression
 coverage — they should always import cleanly through the chain.
 
+### Versioning — v2
+
+The only change from v1 → v2 is the additive `b: List<Build>` field on
+`Envelope`, plus the three new wire types (`Build`, `BuildAttribute`,
+`BuildAbility`). Migration is mechanical: the KSP-generated
+`MigratorV1ToV2` is an identity migrator. The auto-generated identity
+migrator does not update `v`, so `EnvelopeCodec.decode` sets `v` to
+`CurrentVersion` after the migrator chain as a safety net.
+
 ## Conflict handling at import
 
 Each import returns per-entry results:
@@ -465,11 +507,21 @@ When you add a new contribution domain (call it `X`):
    - Per-domain conflict tests already in
      `:app/test/Default*RepositoryConflictTest.kt`.
 
+## Build sharing
+
+Character builds (`Envelope.b`) are reference-only: essences, confluences,
+and ability listings are looked up by name in the receiver's canonical +
+contributions DB. Missing references degrade gracefully — a missing
+essence makes the slot empty; a missing ability is dropped. The receiver
+sees a preview sheet listing every missing reference before they save.
+
+The "Share" intent from a build's Details screen carries **plain text**
+mirroring the visible screen, not the wire-format string. The wire format
+is reserved for the Export-to-File / Import-from-File path on Details and
+Contribute screens.
+
 ## Known limitations / not in scope for v1
 
-- **Build sharing** (compact reference-only export of a curated entity
-  selection from canonical + contributions) is a future feature with its own
-  format. Not addressed here.
 - **Ability listings always export with full effect descriptions.** A bundle
   large enough to exceed the 100 KB share ceiling falls back to file export.
 - **Round-trip of a confluence whose member manifestations are user
