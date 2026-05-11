@@ -10,12 +10,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.CharacterBuildRepository
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.CharacterBuild
 import javax.inject.Inject
 
 @HiltViewModel
 class CharacterBuildDetailViewModel @Inject constructor(
     private val repository: CharacterBuildRepository,
+    private val statusEffectRepository: StatusEffectRepository,
 ) : ViewModel() {
 
     /**
@@ -35,7 +37,13 @@ class CharacterBuildDetailViewModel @Inject constructor(
             repository.builds.drop(1).collect { builds ->
                 val current = currentBuild ?: return@collect
                 val refreshed = builds.find { it.name == current.name } ?: return@collect
-                _state.emit(CharacterBuildDetailUiState.Success(refreshed))
+                _state.emit(refreshed.toSuccess())
+            }
+        }
+        viewModelScope.launch(ioDispatcher) {
+            statusEffectRepository.statusEffects.drop(1).collect { effects ->
+                val currentSuccess = state.value as? CharacterBuildDetailUiState.Success ?: return@collect
+                _state.emit(currentSuccess.copy(statusEffects = effects))
             }
         }
     }
@@ -47,10 +55,16 @@ class CharacterBuildDetailViewModel @Inject constructor(
             if (match == null) {
                 _state.emit(CharacterBuildDetailUiState.Error(IllegalArgumentException("no build named $name")))
             } else {
-                _state.emit(CharacterBuildDetailUiState.Success(match))
+                _state.emit(match.toSuccess())
             }
         }
     }
+
+    private suspend fun CharacterBuild.toSuccess(): CharacterBuildDetailUiState.Success =
+        CharacterBuildDetailUiState.Success(
+            build = this,
+            statusEffects = statusEffectRepository.getStatusEffects(),
+        )
 
     private val currentBuild: CharacterBuild?
         get() = (state.value as? CharacterBuildDetailUiState.Success)?.build

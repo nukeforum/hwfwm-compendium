@@ -17,7 +17,10 @@ import org.junit.Before
 import org.junit.Test
 import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.ContributionResult
+import wizardry.compendium.essences.StatusEffectConflict
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.essences.model.StatusEffect
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharacterBuildDetailViewModelTest {
@@ -30,7 +33,7 @@ class CharacterBuildDetailViewModelTest {
     @Test
     fun `load by name emits Success`() = runTest {
         val repo = FakeRepo(listOf(build("Jason"), build("Humphrey")))
-        val vm = CharacterBuildDetailViewModel(repo).also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo()).also { it.ioDispatcher = dispatcher }
 
         vm.load("Humphrey")
         advanceUntilIdle()
@@ -41,7 +44,8 @@ class CharacterBuildDetailViewModelTest {
 
     @Test
     fun `load by unknown name emits Error`() = runTest {
-        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList())).also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList()), FakeStatusEffectRepo())
+            .also { it.ioDispatcher = dispatcher }
 
         vm.load("ghost")
         advanceUntilIdle()
@@ -53,7 +57,7 @@ class CharacterBuildDetailViewModelTest {
     @Test
     fun `flow update refreshes the loaded build`() = runTest {
         val repo = FakeRepo(listOf(build("Jason", race = "Outworlder")))
-        val vm = CharacterBuildDetailViewModel(repo).also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo()).also { it.ioDispatcher = dispatcher }
 
         vm.load("Jason")
         advanceUntilIdle()
@@ -76,5 +80,17 @@ class CharacterBuildDetailViewModelTest {
         override suspend fun saveBuildContribution(build: CharacterBuild) = ContributionResult.Success
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
         fun update(next: List<CharacterBuild>) { flow.value = next }
+    }
+
+    private class FakeStatusEffectRepo : StatusEffectRepository {
+        override val statusEffects: Flow<List<StatusEffect>> = MutableStateFlow(emptyList())
+        override val conflicts: Flow<List<StatusEffectConflict>> = MutableStateFlow(emptyList())
+        override suspend fun getStatusEffects(): List<StatusEffect> = emptyList()
+        override suspend fun getContributions(): List<StatusEffect> = emptyList()
+        override suspend fun getConflicts(): List<StatusEffectConflict> = emptyList()
+        override suspend fun saveStatusEffectContribution(effect: StatusEffect): ContributionResult = ContributionResult.Success
+        override suspend fun isContribution(name: String): Boolean = false
+        override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
+        override suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult = ContributionResult.Success
     }
 }
