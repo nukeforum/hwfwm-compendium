@@ -2,6 +2,7 @@ package wizardry.compendium.wire
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import wizardry.compendium.wire.generated.WireMigrators
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
@@ -144,8 +145,20 @@ object EnvelopeCodec {
         // The generated WireMigrators registry lists every consecutive pair;
         // we filter to those we need.
         var currentJson = parsed
-        for (migrator in WireMigrators.all.filter { it.from >= incomingVersion && it.to <= CurrentVersion }) {
-            currentJson = migrator.migrate(currentJson)
+        for (migrator in WireMigrators.all) {
+            if (migrator.from >= incomingVersion && migrator.to <= CurrentVersion) {
+                currentJson = migrator.migrate(currentJson)
+            }
+        }
+
+        // Auto-generated mechanical migrators (e.g. additive-field-only diffs)
+        // don't bother to bump the `v` field — they're often pure identity
+        // transforms. By contract, completing the migrator chain has brought
+        // the envelope up to `CurrentVersion`, so set `v` explicitly here.
+        if (incomingVersion != CurrentVersion) {
+            val rewritten = currentJson.toMutableMap()
+            rewritten["v"] = JsonPrimitive(CurrentVersion)
+            currentJson = JsonObject(rewritten)
         }
 
         return try {
