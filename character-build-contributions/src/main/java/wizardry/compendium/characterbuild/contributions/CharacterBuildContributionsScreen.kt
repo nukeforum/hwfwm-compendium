@@ -38,6 +38,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -230,7 +231,8 @@ private fun Form(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Filled.FileOpen, contentDescription = null)
-                Text(text = "  Import from File")
+                Spacer(Modifier.width(8.dp))
+                Text(text = "Import from File")
             }
         }
 
@@ -568,11 +570,17 @@ private fun BuildImportPreviewSheet(
     onCancel: () -> Unit,
     onSave: () -> Unit,
 ) {
+    // Non-dismissible: user must explicitly Cancel or Save. Blocking the
+    // dismiss at the sheet-state level (confirmValueChange = false) prevents
+    // the sheet from animating away before recomposition re-shows it, which
+    // is what happens if we only no-op onDismissRequest.
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { false },
+    )
     ModalBottomSheet(
-        // Non-dismissible: user must explicitly Cancel or Save. We intentionally
-        // no-op the swipe/back-press dismissal to prevent silently losing a
-        // half-edited import.
-        onDismissRequest = { /* no-op */ },
+        onDismissRequest = { /* drag-dismiss is blocked by confirmValueChange */ },
+        sheetState = sheetState,
     ) {
         Column(
             modifier = Modifier
