@@ -149,6 +149,36 @@ class CharacterBuildContributionsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Apply a Confluence pick to [slot].
+     *
+     * - When [set] is non-null, fill empty non-target slots with leftover set members
+     *   (alphabetical by essence name, walking Slot.entries order skipping the target).
+     *   Non-target slots that already hold a set-member essence are left untouched.
+     * - When [set] is null, no fill is performed; only the target slot is changed.
+     * - If the target slot held abilities, route through the existing
+     *   `requestEssenceChange` 3-way prompt (clear / keep / cancel) for that slot.
+     */
+    fun applyConfluence(slot: Slot, confluence: Essence.Confluence, set: ConfluenceSet?) {
+        if (set != null) {
+            val occupied = (Slot.entries - slot)
+                .mapNotNull { _formState.value.attributes[it]?.essence }
+                .toSet()
+            val leftovers = set.set
+                .filterNot { it in occupied }
+                .sortedBy { it.name }
+            val emptyOthers = (Slot.entries - slot).filter { _formState.value.attributes[it]?.essence == null }
+            _formState.update { current ->
+                var next = current
+                emptyOthers.zip(leftovers).forEach { (emptySlot, fill) ->
+                    next = next.withSlot(emptySlot) { it.copy(essence = fill) }
+                }
+                next
+            }
+        }
+        requestEssenceChange(slot, confluence)
+    }
+
     fun requestEssenceChange(slot: Slot, target: Essence?) {
         val current = _formState.value.attributes[slot] ?: return
         if (current.abilities.isEmpty()) {

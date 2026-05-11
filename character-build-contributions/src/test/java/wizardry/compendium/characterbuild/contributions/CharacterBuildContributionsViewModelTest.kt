@@ -396,6 +396,140 @@ class CharacterBuildContributionsViewModelTest {
         assertEquals(setOf("A", "B", "C"), sets.single().set.map { it.name }.toSet())
     }
 
+    @Test
+    fun `applyConfluence with set fills empty slots in Slot order with alphabetical leftovers`() = runTest {
+        val a = manifestation("Aardvark")
+        val b = manifestation("Buffalo")
+        val c = manifestation("Cougar")
+        val combo = confluence("Combo", setOf(a, b, c))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(), Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, combo),
+        )
+        advanceUntilIdle()
+
+        val theSet = ConfluenceSet(setOf(a, b, c))
+        vm.applyConfluence(CharacterBuildContributionsViewModel.Slot.Recovery, combo, theSet)
+        advanceUntilIdle()
+
+        val form = vm.formState.value
+        // Power keeps Aardvark; Recovery gets Combo; empty Speed gets Buffalo (B < C); Spirit gets Cougar.
+        assertEquals("Aardvark", form.attributes[CharacterBuildContributionsViewModel.Slot.Power]?.essence?.name)
+        assertEquals("Buffalo", form.attributes[CharacterBuildContributionsViewModel.Slot.Speed]?.essence?.name)
+        assertEquals("Cougar", form.attributes[CharacterBuildContributionsViewModel.Slot.Spirit]?.essence?.name)
+        assertEquals("Combo", form.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence?.name)
+    }
+
+    @Test
+    fun `applyConfluence with set preserves existing matching essence and its abilities`() = runTest {
+        val sin = manifestation("Sin")
+        val doom = manifestation("Doom")
+        val magic = manifestation("Magic")
+        val combo = confluence("Combo", setOf(sin, doom, magic))
+        val reaper = listing("Hand of the Reaper")
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(sin, listOf(Ability.Listing.of("Hand of the Reaper").acquire(sin)))),
+                Attribute.Speed(), Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(sin, doom, magic, combo),
+            listings = listOf(reaper),
+        )
+        advanceUntilIdle()
+
+        vm.applyConfluence(
+            CharacterBuildContributionsViewModel.Slot.Recovery,
+            combo,
+            ConfluenceSet(setOf(sin, doom, magic)),
+        )
+        advanceUntilIdle()
+
+        val form = vm.formState.value
+        assertEquals("Sin", form.attributes[CharacterBuildContributionsViewModel.Slot.Power]?.essence?.name)
+        assertEquals(
+            listOf("Hand of the Reaper"),
+            form.attributes[CharacterBuildContributionsViewModel.Slot.Power]?.abilities?.map { it.name },
+        )
+    }
+
+    @Test
+    fun `applyConfluence with null set assigns Confluence to target slot only`() = runTest {
+        val sin = manifestation("Sin")
+        val doom = manifestation("Doom")
+        val unrelated1 = manifestation("Far1")
+        val unrelated2 = manifestation("Far2")
+        val unrelated3 = manifestation("Far3")
+        // Confluence with a set that doesn't include sin or doom.
+        val combo = confluence("Combo", setOf(unrelated1, unrelated2, unrelated3))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(sin)),
+                Attribute.Speed(essence = AbsorbedEssence(doom)),
+                Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(sin, doom, unrelated1, unrelated2, unrelated3, combo),
+        )
+        advanceUntilIdle()
+
+        vm.applyConfluence(CharacterBuildContributionsViewModel.Slot.Recovery, combo, null)
+        advanceUntilIdle()
+
+        val form = vm.formState.value
+        assertEquals("Sin", form.attributes[CharacterBuildContributionsViewModel.Slot.Power]?.essence?.name)
+        assertEquals("Doom", form.attributes[CharacterBuildContributionsViewModel.Slot.Speed]?.essence?.name)
+        assertEquals(null, form.attributes[CharacterBuildContributionsViewModel.Slot.Spirit]?.essence)
+        assertEquals("Combo", form.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence?.name)
+    }
+
+    @Test
+    fun `applyConfluence raises essenceChangePrompt for target slot when target has abilities`() = runTest {
+        val sin = manifestation("Sin")
+        val doom = manifestation("Doom")
+        val magic = manifestation("Magic")
+        val combo = confluence("Combo", setOf(sin, doom, magic))
+        val reaper = listing("Hand of the Reaper")
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                // Recovery (the target slot) has abilities.
+                Attribute.Recovery(essence = AbsorbedEssence(sin, listOf(Ability.Listing.of("Hand of the Reaper").acquire(sin)))),
+                Attribute.Power(), Attribute.Speed(), Attribute.Spirit(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(sin, doom, magic, combo),
+            listings = listOf(reaper),
+        )
+        advanceUntilIdle()
+
+        vm.applyConfluence(
+            CharacterBuildContributionsViewModel.Slot.Recovery,
+            combo,
+            ConfluenceSet(setOf(sin, doom, magic)),
+        )
+        advanceUntilIdle()
+
+        val prompt = vm.essenceChangePrompt.first { it != null }
+        assertEquals(CharacterBuildContributionsViewModel.Slot.Recovery, prompt!!.slot)
+        assertEquals("Combo", prompt.target?.name)
+    }
+
     // --- helpers -------------------------------------------------------
 
     private data class SetupForEssenceChange(
