@@ -530,6 +530,143 @@ class CharacterBuildContributionsViewModelTest {
         assertEquals("Combo", prompt.target?.name)
     }
 
+    @Test
+    fun `requestConfluencePick with 1 compatible set applies it immediately`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val combo = confluence("Combo", setOf(a, b, c))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, combo),
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        val form = vm.formState.value
+        assertEquals("Combo", form.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence?.name)
+        assertEquals("C", form.attributes[CharacterBuildContributionsViewModel.Slot.Spirit]?.essence?.name)
+        assertEquals(null, vm.confluenceSetPrompt.value)
+        assertEquals(null, vm.saveCombinationPrompt.value)
+    }
+
+    @Test
+    fun `requestConfluencePick with 2 plus compatible sets raises confluenceSetPrompt`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val d = manifestation("D")
+        val combo = Essence.Confluence(
+            name = "Combo",
+            confluenceSets = setOf(
+                ConfluenceSet(setOf(a, b, c)),
+                ConfluenceSet(setOf(a, b, d)),
+            ),
+            isRestricted = false,
+        )
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, d, combo),
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        val prompt = vm.confluenceSetPrompt.value
+        assertEquals(CharacterBuildContributionsViewModel.Slot.Recovery, prompt?.slot)
+        assertEquals("Combo", prompt?.confluence?.name)
+        assertEquals(2, prompt?.sets?.size)
+        // The Confluence is NOT yet assigned to the slot — we wait for the user to pick a set.
+        assertEquals(null, vm.formState.value.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence)
+    }
+
+    @Test
+    fun `requestConfluencePick with 0 compatible and 3 other essences raises saveCombinationPrompt`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo = confluence("Combo", setOf(x, y, z)) // user's a/b/c don't appear
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(c)),
+                Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, x, y, z, combo),
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        val prompt = vm.saveCombinationPrompt.value
+        assertEquals(CharacterBuildContributionsViewModel.Slot.Recovery, prompt?.slot)
+        assertEquals("Combo", prompt?.confluence?.name)
+        assertEquals(setOf("A", "B", "C"), prompt?.combination?.map { it.name }?.toSet())
+        // No slot change yet.
+        assertEquals(null, vm.formState.value.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence)
+    }
+
+    @Test
+    fun `requestConfluencePick with 0 compatible and 1-2 other essences assigns Confluence directly`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo = confluence("Combo", setOf(x, y, z))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, x, y, z, combo),
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        val form = vm.formState.value
+        assertEquals("Combo", form.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence?.name)
+        assertEquals("A", form.attributes[CharacterBuildContributionsViewModel.Slot.Power]?.essence?.name)
+        assertEquals("B", form.attributes[CharacterBuildContributionsViewModel.Slot.Speed]?.essence?.name)
+        assertEquals(null, vm.confluenceSetPrompt.value)
+        assertEquals(null, vm.saveCombinationPrompt.value)
+    }
+
     // --- helpers -------------------------------------------------------
 
     private data class SetupForEssenceChange(

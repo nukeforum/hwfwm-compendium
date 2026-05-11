@@ -65,6 +65,18 @@ class CharacterBuildContributionsViewModel @Inject constructor(
         val target: Essence?,
     )
 
+    data class ConfluenceSetPrompt(
+        val slot: Slot,
+        val confluence: Essence.Confluence,
+        val sets: List<ConfluenceSet>,
+    )
+
+    data class SaveCombinationPrompt(
+        val slot: Slot,
+        val confluence: Essence.Confluence,
+        val combination: List<Essence.Manifestation>,
+    )
+
     data class ConfluencePickerRow(
         val confluence: Essence.Confluence,
         /** User's already-selected non-target essences that appear in any of this confluence's sets. Deduped, name-sorted. */
@@ -84,6 +96,12 @@ class CharacterBuildContributionsViewModel @Inject constructor(
 
     private val _essenceChangePrompt = MutableStateFlow<EssenceChangePrompt?>(null)
     val essenceChangePrompt = _essenceChangePrompt.asStateFlow()
+
+    private val _confluenceSetPrompt = MutableStateFlow<ConfluenceSetPrompt?>(null)
+    val confluenceSetPrompt = _confluenceSetPrompt.asStateFlow()
+
+    private val _saveCombinationPrompt = MutableStateFlow<SaveCombinationPrompt?>(null)
+    val saveCombinationPrompt = _saveCombinationPrompt.asStateFlow()
 
     private val _availableEssences = MutableStateFlow<List<Essence.Manifestation>>(emptyList())
     val availableEssences = _availableEssences.asStateFlow()
@@ -177,6 +195,31 @@ class CharacterBuildContributionsViewModel @Inject constructor(
             }
         }
         requestEssenceChange(slot, confluence)
+    }
+
+    /**
+     * Entry point for picking a Confluence from the essence picker. Routes to
+     * one of: applyConfluence (1 compatible set or 0-compat-1or2-essences),
+     * confluenceSetPrompt (2+ compatible sets), or saveCombinationPrompt
+     * (0 compatible + exactly 3 other essences).
+     */
+    fun requestConfluencePick(slot: Slot, confluence: Essence.Confluence) {
+        val compatible = compatibleSetsFor(slot, confluence)
+        val others = otherSlotManifestations(slot)
+        when {
+            compatible.size == 1 -> applyConfluence(slot, confluence, compatible.single())
+            compatible.size >= 2 -> {
+                _confluenceSetPrompt.value = ConfluenceSetPrompt(slot, confluence, compatible)
+            }
+            others.size == 3 -> {
+                _saveCombinationPrompt.value = SaveCombinationPrompt(
+                    slot = slot,
+                    confluence = confluence,
+                    combination = others.sortedBy { it.name },
+                )
+            }
+            else -> applyConfluence(slot, confluence, null)
+        }
     }
 
     fun requestEssenceChange(slot: Slot, target: Essence?) {
