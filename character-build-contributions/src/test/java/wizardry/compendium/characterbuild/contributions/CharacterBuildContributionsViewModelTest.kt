@@ -859,6 +859,135 @@ class CharacterBuildContributionsViewModelTest {
         assertEquals(null, vm.saveCombinationPrompt.value)
     }
 
+    @Test
+    fun `confluenceWarning is set when 3 manifestations do not match any Confluence set`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo = confluence("Combo", setOf(x, y, z))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(c)),
+                Attribute.Recovery(essence = AbsorbedEssence(combo)),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, x, y, z, combo),
+        )
+        advanceUntilIdle()
+
+        val warning = vm.confluenceWarning.first { it != null }
+        assertEquals(CharacterBuildContributionsViewModel.Slot.Recovery, warning)
+    }
+
+    @Test
+    fun `confluenceWarning is null when 3 manifestations match a Confluence set`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val combo = confluence("Combo", setOf(a, b, c))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(c)),
+                Attribute.Recovery(essence = AbsorbedEssence(combo)),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, combo),
+        )
+        advanceUntilIdle()
+
+        assertEquals(null, vm.confluenceWarning.value)
+    }
+
+    @Test
+    fun `confluenceWarning is null when any slot is empty`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo = confluence("Combo", setOf(x, y, z))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(), // empty
+                Attribute.Recovery(essence = AbsorbedEssence(combo)),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, x, y, z, combo),
+        )
+        advanceUntilIdle()
+
+        assertEquals(null, vm.confluenceWarning.value)
+    }
+
+    @Test
+    fun `confluenceWarning is null when zero Confluences are picked`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val d = manifestation("D")
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(c)),
+                Attribute.Recovery(essence = AbsorbedEssence(d)),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, d),
+        )
+        advanceUntilIdle()
+
+        assertEquals(null, vm.confluenceWarning.value)
+    }
+
+    @Test
+    fun `confluenceWarning is null when 2+ Confluences are picked`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo1 = confluence("Combo1", setOf(x, y, z))
+        val combo2 = confluence("Combo2", setOf(x, y, z))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(combo1)),
+                Attribute.Recovery(essence = AbsorbedEssence(combo2)),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, x, y, z, combo1, combo2),
+        )
+        advanceUntilIdle()
+
+        assertEquals(null, vm.confluenceWarning.value)
+    }
+
     // --- helpers -------------------------------------------------------
 
     private data class SetupForEssenceChange(

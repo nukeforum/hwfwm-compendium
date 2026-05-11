@@ -5,7 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.AbilityListingRepository
@@ -111,6 +115,24 @@ class CharacterBuildContributionsViewModel @Inject constructor(
 
     private val _availableListings = MutableStateFlow<List<Ability.Listing>>(emptyList())
     val availableListings = _availableListings.asStateFlow()
+
+    val confluenceWarning: StateFlow<Slot?> = _formState
+        .map { computeConfluenceWarning(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    private fun computeConfluenceWarning(form: FormState): Slot? {
+        val essencesBySlot = form.attributes.mapValues { it.value.essence }
+        if (essencesBySlot.values.any { it == null }) return null
+        val confluenceSlots = essencesBySlot.filterValues { it is Essence.Confluence }
+        if (confluenceSlots.size != 1) return null
+        val (slot, essence) = confluenceSlots.entries.single()
+        val confluence = essence as Essence.Confluence
+        val manifestations = (essencesBySlot - slot).values
+            .mapNotNull { it as? Essence.Manifestation }
+            .toSet()
+        val matches = confluence.confluenceSets.any { it.set == manifestations }
+        return if (matches) null else slot
+    }
 
     init {
         viewModelScope.launch {
