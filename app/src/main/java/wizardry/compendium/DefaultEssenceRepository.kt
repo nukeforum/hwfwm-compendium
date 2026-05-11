@@ -32,6 +32,7 @@ class DefaultEssenceRepository @Inject constructor(
 
     private val writeMutex = Mutex()
     private val invalidations = MutableStateFlow(0)
+    @Volatile private var contributionsHealed = false
 
     override val essences: Flow<List<Essence>> = combine(
         toggleFlow.essenceContributionsEnabled,
@@ -45,6 +46,7 @@ class DefaultEssenceRepository @Inject constructor(
 
     override suspend fun getEssences(): List<Essence> {
         val canonical = ensureCanonicalLoaded()
+        healContributionsIfNeeded(canonical)
         if (!toggle.isEssenceContributionsEnabled) return canonical
         val contributions = contributionsCache.contents
         if (detectEssenceConflicts(canonical, contributions).isNotEmpty()) return canonical
@@ -53,10 +55,15 @@ class DefaultEssenceRepository @Inject constructor(
 
     override suspend fun getConflicts(): List<EssenceConflict> {
         val canonical = ensureCanonicalLoaded()
+        healContributionsIfNeeded(canonical)
         return detectEssenceConflicts(canonical, contributionsCache.contents)
     }
 
-    override suspend fun getContributions(): List<Essence> = contributionsCache.contents
+    override suspend fun getContributions(): List<Essence> {
+        val canonical = ensureCanonicalLoaded()
+        healContributionsIfNeeded(canonical)
+        return contributionsCache.contents
+    }
 
     override suspend fun saveManifestationContribution(
         manifestation: Essence.Manifestation,
@@ -109,10 +116,17 @@ class DefaultEssenceRepository @Inject constructor(
                 "That combination already produces ${combinationOwner.name}"
             )
         }
+        val canonicalManifestationNames = canonical
+            .filterIsInstance<Essence.Manifestation>()
+            .map { it.name.normalized() }
+            .toSet()
         val existingNames = existing.map { it.name.normalized() }.toSet()
         val manifestationsToAdd = referencedManifestations
             .distinctBy { it.name.normalized() }
-            .filter { it.name.normalized() !in existingNames }
+            .filter {
+                it.name.normalized() !in existingNames &&
+                    it.name.normalized() !in canonicalManifestationNames
+            }
         contributionsCache.contents = existing + manifestationsToAdd + confluence
         invalidate()
         ContributionResult.Success
@@ -143,11 +157,18 @@ class DefaultEssenceRepository @Inject constructor(
         val updated = source.copy(
             confluenceSets = source.confluenceSets + combination,
         )
+        val canonicalManifestationNames = canonical
+            .filterIsInstance<Essence.Manifestation>()
+            .map { it.name.normalized() }
+            .toSet()
         val existingNames = withoutTarget.map { it.name.normalized() }.toSet()
         val manifestationsToAdd = updated.confluenceSets
             .flatMap { it.set }
             .distinctBy { it.name.normalized() }
-            .filter { it.name.normalized() !in existingNames }
+            .filter {
+                it.name.normalized() !in existingNames &&
+                    it.name.normalized() !in canonicalManifestationNames
+            }
         contributionsCache.contents = withoutTarget + manifestationsToAdd + updated
         invalidate()
         ContributionResult.Success
@@ -217,6 +238,35 @@ class DefaultEssenceRepository @Inject constructor(
         }
         invalidate()
         ContributionResult.Success
+    }
+
+    /**
+     * One-shot cleanup of bogus contribution Manifestations created by an earlier bug
+     * where `addCombinationToConfluence`/`saveConfluenceContribution` mirrored canonical
+     * Manifestations into the contributions cache as side-effects. Those mirrors only
+     * ever appeared as spurious NameCollision entries. Stripping them is safe because
+     * `saveManifestationContribution` rejects any save that would create a canonical-name
+     * Manifestation contribution, so nothing legitimate can match this filter.
+     */
+    private suspend fun healContributionsIfNeeded(canonical: List<Essence>) {
+        if (contributionsHealed) return
+        writeMutex.withLock {
+            if (contributionsHealed) return
+            val canonicalManifestationNames = canonical
+                .filterIsInstance<Essence.Manifestation>()
+                .map { it.name.normalized() }
+                .toSet()
+            val current = contributionsCache.contents
+            val cleaned = current.filterNot { entry ->
+                entry is Essence.Manifestation &&
+                    entry.name.normalized() in canonicalManifestationNames
+            }
+            if (cleaned.size != current.size) {
+                contributionsCache.contents = cleaned
+                invalidations.update { it + 1 }
+            }
+            contributionsHealed = true
+        }
     }
 
     private fun invalidate() {

@@ -63,13 +63,17 @@ class DefaultEssenceRepositoryConflictTest {
 
     @Test
     fun `getConflicts surfaces both name and combination conflicts`() = runTest {
+        // Use Confluence-vs-Confluence name collisions; same-name Manifestation
+        // contributions are stripped by the self-heal pass.
         val canonical = listOf(
-            manifestation("Wind"),
+            confluence("Aurora", setOf(set("M", "N", "O"))),
             confluence("Tempest", setOf(set("A", "B", "C"))),
         )
         val contributions = listOf(
-            manifestation("Wind"),                                         // name collision
-            confluence("Doom", setOf(set("A", "B", "C"))),                  // combination collision
+            // Same-name Confluence that drops a canonical set → real NameCollision
+            confluence("Aurora", setOf(set("P", "Q", "R"))),
+            // Different name but claims a canonical's combination → CombinationCollision
+            confluence("Doom", setOf(set("A", "B", "C"))),
         )
         val repo = repository(canonical = canonical, contributions = contributions, toggle = true)
 
@@ -81,19 +85,19 @@ class DefaultEssenceRepositoryConflictTest {
 
     @Test
     fun `deleting the conflicting contribution clears the conflict and re-enables merge`() = runTest {
-        val canonical = listOf(manifestation("Wind"))
-        val contribution = manifestation("Wind")
+        val canonical = listOf(confluence("Aurora", setOf(set("M", "N", "O"))))
+        val contribution = confluence("Aurora", setOf(set("P", "Q", "R")))
         val repo = repository(canonical = canonical, contributions = listOf(contribution), toggle = true)
 
         // Initially gated to canonical because of the conflict
         assertEquals(canonical, repo.getEssences())
         assertEquals(1, repo.getConflicts().size)
 
-        repo.deleteContribution("Wind")
+        repo.deleteContribution("Aurora")
 
         assertEquals(0, repo.getConflicts().size)
         assertEquals(canonical, repo.getEssences())
-        assertFalse(repo.isContribution("Wind"))
+        assertFalse(repo.isContribution("Aurora"))
     }
 
     @Test
@@ -117,6 +121,77 @@ class DefaultEssenceRepositoryConflictTest {
         val doomInMerged = merged.first { it.name == "Doom" } as Essence.Confluence
         // The merged Doom should contain both canonical's set AND the user's addition.
         assertEquals(setOf(set("A", "B", "C"), set("D", "E", "F")), doomInMerged.confluenceSets)
+    }
+
+    @Test
+    fun `addCombinationToConfluence does not mirror canonical Manifestations into contributions`() = runTest {
+        // Real-world shape: canonical Confluence references canonical Manifestations.
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val d = manifestation("D")
+        val e = manifestation("E")
+        val f = manifestation("F")
+        val canonicalDoom = Essence.Confluence(
+            name = "Doom",
+            confluenceSets = setOf(ConfluenceSet(setOf(a, b, c))),
+            isRestricted = false,
+        )
+        val repo = repository(
+            canonical = listOf(a, b, c, d, e, f, canonicalDoom),
+            contributions = emptyList(),
+            toggle = true,
+        )
+
+        // The user adds {D, E, F} — all canonical Manifestations.
+        repo.addCombinationToConfluence(canonicalDoom, ConfluenceSet(setOf(d, e, f)))
+
+        // No NameCollision should fire; the contributions cache must NOT contain
+        // canonical-named Manifestation entries.
+        assertEquals(emptyList<EssenceConflict>(), repo.getConflicts())
+        val contributedManifestationNames = repo.getContributions()
+            .filterIsInstance<Essence.Manifestation>()
+            .map { it.name }
+        assertEquals(emptyList<String>(), contributedManifestationNames)
+    }
+
+    @Test
+    fun `getEssences self-heals existing duplicate Manifestation contributions on first read`() = runTest {
+        // Simulate the pre-fix bug state: the contributions cache holds canonical-named
+        // Manifestation duplicates that were dumped in by the old addCombinationToConfluence.
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val canonicalDoom = Essence.Confluence(
+            name = "Doom",
+            confluenceSets = setOf(ConfluenceSet(setOf(a, b, c))),
+            isRestricted = false,
+        )
+        val contributedDoomShadow = Essence.Confluence(
+            name = "Doom",
+            confluenceSets = setOf(
+                ConfluenceSet(setOf(a, b, c)),
+                ConfluenceSet(setOf(manifestation("X"), manifestation("Y"), manifestation("Z"))),
+            ),
+            isRestricted = false,
+        )
+        val polluted = listOf(
+            manifestation("A"), manifestation("B"), manifestation("C"), // <-- bogus duplicates
+            manifestation("X"), manifestation("Y"), manifestation("Z"),
+            contributedDoomShadow,
+        )
+        val repo = repository(
+            canonical = listOf(a, b, c, canonicalDoom),
+            contributions = polluted,
+            toggle = true,
+        )
+
+        // First read should heal — the bogus A/B/C duplicates disappear from contributions.
+        repo.getEssences()
+
+        val remaining = repo.getContributions().map { it.name }.toSet()
+        assertEquals(setOf("X", "Y", "Z", "Doom"), remaining)
+        assertEquals(emptyList<EssenceConflict>(), repo.getConflicts())
     }
 
     @Test
