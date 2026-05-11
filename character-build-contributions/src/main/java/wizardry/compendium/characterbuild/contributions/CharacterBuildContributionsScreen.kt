@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -61,6 +63,8 @@ fun CharacterBuildContributionsScreen(
     val mode by viewModel.mode.collectAsState()
     val form by viewModel.formState.collectAsState()
     val prompt by viewModel.essenceChangePrompt.collectAsState()
+    val setPrompt by viewModel.confluenceSetPrompt.collectAsState()
+    val savePrompt by viewModel.saveCombinationPrompt.collectAsState()
     val availableEssences by viewModel.availableEssences.collectAsState()
     val availableConfluences by viewModel.availableConfluences.collectAsState()
 
@@ -96,6 +100,8 @@ fun CharacterBuildContributionsScreen(
     }
 
     prompt?.let { EssencePromptDialog(it, viewModel) }
+    setPrompt?.let { ConfluenceSetPickerDialog(it, viewModel) }
+    savePrompt?.let { SaveCombinationDialog(it, viewModel) }
 }
 
 @Composable
@@ -310,6 +316,63 @@ private fun EssencePromptDialog(
                 OutlinedButton(onClick = viewModel::confirmEssenceChangeKeepingAbilities) { Text("No") }
                 OutlinedButton(
                     onClick = viewModel::cancelEssenceChange,
+                    modifier = Modifier.padding(start = 8.dp),
+                ) { Text("Cancel") }
+            }
+        },
+    )
+}
+
+@Composable
+private fun ConfluenceSetPickerDialog(
+    prompt: CharacterBuildContributionsViewModel.ConfluenceSetPrompt,
+    viewModel: CharacterBuildContributionsViewModel,
+) {
+    AlertDialog(
+        onDismissRequest = viewModel::cancelConfluenceSetPick,
+        title = { Text("Choose ${prompt.confluence.name} set") },
+        text = {
+            Column {
+                Text("This Confluence has multiple known combinations. Pick one to fill the empty slots.")
+                Spacer(Modifier.height(8.dp))
+                prompt.sets.forEach { set ->
+                    val names = set.set.map { it.name }.sorted().joinToString(" · ")
+                    OutlinedButton(
+                        onClick = { viewModel.confirmConfluenceSetPick(set) },
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                    ) { Text(names) }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            OutlinedButton(onClick = viewModel::cancelConfluenceSetPick) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun SaveCombinationDialog(
+    prompt: CharacterBuildContributionsViewModel.SaveCombinationPrompt,
+    viewModel: CharacterBuildContributionsViewModel,
+) {
+    val combo = prompt.combination.joinToString(" + ") { it.name }
+    AlertDialog(
+        onDismissRequest = { viewModel.dismissSaveCombinationPrompt(complete = false) },
+        title = { Text("Save new combination?") },
+        text = {
+            Text("$combo isn't a known set for ${prompt.confluence.name}. Save this as a new combination?")
+        },
+        confirmButton = {
+            Button(onClick = viewModel::confirmSaveCombination) { Text("Yes") }
+        },
+        dismissButton = {
+            Row {
+                OutlinedButton(onClick = { viewModel.dismissSaveCombinationPrompt(complete = true) }) {
+                    Text("No")
+                }
+                OutlinedButton(
+                    onClick = { viewModel.dismissSaveCombinationPrompt(complete = false) },
                     modifier = Modifier.padding(start = 8.dp),
                 ) { Text("Cancel") }
             }
