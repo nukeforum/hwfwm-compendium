@@ -1,5 +1,8 @@
 package wizardry.compendium.characterbuild.contributions
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,11 +15,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Warning
@@ -29,6 +34,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -42,10 +48,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.EssenceChangePrompt
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.Mode
+import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.PasteImportState
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.SaveState
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.Slot
 import wizardry.compendium.essences.model.Essence
@@ -53,6 +62,8 @@ import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.DeleteContributionButton
 import wizardry.compendium.ui.EditPreviewToggle
 import wizardry.compendium.ui.SearchableSelectionSheet
+import wizardry.compendium.wire.share.RefResolution
+import wizardry.compendium.wire.share.SlotResolution
 
 @Composable
 fun CharacterBuildContributionsScreen(
@@ -69,6 +80,24 @@ fun CharacterBuildContributionsScreen(
     val warningSlot by viewModel.confluenceWarning.collectAsState()
     val availableEssences by viewModel.availableEssences.collectAsState()
     val availableConfluences by viewModel.availableConfluences.collectAsState()
+    val pasteImportState by viewModel.pasteImportState.collectAsState()
+
+    val context = LocalContext.current
+    val openDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val text = try {
+                context.contentResolver.openInputStream(uri)
+                    ?.bufferedReader(Charsets.UTF_8)
+                    ?.use { it.readText() }
+                    .orEmpty()
+            } catch (_: Exception) {
+                ""
+            }
+            viewModel.startImportFromText(text)
+        }
+    }
 
     var warningDialogOpen by rememberSaveable { mutableStateOf(false) }
     var essencePickerSlot by rememberSaveable { mutableStateOf<Slot?>(null) }
@@ -78,6 +107,13 @@ fun CharacterBuildContributionsScreen(
             SaveState.Deleted -> onContributionDeleted()
             SaveState.Success -> onContributionSaved()
             else -> {}
+        }
+    }
+
+    LaunchedEffect(pasteImportState) {
+        if (pasteImportState is PasteImportState.Done) {
+            onContributionSaved()
+            viewModel.cancelImport()
         }
     }
 
@@ -94,6 +130,7 @@ fun CharacterBuildContributionsScreen(
             essencePickerSlot = essencePickerSlot,
             onEssencePickerSlotChange = { essencePickerSlot = it },
             viewModel = viewModel,
+            onImportFromFile = { openDocumentLauncher.launch(arrayOf("text/*")) },
         )
         Mode.Edit.Loading -> CenteredText("Loading")
         Mode.Edit.NotFound -> CenteredText("This build is not a user contribution and cannot be edited.")
@@ -109,6 +146,17 @@ fun CharacterBuildContributionsScreen(
             essencePickerSlot = essencePickerSlot,
             onEssencePickerSlotChange = { essencePickerSlot = it },
             viewModel = viewModel,
+            onImportFromFile = null,
+        )
+    }
+
+    val reviewing = pasteImportState as? PasteImportState.Reviewing
+    if (reviewing != null) {
+        BuildImportPreviewSheet(
+            state = reviewing,
+            onNameChange = viewModel::updateImportName,
+            onCancel = viewModel::cancelImport,
+            onSave = viewModel::confirmImport,
         )
     }
 
@@ -158,6 +206,7 @@ private fun Form(
     essencePickerSlot: Slot?,
     onEssencePickerSlotChange: (Slot?) -> Unit,
     viewModel: CharacterBuildContributionsViewModel,
+    onImportFromFile: (() -> Unit)?,
 ) {
     var preview by rememberSaveable { mutableStateOf(false) }
     val saving = saveState is SaveState.Saving
@@ -174,6 +223,16 @@ private fun Form(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         EditPreviewToggle(isPreview = preview, onChange = { preview = it })
+
+        if (!isEdit && onImportFromFile != null) {
+            OutlinedButton(
+                onClick = onImportFromFile,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(Icons.Filled.FileOpen, contentDescription = null)
+                Text(text = "  Import from File")
+            }
+        }
 
         if (preview) {
             Text("Preview: ${form.name.ifBlank { "(unnamed)" }} — ${form.race.ifBlank { "(no race)" }}")
@@ -497,6 +556,119 @@ private fun CollapsibleCard(
                     .padding(horizontal = 12.dp, vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) { content() }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BuildImportPreviewSheet(
+    state: PasteImportState.Reviewing,
+    onNameChange: (String) -> Unit,
+    onCancel: () -> Unit,
+    onSave: () -> Unit,
+) {
+    ModalBottomSheet(
+        // Non-dismissible: user must explicitly Cancel or Save. We intentionally
+        // no-op the swipe/back-press dismissal to prevent silently losing a
+        // half-edited import.
+        onDismissRequest = { /* no-op */ },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+        ) {
+            Text("Import character build", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(16.dp))
+
+            // Client-side collision flag: trust the decoder's pre-check when the
+            // user hasn't renamed away from the original. A rename clears the
+            // visible collision; the VM re-checks server-side on confirm anyway.
+            val collides = state.preview.nameCollides && state.editedName == state.preview.originalName
+            val blank = state.editedName.isBlank()
+            OutlinedTextField(
+                value = state.editedName,
+                onValueChange = onNameChange,
+                label = { Text("Name") },
+                isError = collides || blank,
+                supportingText = {
+                    when {
+                        collides -> Text("A build with this name already exists — pick a different name.")
+                        blank -> Text("Name is required.")
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+
+            Spacer(Modifier.height(8.dp))
+            Text("Race: ${state.preview.race}", style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(16.dp))
+
+            state.preview.attributes.forEach { attr ->
+                Text(attr.slot, style = MaterialTheme.typography.titleSmall)
+                when (val r = attr.resolution) {
+                    is SlotResolution.Empty -> Text(
+                        "(empty)",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    is SlotResolution.Missing -> Text(
+                        "${r.essenceName} (missing — slot will be empty)",
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    is SlotResolution.Resolved -> {
+                        Text("Essence: ${r.essence.name}")
+                        r.abilities.forEach { ability ->
+                            when (ability) {
+                                is RefResolution.Resolved<*> -> Text("  • ${ability.name}")
+                                is RefResolution.Missing -> Text(
+                                    "  • ${ability.name} (missing — will be dropped)",
+                                    color = MaterialTheme.colorScheme.error,
+                                    textDecoration = TextDecoration.LineThrough,
+                                )
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            if (state.preview.racials.isNotEmpty()) {
+                Text("Racial Abilities", style = MaterialTheme.typography.titleSmall)
+                state.preview.racials.forEach { racial ->
+                    when (racial) {
+                        is RefResolution.Resolved<*> -> Text("  • ${racial.name}")
+                        is RefResolution.Missing -> Text(
+                            "  • ${racial.name} (missing — will be dropped)",
+                            color = MaterialTheme.colorScheme.error,
+                            textDecoration = TextDecoration.LineThrough,
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
+            if (state.preview.missingCount > 0) {
+                Text(
+                    "${state.preview.missingCount} references missing — they will be dropped.",
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                OutlinedButton(onClick = onCancel) { Text("Cancel") }
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    onClick = onSave,
+                    enabled = !blank && !collides,
+                ) { Text("Save") }
+            }
         }
     }
 }
