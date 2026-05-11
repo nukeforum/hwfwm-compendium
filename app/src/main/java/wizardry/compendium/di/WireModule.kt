@@ -6,9 +6,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
+import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.wire.WireExporter
+import wizardry.compendium.wire.share.BuildShareDecoder
 import javax.inject.Singleton
 
 /**
@@ -35,5 +37,17 @@ object WireModule {
         awakeningStoneRepository = awakeningStoneRepository,
         abilityListingRepository = abilityListingRepository,
         statusEffectRepository = statusEffectRepository,
+    )
+
+    @Singleton
+    @Provides
+    fun provideBuildShareDecoder(
+        essenceRepository: EssenceRepository,
+        abilityListingRepository: AbilityListingRepository,
+        buildRepository: CharacterBuildRepository,
+    ): BuildShareDecoder = BuildShareDecoder(
+        essenceRepository = essenceRepository,
+        abilityListingRepository = abilityListingRepository,
+        buildRepository = buildRepository,
     )
 }

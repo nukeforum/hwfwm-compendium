@@ -32,6 +32,7 @@ import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.WireExporter
+import wizardry.compendium.wire.share.BuildShareDecoder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShareViewModelDecodeConfluenceBundleTest {

@@ -32,6 +32,7 @@ import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.wire.share.BuildShareDecoder
 import kotlin.time.Duration
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -1064,7 +1065,52 @@ class CharacterBuildContributionsViewModelTest {
             buildRepository = repo,
             essenceRepository = essenceRepo,
             abilityListingRepository = FakeAbilityListingRepo(listings),
+            buildShareDecoder = NoOpBuildShareDecoder(),
         )
+    }
+
+    private class NoOpBuildShareDecoder : BuildShareDecoder(
+        essenceRepository = NoOpEssenceRepoForDecoder(),
+        abilityListingRepository = NoOpListingRepoForDecoder(),
+        buildRepository = NoOpBuildRepoForDecoder(),
+    ) {
+        override suspend fun decode(text: String): Result =
+            Result.Failed("import not exercised in this test")
+    }
+
+    private class NoOpEssenceRepoForDecoder : EssenceRepository {
+        override val essences: Flow<List<Essence>> = MutableStateFlow(emptyList())
+        override val conflicts: Flow<List<EssenceConflict>> = MutableStateFlow(emptyList())
+        override suspend fun getEssences(): List<Essence> = emptyList()
+        override suspend fun getContributions(): List<Essence> = emptyList()
+        override suspend fun getConflicts(): List<EssenceConflict> = emptyList()
+        override suspend fun saveManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
+        override suspend fun saveConfluenceContribution(confluence: Essence.Confluence, referencedManifestations: List<Essence.Manifestation>) = ContributionResult.Success
+        override suspend fun addCombinationToConfluence(target: Essence.Confluence, combination: ConfluenceSet) = ContributionResult.Success
+        override suspend fun isContribution(name: String) = false
+        override suspend fun deleteContribution(name: String) = ContributionResult.Success
+        override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
+        override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
+    }
+
+    private class NoOpListingRepoForDecoder : AbilityListingRepository {
+        override val abilityListings: Flow<List<Ability.Listing>> = MutableStateFlow(emptyList())
+        override val conflicts: Flow<List<AbilityListingConflict>> = MutableStateFlow(emptyList())
+        override suspend fun getAbilityListings(): List<Ability.Listing> = emptyList()
+        override suspend fun getContributions(): List<Ability.Listing> = emptyList()
+        override suspend fun getConflicts(): List<AbilityListingConflict> = emptyList()
+        override suspend fun saveAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+        override suspend fun isContribution(name: String) = false
+        override suspend fun deleteContribution(name: String) = ContributionResult.Success
+        override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+    }
+
+    private class NoOpBuildRepoForDecoder : CharacterBuildRepository {
+        override val builds: Flow<List<CharacterBuild>> = MutableStateFlow(emptyList())
+        override suspend fun getBuilds() = emptyList<CharacterBuild>()
+        override suspend fun getBuild(name: String): CharacterBuild? = null
+        override suspend fun saveBuildContribution(build: CharacterBuild) = ContributionResult.Success
+        override suspend fun deleteContribution(name: String) = ContributionResult.Success
     }
 
     private fun manifestation(name: String) = Essence.Manifestation(

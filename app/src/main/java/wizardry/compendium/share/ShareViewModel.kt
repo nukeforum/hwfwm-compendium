@@ -18,6 +18,8 @@ import wizardry.compendium.wire.EnvelopeMapper
 import wizardry.compendium.wire.WireDecodeException
 import wizardry.compendium.wire.WireExporter
 import wizardry.compendium.wire.WireVersionUnsupported
+import wizardry.compendium.wire.share.BuildImportPreview
+import wizardry.compendium.wire.share.BuildShareDecoder
 import javax.inject.Inject
 
 /**

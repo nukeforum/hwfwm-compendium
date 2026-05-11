@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":model-core"))
     implementation(project(":design"))
     implementation(project(":essences"))
+    implementation(project(":wire"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlin.coroutines)

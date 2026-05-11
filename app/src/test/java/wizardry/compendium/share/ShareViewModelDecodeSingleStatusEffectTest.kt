@@ -18,6 +18,7 @@ import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.EnvelopeMapper
+import wizardry.compendium.wire.share.BuildShareDecoder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShareViewModelDecodeSingleStatusEffectTest {

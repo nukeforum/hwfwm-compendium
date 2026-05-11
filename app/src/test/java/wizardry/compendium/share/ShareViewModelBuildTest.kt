@@ -29,6 +29,7 @@ import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.wire.share.BuildShareDecoder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ShareViewModelBuildTest {

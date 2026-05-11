@@ -23,6 +23,11 @@ import wizardry.compendium.essences.model.Attribute
 import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.wire.share.BuildImportPreview
+import wizardry.compendium.wire.share.BuildShareDecoder
+import wizardry.compendium.wire.share.RefResolution
+import wizardry.compendium.wire.share.SlotResolution
 import javax.inject.Inject
 
 @HiltViewModel
@@ -31,6 +36,7 @@ class CharacterBuildContributionsViewModel @Inject constructor(
     private val buildRepository: CharacterBuildRepository,
     private val essenceRepository: EssenceRepository,
     private val abilityListingRepository: AbilityListingRepository,
+    private val buildShareDecoder: BuildShareDecoder,
 ) : ViewModel() {
 
     enum class Slot { Power, Speed, Spirit, Recovery }
@@ -50,6 +56,20 @@ class CharacterBuildContributionsViewModel @Inject constructor(
         data object Success : SaveState
         data object Deleted : SaveState
         data class Error(val message: String) : SaveState
+    }
+
+    /**
+     * Paste-buffer build import flow state. The Contribute screen drives this
+     * through the share-text "Import" action; `Reviewing` is the only state
+     * the user can act on (rename, confirm, cancel).
+     */
+    sealed interface PasteImportState {
+        data object Idle : PasteImportState
+        data object Decoding : PasteImportState
+        data class Reviewing(val preview: BuildImportPreview, val editedName: String) : PasteImportState
+        data object Saving : PasteImportState
+        data object Done : PasteImportState
+        data class Failed(val reason: String) : PasteImportState
     }
 
     data class SlotState(
@@ -91,6 +111,9 @@ class CharacterBuildContributionsViewModel @Inject constructor(
 
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState = _saveState.asStateFlow()
+
+    private val _pasteImportState = MutableStateFlow<PasteImportState>(PasteImportState.Idle)
+    val pasteImportState = _pasteImportState.asStateFlow()
 
     private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
     val mode = _mode.asStateFlow()
@@ -350,6 +373,92 @@ class CharacterBuildContributionsViewModel @Inject constructor(
                 is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
             }
         }
+    }
+
+    fun startImportFromText(text: String) {
+        viewModelScope.launch {
+            _pasteImportState.value = PasteImportState.Decoding
+            _pasteImportState.value = when (val r = buildShareDecoder.decode(text)) {
+                is BuildShareDecoder.Result.Loaded ->
+                    PasteImportState.Reviewing(r.preview, r.preview.originalName)
+                is BuildShareDecoder.Result.Failed -> PasteImportState.Failed(r.reason)
+            }
+        }
+    }
+
+    fun updateImportName(name: String) {
+        val current = _pasteImportState.value
+        if (current is PasteImportState.Reviewing) {
+            _pasteImportState.value = current.copy(editedName = name)
+        }
+    }
+
+    fun cancelImport() {
+        _pasteImportState.value = PasteImportState.Idle
+    }
+
+    fun confirmImport() {
+        val current = _pasteImportState.value as? PasteImportState.Reviewing ?: return
+        if (current.editedName.isBlank()) {
+            _pasteImportState.value = PasteImportState.Failed("Name is required.")
+            return
+        }
+        viewModelScope.launch {
+            _pasteImportState.value = PasteImportState.Saving
+            val existing = buildRepository.getBuild(current.editedName)
+            if (existing != null) {
+                _pasteImportState.value = PasteImportState.Failed(
+                    "A build named \"${current.editedName}\" already exists. Pick a different name.",
+                )
+                return@launch
+            }
+            val build = materializeBuild(current.preview, current.editedName)
+            when (val result = buildRepository.saveBuildContribution(build)) {
+                ContributionResult.Success -> _pasteImportState.value = PasteImportState.Done
+                is ContributionResult.Failure -> _pasteImportState.value = PasteImportState.Failed(result.message)
+            }
+        }
+    }
+
+    /**
+     * Reconstruct a `CharacterBuild` from a fully-decoded `BuildImportPreview`.
+     *
+     * Each `Acquired` ability is materialized via the listing's `acquire` and
+     * then `copy`'d with the wire-format rank/tier/progress so a paste preserves
+     * the donor's progression. Missing/empty slots become empty attributes.
+     */
+    private fun materializeBuild(preview: BuildImportPreview, name: String): CharacterBuild {
+        val racials = preview.racials.mapNotNull { (it as? RefResolution.Resolved)?.value }
+        val attrSet = preview.attributes.mapIndexed { index, attr ->
+            val absorbed = when (val r = attr.resolution) {
+                is SlotResolution.Resolved -> {
+                    val abilities = r.abilities.zip(r.wireAbilities).mapNotNull { (resolution, wire) ->
+                        val listing = (resolution as? RefResolution.Resolved)?.value ?: return@mapNotNull null
+                        listing.acquire(r.essence).copy(
+                            rank = Rank.entries[wire.rankIndex],
+                            tier = wire.tier,
+                            progress = wire.progress,
+                        )
+                    }
+                    AbsorbedEssence(essence = r.essence, abilities = abilities)
+                }
+                is SlotResolution.Empty,
+                is SlotResolution.Missing -> null
+            }
+            when (index) {
+                0 -> Attribute.Power(essence = absorbed)
+                1 -> Attribute.Speed(essence = absorbed)
+                2 -> Attribute.Spirit(essence = absorbed)
+                3 -> Attribute.Recovery(essence = absorbed)
+                else -> error("unreachable: build envelope must have exactly 4 attribute slots")
+            }
+        }.toSet()
+        return CharacterBuild(
+            name = name.trim(),
+            race = preview.race,
+            racialAbilities = racials,
+            attributes = attrSet,
+        )
     }
 
     fun deleteContribution() {

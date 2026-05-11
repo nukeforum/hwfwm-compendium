@@ -1,4 +1,4 @@
-package wizardry.compendium.share
+package wizardry.compendium.wire.share
 
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.CharacterBuildRepository
@@ -11,17 +11,24 @@ import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.SlotIndex
 import wizardry.compendium.wire.WireDecodeException
 import wizardry.compendium.wire.WireVersionUnsupported
-import javax.inject.Inject
 
 /**
  * Decodes a build share-text into a `BuildImportPreview`, resolving every
  * referenced name against the receiver's repos and surfacing both missing
  * references and build-name collisions for the preview sheet.
  *
- * Constructor-injectable so both `ShareViewModel` and
- * `CharacterBuildContributionsViewModel` can use it without VM-to-VM deps.
+ * Lives in `:wire` (not `:app`) so both `ShareViewModel` (in `:app`) and
+ * `CharacterBuildContributionsViewModel` (in `:character-build-contributions`)
+ * can depend on it without a VM-to-VM dependency or cyclic module graph.
+ *
+ * `open` for test substitution: VM tests provide a fake subclass that
+ * returns a canned `Result` without going through the full wire decode.
+ *
+ * No `@Inject` because `:wire` is a pure JVM module that doesn't pull in
+ * Hilt/javax.inject. Construction is wired via Hilt `@Provides` in
+ * `:app/di/WireModule.kt`.
  */
-class BuildShareDecoder @Inject constructor(
+open class BuildShareDecoder(
     private val essenceRepository: EssenceRepository,
     private val abilityListingRepository: AbilityListingRepository,
     private val buildRepository: CharacterBuildRepository,
@@ -32,7 +39,7 @@ class BuildShareDecoder @Inject constructor(
         data class Failed(val reason: String) : Result
     }
 
-    suspend fun decode(text: String): Result {
+    open suspend fun decode(text: String): Result {
         if (text.isBlank()) return Result.Failed("Paste is empty.")
 
         val envelope: Envelope = try {
