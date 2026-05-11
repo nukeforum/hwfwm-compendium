@@ -37,7 +37,11 @@ import kotlin.time.Duration
  * Mapper functions throw `WireDecodeException` for malformed wire data
  * (e.g., an unrecognized enum index, a confluence set referencing a
  * non-existent manifestation). The importer catches these and surfaces them
- * as `ImportResult.Failed` for the affected entity.
+ * as `ImportResult.Failed` for the affected entity. The `CharacterBuild`
+ * mapper is a deliberate exception: it silently drops unresolved essence
+ * and ability-listing references (leaving empty slots / omitted abilities)
+ * so a partially-importable build still round-trips, with the preview layer
+ * responsible for surfacing missing references to the user.
  *
  * # Encoding: lossy by design
  *
@@ -282,6 +286,13 @@ object EnvelopeMapper {
     // CharacterBuild
     // -------------------------------------------------------------------------
 
+    private val slotConstructors: List<(AbsorbedEssence?) -> Attribute> = listOf(
+        { Attribute.Power(essence = it) },
+        { Attribute.Speed(essence = it) },
+        { Attribute.Spirit(essence = it) },
+        { Attribute.Recovery(essence = it) },
+    )
+
     fun toWire(build: ModelCharacterBuild): Build {
         val slotAttrs = listOf(build.Power, build.Speed, build.Spirit, build.Recovery)
         val wireAttrs = slotAttrs.map { attr ->
@@ -329,13 +340,7 @@ object EnvelopeMapper {
         val racials = wire.racials.mapNotNull { listingLookup(it) }
         val attrs = wire.attributes.mapIndexed { index, wireAttr ->
             val absorbed = resolveAbsorbed(wireAttr, manifestationLookup, confluenceLookup, listingLookup)
-            when (index) {
-                0 -> Attribute.Power(essence = absorbed)
-                1 -> Attribute.Speed(essence = absorbed)
-                2 -> Attribute.Spirit(essence = absorbed)
-                3 -> Attribute.Recovery(essence = absorbed)
-                else -> error("unreachable")
-            }
+            slotConstructors[index](absorbed)
         }.toSet()
         return ModelCharacterBuild(
             name = wire.name,
