@@ -75,7 +75,7 @@ object EnvelopeCodec {
      * this version; incoming envelopes with an older version are migrated
      * up; envelopes with a newer version are rejected.
      */
-    const val CurrentVersion: Int = 1
+    const val CurrentVersion: Int = 2
 
     private val json = Json {
         // Single source of truth for "skip falsy / empty defaults":

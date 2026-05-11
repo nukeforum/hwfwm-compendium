@@ -56,7 +56,7 @@ import wizardry.compendium.wire.annotations.WireType
  * The companion `EnvelopeCodec` handles transport (gzip+base64+JSON);
  * `EnvelopeMapper` handles model↔wire conversion using `EnumIndex` tables.
  */
-@WireFormat(version = 1)
+@WireFormat(version = 2)
 @WireType(alias = "envelope")
 @Serializable
 data class Envelope(
@@ -77,6 +77,9 @@ data class Envelope(
 
     @SerialName("x")
     val statusEffects: List<StatusEffect> = emptyList(),
+
+    @SerialName("b")
+    val builds: List<Build> = emptyList(),
 )
 
 @WireType(alias = "manifestation")
@@ -318,6 +321,47 @@ internal object CostSerializer : KSerializer<Cost> {
         )
     }
 }
+
+/**
+ * A character build: name + race + per-slot essence assignment + racial
+ * abilities. `attributes` is positional: index 0=Power, 1=Speed, 2=Spirit,
+ * 3=Recovery. Names are looked up against the receiver's canonical +
+ * contributed data at import time.
+ */
+@WireType(alias = "build")
+@Serializable
+data class Build(
+    @SerialName("n")
+    val name: String,
+
+    @SerialName("r")
+    val race: String,
+
+    @SerialName("y")
+    val racials: List<String> = emptyList(),
+
+    @SerialName("a")
+    val attributes: List<BuildAttribute>,
+)
+
+/**
+ * A single attribute slot's payload: which essence is in it (empty string =
+ * empty slot), whether to look up that name as a Confluence (true) or
+ * Manifestation (false, default), and which ability listings the user has
+ * filled in (with rank/tier/progress per ability).
+ */
+@WireType(alias = "buildAttr")
+@Serializable
+data class BuildAttribute(
+    @SerialName("e")
+    val essenceName: String = "",
+
+    @SerialName("c")
+    val confluence: Boolean = false,
+
+    @SerialName("b")
+    val abilities: List<BuildAbility> = emptyList(),
+)
 
 /**
  * 4-element tuple: [name, rankIndex, tier, progress].
