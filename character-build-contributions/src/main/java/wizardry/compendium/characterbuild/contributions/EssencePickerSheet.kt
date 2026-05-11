@@ -49,6 +49,7 @@ fun EssencePickerSheet(
     showSegmentedControl: Boolean,
     onDismiss: () -> Unit,
     onConfirm: (Essence) -> Unit,
+    subtitleOf: (Essence) -> String? = { null },
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var query by remember { mutableStateOf("") }
@@ -125,11 +126,19 @@ fun EssencePickerSheet(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(
-                                    text = option.name,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    modifier = Modifier.weight(1f),
-                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = option.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                    subtitleOf(option)?.let { sub ->
+                                        Text(
+                                            text = sub,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
                                 if (isSelected) Icon(Icons.Filled.Check, contentDescription = null)
                             }
                         }

@@ -244,16 +244,27 @@ private fun Form(
     }
 
     essencePickerSlot?.let { slot ->
+        val rows = viewModel.confluencePickerRowsFor(slot)
+        val subtitleByName = rows.associate { it.confluence.name to it.matchedEssences }
+        val sortedConfluences = rows.map { it.confluence }
         EssencePickerSheet(
             title = "$slot essence",
             manifestations = availableEssences,
-            confluences = availableConfluences,
+            confluences = sortedConfluences,
             initiallySelected = form.attributes[slot]?.essence,
             showSegmentedControl = true,
             onDismiss = { essencePickerSlot = null },
             onConfirm = { pick ->
-                viewModel.requestEssenceChange(slot, pick)
+                when (pick) {
+                    is Essence.Confluence -> viewModel.requestConfluencePick(slot, pick)
+                    else -> viewModel.requestEssenceChange(slot, pick)
+                }
                 essencePickerSlot = null
+            },
+            subtitleOf = { option ->
+                val matched = subtitleByName[option.name].orEmpty()
+                if (matched.isEmpty()) null
+                else "Includes ${matched.joinToString(", ") { it.name }}"
             },
         )
     }
