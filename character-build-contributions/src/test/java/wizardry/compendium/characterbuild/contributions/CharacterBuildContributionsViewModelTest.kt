@@ -988,6 +988,39 @@ class CharacterBuildContributionsViewModelTest {
         assertEquals(null, vm.confluenceWarning.value)
     }
 
+    @Test
+    fun `resolveWarningSaveCombination raises saveCombinationPrompt for the warning slot`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo = confluence("Combo", setOf(x, y, z))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(c)),
+                Attribute.Recovery(essence = AbsorbedEssence(combo)),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, x, y, z, combo),
+        )
+        advanceUntilIdle()
+
+        vm.resolveWarningSaveCombination()
+        advanceUntilIdle()
+
+        val prompt = vm.saveCombinationPrompt.value
+        assertEquals(CharacterBuildContributionsViewModel.Slot.Recovery, prompt?.slot)
+        assertEquals("Combo", prompt?.confluence?.name)
+        assertEquals(setOf("A", "B", "C"), prompt?.combination?.map { it.name }?.toSet())
+    }
+
     // --- helpers -------------------------------------------------------
 
     private data class SetupForEssenceChange(

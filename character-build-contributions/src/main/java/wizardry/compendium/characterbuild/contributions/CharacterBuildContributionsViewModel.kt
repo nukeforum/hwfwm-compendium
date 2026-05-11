@@ -271,6 +271,21 @@ class CharacterBuildContributionsViewModel @Inject constructor(
     }
 
     /**
+     * Surface the save-combination dialog seeded from the current warning state.
+     * No-op if no warning is active.
+     */
+    fun resolveWarningSaveCombination() {
+        val slot = confluenceWarning.value ?: return
+        val form = _formState.value
+        val confluence = form.attributes[slot]?.essence as? Essence.Confluence ?: return
+        val combination = (Slot.entries - slot)
+            .mapNotNull { form.attributes[it]?.essence as? Essence.Manifestation }
+            .sortedBy { it.name }
+        if (combination.size != 3) return
+        _saveCombinationPrompt.value = SaveCombinationPrompt(slot, confluence, combination)
+    }
+
+    /**
      * [complete] = true is the "No" path (assign Confluence, don't write).
      * [complete] = false is the "Cancel" path (no slot change, no write).
      */
