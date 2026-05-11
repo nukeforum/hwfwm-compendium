@@ -249,7 +249,7 @@ private fun Form(
             manifestations = availableEssences,
             confluences = availableConfluences,
             initiallySelected = form.attributes[slot]?.essence,
-            showSegmentedControl = viewModel.isFinalEssencePick(slot),
+            showSegmentedControl = true,
             onDismiss = { essencePickerSlot = null },
             onConfirm = { pick ->
                 viewModel.requestEssenceChange(slot, pick)

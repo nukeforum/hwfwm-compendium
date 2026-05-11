@@ -151,20 +151,6 @@ class CharacterBuildContributionsViewModel @Inject constructor(
         }
     }
 
-    /**
-     * The "final pick" condition: the user is choosing the essence for the last
-     * remaining slot, so a Confluence becomes a valid choice. Returns true iff
-     * every OTHER slot has a non-Confluence essence assigned.
-     */
-    fun isFinalEssencePick(slot: Slot): Boolean {
-        val others = Slot.entries - slot
-        val attributes = _formState.value.attributes
-        return others.all { other ->
-            val essence = attributes[other]?.essence
-            essence != null && essence !is Essence.Confluence
-        }
-    }
-
     fun confirmEssenceChangeClearingAbilities() {
         val prompt = _essenceChangePrompt.value ?: return
         _formState.update {
