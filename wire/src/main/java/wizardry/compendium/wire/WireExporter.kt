@@ -6,6 +6,7 @@ import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect as ModelStatusEffect
 
@@ -124,5 +125,17 @@ class WireExporter(
     fun exportSingle(effect: ModelStatusEffect): Envelope = Envelope(
         version = EnvelopeCodec.CurrentVersion,
         statusEffects = listOf(EnvelopeMapper.toWire(effect)),
+    )
+
+    /**
+     * Wraps a single character build in an envelope. Builds reference essences,
+     * confluences, and ability listings by name; the receiver resolves them
+     * against their canonical + contributed data at import time. Unlike
+     * `exportSingle(confluence)`, we do NOT bundle the referenced entities —
+     * build shares are reference-only by design.
+     */
+    fun exportSingle(build: CharacterBuild): Envelope = Envelope(
+        version = EnvelopeCodec.CurrentVersion,
+        builds = listOf(EnvelopeMapper.toWire(build)),
     )
 }
