@@ -1,4 +1,4 @@
-package wizardry.compendium.share
+package wizardry.compendium.ability.preview
 
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AbilityType
@@ -24,6 +24,16 @@ import kotlin.time.Duration
  * implementation would require either pulling Compose into the share module
  * (bad) or extracting a pure model layer (worth doing eventually but out of
  * scope here). For now: a parallel renderer kept honest by integration tests.
+ *
+ * # Why this lives in `:ability-preview`
+ *
+ * Both `:app` (for `ShareViewModel`) and `:character-build-details` (for the
+ * detail VM's `shareText()`) need to call this renderer. Putting it in `:app`
+ * would force `:character-build-details` to depend on `:app`, which would
+ * create a cycle (`:app` already depends on `:character-build-details`).
+ * `:ability-preview` is the natural shared home: both consumers already
+ * depend on it, and it's the parallel Compose-renderer module to this
+ * text renderer.
  */
 object AbilityTextRenderer {
 

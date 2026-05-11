@@ -9,15 +9,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import wizardry.compendium.ability.preview.AbilityTextRenderer
 import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.wire.EnvelopeCodec
+import wizardry.compendium.wire.WireExporter
 import javax.inject.Inject
 
 @HiltViewModel
 class CharacterBuildDetailViewModel @Inject constructor(
     private val repository: CharacterBuildRepository,
     private val statusEffectRepository: StatusEffectRepository,
+    private val wireExporter: WireExporter,
 ) : ViewModel() {
 
     /**
@@ -68,4 +72,25 @@ class CharacterBuildDetailViewModel @Inject constructor(
 
     private val currentBuild: CharacterBuild?
         get() = (state.value as? CharacterBuildDetailUiState.Success)?.build
+
+    /**
+     * Renders the current Success state's build as plain text suitable for
+     * an ACTION_SEND share intent. Returns empty string if the VM is not in
+     * Success state (the UI should hide the button in that case, but this
+     * keeps the contract safe).
+     */
+    fun shareText(): String {
+        val success = state.value as? CharacterBuildDetailUiState.Success ?: return ""
+        return AbilityTextRenderer.renderBuild(success.build, success.statusEffects)
+    }
+
+    /**
+     * Encodes the current Success state's build into the wire envelope and
+     * returns the base64 text. Used by the Export-to-file button. Returns
+     * empty string if the VM is not in Success state.
+     */
+    fun encodeFile(): String {
+        val success = state.value as? CharacterBuildDetailUiState.Success ?: return ""
+        return EnvelopeCodec.encode(wireExporter.exportSingle(success.build)).text
+    }
 }

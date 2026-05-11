@@ -34,7 +34,7 @@ import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.wire.WireExporter
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class CharacterBuildDetailViewModelTest {
+class CharacterBuildDetailViewModelShareTest {
 
     private val dispatcher = StandardTestDispatcher()
 
@@ -42,55 +42,70 @@ class CharacterBuildDetailViewModelTest {
     @After fun tearDown() { Dispatchers.resetMain() }
 
     @Test
-    fun `load by name emits Success`() = runTest {
-        val repo = FakeRepo(listOf(build("Jason"), build("Humphrey")))
-        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), exporter()).also { it.ioDispatcher = dispatcher }
+    fun `shareText and encodeFile return non-empty strings for a loaded build`() = runTest {
+        val build = CharacterBuild(name = "Frosty", race = "Human", racialAbilities = emptyList())
+        val buildRepo = FakeBuildRepo(listOf(build))
+        val statusEffectRepo = FakeStatusEffectRepo()
+        val exporter = WireExporter(
+            essenceRepository = FakeEssenceRepo(),
+            awakeningStoneRepository = FakeAwakeningStoneRepo(),
+            abilityListingRepository = FakeAbilityListingRepo(),
+            statusEffectRepository = statusEffectRepo,
+        )
+        val vm = CharacterBuildDetailViewModel(buildRepo, statusEffectRepo, exporter)
+            .also { it.ioDispatcher = dispatcher }
 
-        vm.load("Humphrey")
+        vm.load("Frosty")
         advanceUntilIdle()
 
         val state = vm.state.first { it is CharacterBuildDetailUiState.Success } as CharacterBuildDetailUiState.Success
-        assertEquals("Humphrey", state.build.name)
+        assertEquals("Frosty", state.build.name)
+
+        val shareText = vm.shareText()
+        assertTrue("shareText starts with Frosty\\n", shareText.startsWith("Frosty\n"))
+
+        val encoded = vm.encodeFile()
+        assertTrue("encodeFile is non-empty", encoded.isNotEmpty())
     }
 
     @Test
-    fun `load by unknown name emits Error`() = runTest {
-        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList()), FakeStatusEffectRepo(), exporter())
+    fun `shareText and encodeFile return empty when state is not Success`() = runTest {
+        val exporter = WireExporter(
+            essenceRepository = FakeEssenceRepo(),
+            awakeningStoneRepository = FakeAwakeningStoneRepo(),
+            abilityListingRepository = FakeAbilityListingRepo(),
+            statusEffectRepository = FakeStatusEffectRepo(),
+        )
+        val vm = CharacterBuildDetailViewModel(FakeBuildRepo(emptyList()), FakeStatusEffectRepo(), exporter)
             .also { it.ioDispatcher = dispatcher }
 
-        vm.load("ghost")
-        advanceUntilIdle()
-
-        val state = vm.state.first { it is CharacterBuildDetailUiState.Error }
-        assertTrue(state is CharacterBuildDetailUiState.Error)
+        // No load() — state is Loading.
+        assertEquals("", vm.shareText())
+        assertEquals("", vm.encodeFile())
     }
 
-    @Test
-    fun `flow update refreshes the loaded build`() = runTest {
-        val repo = FakeRepo(listOf(build("Jason", race = "Outworlder")))
-        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), exporter()).also { it.ioDispatcher = dispatcher }
-
-        vm.load("Jason")
-        advanceUntilIdle()
-
-        repo.update(listOf(build("Jason", race = "Earthling")))
-        advanceUntilIdle()
-
-        val state = vm.state.first { (it as? CharacterBuildDetailUiState.Success)?.build?.race == "Earthling" }
-        assertEquals("Earthling", (state as CharacterBuildDetailUiState.Success).build.race)
+    private class FakeBuildRepo(initial: List<CharacterBuild>) : CharacterBuildRepository {
+        private val flow = MutableStateFlow(initial)
+        override val builds: Flow<List<CharacterBuild>> = flow
+        override suspend fun getBuilds() = flow.value
+        override suspend fun getBuild(name: String) = flow.value.firstOrNull { it.name == name }
+        override suspend fun saveBuildContribution(build: CharacterBuild) = ContributionResult.Success
+        override suspend fun deleteContribution(name: String) = ContributionResult.Success
     }
 
-    private fun build(name: String, race: String = "Race"): CharacterBuild =
-        CharacterBuild(name = name, race = race, racialAbilities = emptyList())
+    private class FakeStatusEffectRepo : StatusEffectRepository {
+        override val statusEffects: Flow<List<StatusEffect>> = MutableStateFlow(emptyList())
+        override val conflicts: Flow<List<StatusEffectConflict>> = MutableStateFlow(emptyList())
+        override suspend fun getStatusEffects(): List<StatusEffect> = emptyList()
+        override suspend fun getContributions(): List<StatusEffect> = emptyList()
+        override suspend fun getConflicts(): List<StatusEffectConflict> = emptyList()
+        override suspend fun saveStatusEffectContribution(effect: StatusEffect): ContributionResult = ContributionResult.Success
+        override suspend fun isContribution(name: String): Boolean = false
+        override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
+        override suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult = ContributionResult.Success
+    }
 
-    private fun exporter(): WireExporter = WireExporter(
-        essenceRepository = StubEssenceRepo(),
-        awakeningStoneRepository = StubAwakeningStoneRepo(),
-        abilityListingRepository = StubAbilityListingRepo(),
-        statusEffectRepository = FakeStatusEffectRepo(),
-    )
-
-    private class StubEssenceRepo : EssenceRepository {
+    private class FakeEssenceRepo : EssenceRepository {
         override val essences: Flow<List<Essence>> = MutableStateFlow(emptyList())
         override val conflicts: Flow<List<EssenceConflict>> = MutableStateFlow(emptyList())
         override suspend fun getEssences(): List<Essence> = emptyList()
@@ -117,7 +132,7 @@ class CharacterBuildDetailViewModelTest {
         ): ContributionResult = ContributionResult.Success
     }
 
-    private class StubAwakeningStoneRepo : AwakeningStoneRepository {
+    private class FakeAwakeningStoneRepo : AwakeningStoneRepository {
         override val awakeningStones: Flow<List<AwakeningStone>> = MutableStateFlow(emptyList())
         override val conflicts: Flow<List<AwakeningStoneConflict>> = MutableStateFlow(emptyList())
         override suspend fun getAwakeningStones(): List<AwakeningStone> = emptyList()
@@ -131,7 +146,7 @@ class CharacterBuildDetailViewModelTest {
             ContributionResult.Success
     }
 
-    private class StubAbilityListingRepo : AbilityListingRepository {
+    private class FakeAbilityListingRepo : AbilityListingRepository {
         override val abilityListings: Flow<List<Ability.Listing>> = MutableStateFlow(emptyList())
         override val conflicts: Flow<List<AbilityListingConflict>> = MutableStateFlow(emptyList())
         override suspend fun getAbilityListings(): List<Ability.Listing> = emptyList()
@@ -143,27 +158,5 @@ class CharacterBuildDetailViewModelTest {
         override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
         override suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult =
             ContributionResult.Success
-    }
-
-    private class FakeRepo(initial: List<CharacterBuild>) : CharacterBuildRepository {
-        private val flow = MutableStateFlow(initial)
-        override val builds: Flow<List<CharacterBuild>> = flow
-        override suspend fun getBuilds() = flow.value
-        override suspend fun getBuild(name: String) = flow.value.firstOrNull { it.name == name }
-        override suspend fun saveBuildContribution(build: CharacterBuild) = ContributionResult.Success
-        override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        fun update(next: List<CharacterBuild>) { flow.value = next }
-    }
-
-    private class FakeStatusEffectRepo : StatusEffectRepository {
-        override val statusEffects: Flow<List<StatusEffect>> = MutableStateFlow(emptyList())
-        override val conflicts: Flow<List<StatusEffectConflict>> = MutableStateFlow(emptyList())
-        override suspend fun getStatusEffects(): List<StatusEffect> = emptyList()
-        override suspend fun getContributions(): List<StatusEffect> = emptyList()
-        override suspend fun getConflicts(): List<StatusEffectConflict> = emptyList()
-        override suspend fun saveStatusEffectContribution(effect: StatusEffect): ContributionResult = ContributionResult.Success
-        override suspend fun isContribution(name: String): Boolean = false
-        override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
-        override suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult = ContributionResult.Success
     }
 }

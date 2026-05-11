@@ -1,4 +1,4 @@
-package wizardry.compendium.share
+package wizardry.compendium.ability.preview
 
 import org.junit.Assert.assertTrue
 import org.junit.Test

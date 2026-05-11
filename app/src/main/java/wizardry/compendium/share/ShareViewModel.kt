@@ -2,6 +2,7 @@ package wizardry.compendium.share
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import wizardry.compendium.ability.preview.AbilityTextRenderer
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
