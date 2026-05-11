@@ -13,6 +13,7 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.float
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonPrimitive
@@ -314,6 +315,58 @@ internal object CostSerializer : KSerializer<Cost> {
             kind = kind,
             amountIndex = arr[1].jsonPrimitive.int,
             resourceIndex = arr[2].jsonPrimitive.int,
+        )
+    }
+}
+
+/**
+ * 4-element tuple: [name, rankIndex, tier, progress].
+ *
+ * Build slots can carry up to 5 abilities, and a Diamond-rank build has 20 of
+ * them. The tuple shape saves ~25 chars per ability vs. an object form.
+ */
+@WireType(alias = "buildAbility")
+@Serializable(with = BuildAbilitySerializer::class)
+data class BuildAbility(
+    val name: String,
+    val rankIndex: Int,
+    val tier: Int,
+    val progress: Float,
+)
+
+internal object BuildAbilitySerializer : KSerializer<BuildAbility> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("BuildAbility") {
+        element<String>("name")
+        element<Int>("rankIndex")
+        element<Int>("tier")
+        element<Float>("progress")
+    }
+
+    override fun serialize(encoder: Encoder, value: BuildAbility) {
+        val jsonEncoder = encoder as? JsonEncoder
+            ?: error("BuildAbilitySerializer only supports JSON encoding")
+        jsonEncoder.encodeJsonElement(
+            JsonArray(
+                listOf(
+                    JsonPrimitive(value.name),
+                    JsonPrimitive(value.rankIndex),
+                    JsonPrimitive(value.tier),
+                    JsonPrimitive(value.progress),
+                ),
+            ),
+        )
+    }
+
+    override fun deserialize(decoder: Decoder): BuildAbility {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: error("BuildAbilitySerializer only supports JSON decoding")
+        val arr: List<JsonElement> = jsonDecoder.decodeJsonElement().jsonArray
+        require(arr.size == 4) { "BuildAbility wire tuple must have 4 elements, got ${arr.size}" }
+        return BuildAbility(
+            name = arr[0].jsonPrimitive.content,
+            rankIndex = arr[1].jsonPrimitive.int,
+            tier = arr[2].jsonPrimitive.int,
+            progress = arr[3].jsonPrimitive.float,
         )
     }
 }
