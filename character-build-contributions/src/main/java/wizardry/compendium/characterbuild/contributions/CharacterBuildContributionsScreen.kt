@@ -86,7 +86,7 @@ fun CharacterBuildContributionsScreen(
         Mode.Edit.NotFound -> CenteredText("This build is not a user contribution and cannot be edited.")
         is Mode.Edit.Ready -> Form(
             isEdit = true,
-            startCollapsed = false,
+            startCollapsed = true,
             form = form,
             availableEssences = availableEssences,
             availableConfluences = availableConfluences,
