@@ -667,6 +667,198 @@ class CharacterBuildContributionsViewModelTest {
         assertEquals(null, vm.saveCombinationPrompt.value)
     }
 
+    @Test
+    fun `confirmConfluenceSetPick applies the chosen set and clears prompt`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val d = manifestation("D")
+        val combo = Essence.Confluence(
+            name = "Combo",
+            confluenceSets = setOf(
+                ConfluenceSet(setOf(a, b, c)),
+                ConfluenceSet(setOf(a, b, d)),
+            ),
+            isRestricted = false,
+        )
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, d, combo),
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        val secondSet = ConfluenceSet(setOf(a, b, d))
+        vm.confirmConfluenceSetPick(secondSet)
+        advanceUntilIdle()
+
+        val form = vm.formState.value
+        assertEquals("Combo", form.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence?.name)
+        assertEquals("D", form.attributes[CharacterBuildContributionsViewModel.Slot.Spirit]?.essence?.name)
+        assertEquals(null, vm.confluenceSetPrompt.value)
+    }
+
+    @Test
+    fun `cancelConfluenceSetPick clears the prompt without changing slots`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val d = manifestation("D")
+        val combo = Essence.Confluence(
+            name = "Combo",
+            confluenceSets = setOf(
+                ConfluenceSet(setOf(a, b, c)),
+                ConfluenceSet(setOf(a, b, d)),
+            ),
+            isRestricted = false,
+        )
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, d, combo),
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        vm.cancelConfluenceSetPick()
+        advanceUntilIdle()
+
+        assertEquals(null, vm.confluenceSetPrompt.value)
+        assertEquals(null, vm.formState.value.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence)
+    }
+
+    @Test
+    fun `confirmSaveCombination writes the new ConfluenceSet and completes the pick`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo = confluence("Combo", setOf(x, y, z))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(c)),
+                Attribute.Recovery(),
+            ),
+        )
+        val essenceRepo = RecordingEssenceRepo(listOf(a, b, c, x, y, z, combo))
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, x, y, z, combo),
+            essenceRepo = essenceRepo,
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        vm.confirmSaveCombination()
+        advanceUntilIdle()
+
+        val recorded = essenceRepo.combinationsAdded.single()
+        assertEquals("Combo", recorded.first.name)
+        assertEquals(setOf("A", "B", "C"), recorded.second.set.map { it.name }.toSet())
+        assertEquals("Combo", vm.formState.value.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence?.name)
+        assertEquals(null, vm.saveCombinationPrompt.value)
+    }
+
+    @Test
+    fun `dismissSaveCombinationPrompt complete=true assigns Confluence without writing`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo = confluence("Combo", setOf(x, y, z))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(c)),
+                Attribute.Recovery(),
+            ),
+        )
+        val essenceRepo = RecordingEssenceRepo(listOf(a, b, c, x, y, z, combo))
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, x, y, z, combo),
+            essenceRepo = essenceRepo,
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        vm.dismissSaveCombinationPrompt(complete = true)
+        advanceUntilIdle()
+
+        assertTrue(essenceRepo.combinationsAdded.isEmpty())
+        assertEquals("Combo", vm.formState.value.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence?.name)
+        assertEquals(null, vm.saveCombinationPrompt.value)
+    }
+
+    @Test
+    fun `dismissSaveCombinationPrompt complete=false leaves everything unchanged`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val x = manifestation("X1")
+        val y = manifestation("Y1")
+        val z = manifestation("Z1")
+        val combo = confluence("Combo", setOf(x, y, z))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(essence = AbsorbedEssence(c)),
+                Attribute.Recovery(),
+            ),
+        )
+        val essenceRepo = RecordingEssenceRepo(listOf(a, b, c, x, y, z, combo))
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, x, y, z, combo),
+            essenceRepo = essenceRepo,
+        )
+        advanceUntilIdle()
+
+        vm.requestConfluencePick(CharacterBuildContributionsViewModel.Slot.Recovery, combo)
+        advanceUntilIdle()
+
+        vm.dismissSaveCombinationPrompt(complete = false)
+        advanceUntilIdle()
+
+        assertTrue(essenceRepo.combinationsAdded.isEmpty())
+        assertEquals(null, vm.formState.value.attributes[CharacterBuildContributionsViewModel.Slot.Recovery]?.essence)
+        assertEquals(null, vm.saveCombinationPrompt.value)
+    }
+
     // --- helpers -------------------------------------------------------
 
     private data class SetupForEssenceChange(
@@ -701,13 +893,14 @@ class CharacterBuildContributionsViewModelTest {
         essences: List<Essence> = emptyList(),
         listings: List<Ability.Listing> = emptyList(),
         repo: FakeBuildRepo = FakeBuildRepo(existingBuilds),
+        essenceRepo: EssenceRepository = FakeEssenceRepo(essences),
     ): CharacterBuildContributionsViewModel {
         val savedState = SavedStateHandle()
         if (savedName != null) savedState["name"] = savedName
         return CharacterBuildContributionsViewModel(
             savedStateHandle = savedState,
             buildRepository = repo,
-            essenceRepository = FakeEssenceRepo(essences),
+            essenceRepository = essenceRepo,
             abilityListingRepository = FakeAbilityListingRepo(listings),
         )
     }
@@ -776,6 +969,25 @@ class CharacterBuildContributionsViewModelTest {
         override suspend fun saveManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
         override suspend fun saveConfluenceContribution(confluence: Essence.Confluence, referencedManifestations: List<Essence.Manifestation>) = ContributionResult.Success
         override suspend fun addCombinationToConfluence(target: Essence.Confluence, combination: ConfluenceSet) = ContributionResult.Success
+        override suspend fun isContribution(name: String) = false
+        override suspend fun deleteContribution(name: String) = ContributionResult.Success
+        override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
+        override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
+    }
+
+    private class RecordingEssenceRepo(private val data: List<Essence>) : EssenceRepository {
+        val combinationsAdded = mutableListOf<Pair<Essence.Confluence, ConfluenceSet>>()
+        override val essences: Flow<List<Essence>> = MutableStateFlow(data)
+        override val conflicts: Flow<List<EssenceConflict>> = MutableStateFlow(emptyList())
+        override suspend fun getEssences() = data
+        override suspend fun getContributions() = emptyList<Essence>()
+        override suspend fun getConflicts() = emptyList<EssenceConflict>()
+        override suspend fun saveManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
+        override suspend fun saveConfluenceContribution(confluence: Essence.Confluence, referencedManifestations: List<Essence.Manifestation>) = ContributionResult.Success
+        override suspend fun addCombinationToConfluence(target: Essence.Confluence, combination: ConfluenceSet): ContributionResult {
+            combinationsAdded.add(target to combination)
+            return ContributionResult.Success
+        }
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
         override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success

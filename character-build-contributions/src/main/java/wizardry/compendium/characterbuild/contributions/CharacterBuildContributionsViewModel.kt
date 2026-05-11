@@ -222,6 +222,42 @@ class CharacterBuildContributionsViewModel @Inject constructor(
         }
     }
 
+    fun confirmConfluenceSetPick(set: ConfluenceSet) {
+        val prompt = _confluenceSetPrompt.value ?: return
+        _confluenceSetPrompt.value = null
+        applyConfluence(prompt.slot, prompt.confluence, set)
+    }
+
+    fun cancelConfluenceSetPick() {
+        _confluenceSetPrompt.value = null
+    }
+
+    /**
+     * "Yes" path: persist the user's 3-essence combination as a new ConfluenceSet
+     * on the target Confluence, then assign the Confluence to the target slot.
+     */
+    fun confirmSaveCombination() {
+        val prompt = _saveCombinationPrompt.value ?: return
+        _saveCombinationPrompt.value = null
+        viewModelScope.launch {
+            essenceRepository.addCombinationToConfluence(
+                target = prompt.confluence,
+                combination = ConfluenceSet(prompt.combination.toSet()),
+            )
+            applyConfluence(prompt.slot, prompt.confluence, null)
+        }
+    }
+
+    /**
+     * [complete] = true is the "No" path (assign Confluence, don't write).
+     * [complete] = false is the "Cancel" path (no slot change, no write).
+     */
+    fun dismissSaveCombinationPrompt(complete: Boolean) {
+        val prompt = _saveCombinationPrompt.value ?: return
+        _saveCombinationPrompt.value = null
+        if (complete) applyConfluence(prompt.slot, prompt.confluence, null)
+    }
+
     fun requestEssenceChange(slot: Slot, target: Essence?) {
         val current = _formState.value.attributes[slot] ?: return
         if (current.abilities.isEmpty()) {
