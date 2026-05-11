@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -65,8 +66,12 @@ fun CharacterBuildContributionsScreen(
     val prompt by viewModel.essenceChangePrompt.collectAsState()
     val setPrompt by viewModel.confluenceSetPrompt.collectAsState()
     val savePrompt by viewModel.saveCombinationPrompt.collectAsState()
+    val warningSlot by viewModel.confluenceWarning.collectAsState()
     val availableEssences by viewModel.availableEssences.collectAsState()
     val availableConfluences by viewModel.availableConfluences.collectAsState()
+
+    var warningDialogOpen by rememberSaveable { mutableStateOf(false) }
+    var essencePickerSlot by rememberSaveable { mutableStateOf<Slot?>(null) }
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -84,6 +89,10 @@ fun CharacterBuildContributionsScreen(
             availableEssences = availableEssences,
             availableConfluences = availableConfluences,
             saveState = saveState,
+            warningSlot = warningSlot,
+            onShowWarning = { warningDialogOpen = true },
+            essencePickerSlot = essencePickerSlot,
+            onEssencePickerSlotChange = { essencePickerSlot = it },
             viewModel = viewModel,
         )
         Mode.Edit.Loading -> CenteredText("Loading")
@@ -95,6 +104,10 @@ fun CharacterBuildContributionsScreen(
             availableEssences = availableEssences,
             availableConfluences = availableConfluences,
             saveState = saveState,
+            warningSlot = warningSlot,
+            onShowWarning = { warningDialogOpen = true },
+            essencePickerSlot = essencePickerSlot,
+            onEssencePickerSlotChange = { essencePickerSlot = it },
             viewModel = viewModel,
         )
     }
@@ -102,6 +115,28 @@ fun CharacterBuildContributionsScreen(
     prompt?.let { EssencePromptDialog(it, viewModel) }
     setPrompt?.let { ConfluenceSetPickerDialog(it, viewModel) }
     savePrompt?.let { SaveCombinationDialog(it, viewModel) }
+
+    if (warningDialogOpen) {
+        val ws = warningSlot
+        if (ws != null) {
+            ConfluenceWarningDialog(
+                slot = ws,
+                form = form,
+                onSaveAsCombination = {
+                    viewModel.resolveWarningSaveCombination()
+                    warningDialogOpen = false
+                },
+                onChangeConfluence = {
+                    warningDialogOpen = false
+                    essencePickerSlot = ws
+                },
+                onDismiss = { warningDialogOpen = false },
+            )
+        } else {
+            // The warning flipped away; close the dialog.
+            warningDialogOpen = false
+        }
+    }
 }
 
 @Composable
@@ -118,6 +153,10 @@ private fun Form(
     availableEssences: List<Essence.Manifestation>,
     availableConfluences: List<Essence.Confluence>,
     saveState: SaveState,
+    warningSlot: Slot?,
+    onShowWarning: () -> Unit,
+    essencePickerSlot: Slot?,
+    onEssencePickerSlotChange: (Slot?) -> Unit,
     viewModel: CharacterBuildContributionsViewModel,
 ) {
     var preview by rememberSaveable { mutableStateOf(false) }
@@ -125,7 +164,6 @@ private fun Form(
     val canSave = form.name.isNotBlank() && form.race.isNotBlank() && !saving
 
     var racialPickerOpen by remember { mutableStateOf(false) }
-    var essencePickerSlot by remember { mutableStateOf<Slot?>(null) }
     var abilityPickerSlot by remember { mutableStateOf<Slot?>(null) }
 
     Column(
@@ -181,6 +219,17 @@ private fun Form(
                 CollapsibleCard(
                     title = "$slot — $essenceLabel${if (state.essence != null) " (${state.abilities.size}/5)" else ""}",
                     startExpanded = !startCollapsed,
+                    trailing = if (slot == warningSlot) {
+                        {
+                            IconButton(onClick = onShowWarning) {
+                                Icon(
+                                    imageVector = Icons.Filled.Warning,
+                                    contentDescription = "Warning",
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    } else null,
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -190,7 +239,7 @@ private fun Form(
                             text = "Essence: $essenceLabel",
                             modifier = Modifier.weight(1f),
                         )
-                        OutlinedButton(onClick = { essencePickerSlot = slot }) { Text("Change") }
+                        OutlinedButton(onClick = { onEssencePickerSlotChange(slot) }) { Text("Change") }
                     }
                     if (state.essence != null) {
                         Text("Abilities (${state.abilities.size}/5)")
@@ -259,13 +308,13 @@ private fun Form(
             confluences = sortedConfluences,
             initiallySelected = form.attributes[slot]?.essence,
             showSegmentedControl = true,
-            onDismiss = { essencePickerSlot = null },
+            onDismiss = { onEssencePickerSlotChange(null) },
             onConfirm = { pick ->
                 when (pick) {
                     is Essence.Confluence -> viewModel.requestConfluencePick(slot, pick)
                     else -> viewModel.requestEssenceChange(slot, pick)
                 }
-                essencePickerSlot = null
+                onEssencePickerSlotChange(null)
             },
             subtitleOf = { option ->
                 val matched = subtitleByName[option.name].orEmpty()
@@ -381,9 +430,43 @@ private fun SaveCombinationDialog(
 }
 
 @Composable
+private fun ConfluenceWarningDialog(
+    slot: Slot,
+    form: CharacterBuildContributionsViewModel.FormState,
+    onSaveAsCombination: () -> Unit,
+    onChangeConfluence: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val confluenceEssence = form.attributes[slot]?.essence as? Essence.Confluence
+    val others = (Slot.entries - slot)
+        .mapNotNull { form.attributes[it]?.essence as? Essence.Manifestation }
+        .joinToString(" + ") { it.name }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Unknown combination") },
+        text = {
+            Text("$others isn't a known set for ${confluenceEssence?.name ?: "this Confluence"}.")
+        },
+        confirmButton = {
+            Button(onClick = onSaveAsCombination) { Text("Save as new combination") }
+        },
+        dismissButton = {
+            Row {
+                OutlinedButton(onClick = onChangeConfluence) { Text("Change Confluence") }
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.padding(start = 8.dp),
+                ) { Text("Cancel") }
+            }
+        },
+    )
+}
+
+@Composable
 private fun CollapsibleCard(
     title: String,
     startExpanded: Boolean,
+    trailing: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     var expanded by rememberSaveable(title) { mutableStateOf(startExpanded) }
@@ -399,6 +482,7 @@ private fun CollapsibleCard(
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleSmall,
             )
+            trailing?.invoke()
             IconButton(onClick = { expanded = !expanded }) {
                 Icon(
                     imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
