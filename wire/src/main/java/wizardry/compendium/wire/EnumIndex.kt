@@ -232,3 +232,17 @@ internal object EnumIndex {
         return table[i]
     }
 }
+
+/**
+ * Wire-format slot ordering. Position in `Build.attributes` corresponds to
+ * this list's index. The names match the `CharacterBuildContributionsViewModel.Slot`
+ * enum entries; the wire module deliberately doesn't depend on that enum
+ * (it lives in a UI module) to avoid a cycle.
+ *
+ * Adding a new slot is a breaking wire change — the `Build.attributes` list
+ * length is part of the contract. Reordering is a wire-version bump.
+ */
+object SlotIndex {
+    val orderedNames: List<String> = listOf("Power", "Speed", "Spirit", "Recovery")
+    const val SLOT_COUNT: Int = 4
+}
