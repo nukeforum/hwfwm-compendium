@@ -269,6 +269,133 @@ class CharacterBuildContributionsViewModelTest {
         assertEquals(6, vm.formState.value.racialAbilities.size)
     }
 
+    @Test
+    fun `confluencePickerRowsFor sorts by match count desc, ties alphabetical`() = runTest {
+        val a = manifestation("Alpha")
+        val b = manifestation("Bravo")
+        val c = manifestation("Charlie")
+        val noMatch = manifestation("Delta")
+        // Three confluences; "Balance" gets 2 matches, "Catalyst" and "Aurora" get 1 each.
+        val balance = confluence("Balance", setOf(a, b, noMatch))
+        val aurora = confluence("Aurora", setOf(a, c, noMatch))
+        val catalyst = confluence("Catalyst", setOf(a, noMatch, c))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(),
+                Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, noMatch, balance, aurora, catalyst),
+        )
+        advanceUntilIdle()
+
+        val rows = vm.confluencePickerRowsFor(CharacterBuildContributionsViewModel.Slot.Recovery)
+
+        assertEquals(listOf("Balance", "Aurora", "Catalyst"), rows.map { it.confluence.name })
+        assertEquals(2, rows[0].matchedEssences.size)
+        assertEquals(1, rows[1].matchedEssences.size)
+        assertEquals(1, rows[2].matchedEssences.size)
+    }
+
+    @Test
+    fun `confluencePickerRowsFor subtitle is union of matched user essences`() = runTest {
+        val magic = manifestation("Magic")
+        val sand = manifestation("Sand")
+        val fire = manifestation("Fire")
+        val sun = manifestation("Sun")
+        val earth = manifestation("Earth")
+        // Sets: {Magic, Fire, Sand} and {Magic, Sun, Earth} — user has Magic + Sand.
+        val heat = Essence.Confluence(
+            name = "Heat",
+            confluenceSets = setOf(
+                ConfluenceSet(setOf(magic, fire, sand)),
+                ConfluenceSet(setOf(magic, sun, earth)),
+            ),
+            isRestricted = false,
+        )
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(magic)),
+                Attribute.Speed(essence = AbsorbedEssence(sand)),
+                Attribute.Spirit(),
+                Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(magic, sand, fire, sun, earth, heat),
+        )
+        advanceUntilIdle()
+
+        val rows = vm.confluencePickerRowsFor(CharacterBuildContributionsViewModel.Slot.Recovery)
+        val heatRow = rows.single { it.confluence.name == "Heat" }
+        // Magic is in both sets, Sand in one — union = {Magic, Sand}.
+        assertEquals(setOf("Magic", "Sand"), heatRow.matchedEssences.map { it.name }.toSet())
+    }
+
+    @Test
+    fun `confluencePickerRowsFor returns empty matchedEssences when nothing aligns`() = runTest {
+        val sin = manifestation("Sin")
+        val unrelated1 = manifestation("Unrelated1")
+        val unrelated2 = manifestation("Unrelated2")
+        val unrelated3 = manifestation("Unrelated3")
+        val balance = confluence("Balance", setOf(unrelated1, unrelated2, unrelated3))
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(sin)),
+                Attribute.Speed(), Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(sin, unrelated1, unrelated2, unrelated3, balance),
+        )
+        advanceUntilIdle()
+
+        val rows = vm.confluencePickerRowsFor(CharacterBuildContributionsViewModel.Slot.Recovery)
+        assertEquals(emptyList<Essence.Manifestation>(), rows.single().matchedEssences)
+    }
+
+    @Test
+    fun `compatibleSetsFor filters sets whose membership covers existing other-slot essences`() = runTest {
+        val a = manifestation("A")
+        val b = manifestation("B")
+        val c = manifestation("C")
+        val d = manifestation("D")
+        val confl = Essence.Confluence(
+            name = "Combo",
+            confluenceSets = setOf(
+                ConfluenceSet(setOf(a, b, c)),  // covers user (A, B)
+                ConfluenceSet(setOf(a, c, d)),  // does NOT cover user (B missing)
+            ),
+            isRestricted = false,
+        )
+        val build = build("X", "Y").copy(
+            attributes = setOf(
+                Attribute.Power(essence = AbsorbedEssence(a)),
+                Attribute.Speed(essence = AbsorbedEssence(b)),
+                Attribute.Spirit(), Attribute.Recovery(),
+            ),
+        )
+        val vm = create(
+            savedName = "X",
+            existingBuilds = listOf(build),
+            essences = listOf(a, b, c, d, confl),
+        )
+        advanceUntilIdle()
+
+        val sets = vm.compatibleSetsFor(CharacterBuildContributionsViewModel.Slot.Recovery, confl)
+        assertEquals(1, sets.size)
+        assertEquals(setOf("A", "B", "C"), sets.single().set.map { it.name }.toSet())
+    }
+
     // --- helpers -------------------------------------------------------
 
     private data class SetupForEssenceChange(

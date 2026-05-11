@@ -17,6 +17,7 @@ import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AbilityType
 import wizardry.compendium.essences.model.Attribute
 import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import javax.inject.Inject
 
@@ -62,6 +63,12 @@ class CharacterBuildContributionsViewModel @Inject constructor(
     data class EssenceChangePrompt(
         val slot: Slot,
         val target: Essence?,
+    )
+
+    data class ConfluencePickerRow(
+        val confluence: Essence.Confluence,
+        /** User's already-selected non-target essences that appear in any of this confluence's sets. Deduped, name-sorted. */
+        val matchedEssences: List<Essence.Manifestation>,
     )
 
     private val editName: String? = savedStateHandle.get<String>("name")
@@ -208,6 +215,44 @@ class CharacterBuildContributionsViewModel @Inject constructor(
                 is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
             }
         }
+    }
+
+    /**
+     * Returns the Confluence-tab rows for the picker when [slot] is being changed.
+     * Sort key: matchedEssences.size desc, then confluence.name asc.
+     */
+    fun confluencePickerRowsFor(slot: Slot): List<ConfluencePickerRow> {
+        val others = otherSlotManifestations(slot)
+        return _availableConfluences.value
+            .map { confluence ->
+                val matched = confluence.confluenceSets
+                    .flatMap { it.set }
+                    .filter { it in others }
+                    .distinctBy { it.name }
+                    .sortedBy { it.name }
+                ConfluencePickerRow(confluence, matched)
+            }
+            .sortedWith(
+                compareByDescending<ConfluencePickerRow> { it.matchedEssences.size }
+                    .thenBy { it.confluence.name },
+            )
+    }
+
+    /**
+     * Sets from [confluence] whose 3-essence membership is a superset of the user's
+     * existing non-target manifestation essences.
+     */
+    fun compatibleSetsFor(slot: Slot, confluence: Essence.Confluence): List<ConfluenceSet> {
+        val others = otherSlotManifestations(slot)
+        return confluence.confluenceSets.filter { it.set.containsAll(others) }
+    }
+
+    /** Manifestation essences in slots other than [slot]. Excludes Confluences and nulls. */
+    private fun otherSlotManifestations(slot: Slot): Set<Essence.Manifestation> {
+        val attributes = _formState.value.attributes
+        return (Slot.entries - slot)
+            .mapNotNull { attributes[it]?.essence as? Essence.Manifestation }
+            .toSet()
     }
 
     private fun CharacterBuild.toForm(): FormState {
