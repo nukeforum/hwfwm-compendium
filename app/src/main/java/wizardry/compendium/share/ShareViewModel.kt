@@ -8,6 +8,7 @@ import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.wire.Envelope
@@ -41,6 +42,7 @@ class ShareViewModel @Inject constructor(
     awakeningStoneRepository: AwakeningStoneRepository,
     abilityListingRepository: AbilityListingRepository,
     statusEffectRepository: StatusEffectRepository,
+    private val buildShareDecoder: BuildShareDecoder,
 ) : ViewModel() {
 
     private val exporter = WireExporter(
@@ -64,6 +66,20 @@ class ShareViewModel @Inject constructor(
 
     fun encode(effect: StatusEffect): String =
         EnvelopeCodec.encode(exporter.exportSingle(effect)).text
+
+    fun encodeBuild(build: CharacterBuild): String =
+        EnvelopeCodec.encode(exporter.exportSingle(build)).text
+
+    fun renderBuildAsText(
+        build: CharacterBuild,
+        statusEffects: List<StatusEffect>,
+    ): String = AbilityTextRenderer.renderBuild(build, statusEffects)
+
+    suspend fun decodeBuildBundle(text: String): DecodedSingle<BuildImportPreview> =
+        when (val r = buildShareDecoder.decode(text)) {
+            is BuildShareDecoder.Result.Loaded -> DecodedSingle.Loaded(r.preview)
+            is BuildShareDecoder.Result.Failed -> DecodedSingle.Failed(r.reason)
+        }
 
     fun decodeSingleStatusEffect(text: String): DecodedSingle<StatusEffect> =
         decodeSingle(text) { envelope ->

@@ -36,11 +36,14 @@ class ShareViewModelDecodeSingleStatusEffectTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(dispatcher)
+        val essenceRepo = FakeEssenceRepositoryForStatusEffectTest()
+        val listingRepo = FakeAbilityListingRepositoryForStatusEffectTest()
         viewModel = ShareViewModel(
-            FakeEssenceRepositoryForStatusEffectTest(),
+            essenceRepo,
             FakeAwakeningStoneRepositoryForStatusEffectTest(),
-            FakeAbilityListingRepositoryForStatusEffectTest(),
+            listingRepo,
             fakeStatusEffectRepoForTest(),
+            BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepositoryForStatusEffectTest()),
         )
     }
 
@@ -152,4 +155,13 @@ private class FakeAbilityListingRepositoryForStatusEffectTest : wizardry.compend
     override suspend fun deleteContribution(name: String) = wizardry.compendium.essences.ContributionResult.Success
     override suspend fun updateAbilityListingContribution(listing: wizardry.compendium.essences.model.Ability.Listing) =
         wizardry.compendium.essences.ContributionResult.Success
+}
+
+private class FakeCharacterBuildRepositoryForStatusEffectTest : wizardry.compendium.essences.CharacterBuildRepository {
+    override val builds = kotlinx.coroutines.flow.flowOf(emptyList<wizardry.compendium.essences.model.CharacterBuild>())
+    override suspend fun getBuilds() = emptyList<wizardry.compendium.essences.model.CharacterBuild>()
+    override suspend fun getBuild(name: String): wizardry.compendium.essences.model.CharacterBuild? = null
+    override suspend fun saveBuildContribution(build: wizardry.compendium.essences.model.CharacterBuild) =
+        wizardry.compendium.essences.ContributionResult.Success
+    override suspend fun deleteContribution(name: String) = wizardry.compendium.essences.ContributionResult.Success
 }

@@ -17,6 +17,7 @@ import wizardry.compendium.essences.AbilityListingConflict
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneConflict
 import wizardry.compendium.essences.AwakeningStoneRepository
+import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceRepository
@@ -25,6 +26,7 @@ import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
@@ -55,7 +57,10 @@ class ShareViewModelDecodeConfluenceBundleTest {
         essenceRepo = FakeEssenceRepository(canonical = emptyList(), contributions = emptyList())
         stoneRepo = FakeAwakeningStoneRepository()
         listingRepo = FakeAbilityListingRepository()
-        viewModel = ShareViewModel(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
+        viewModel = ShareViewModel(
+            essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo(),
+            BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepository()),
+        )
     }
 
     @After
@@ -83,7 +88,10 @@ class ShareViewModelDecodeConfluenceBundleTest {
     @Test
     fun `marks bundled essences as not new when already in repo`() = runTest(dispatcher) {
         essenceRepo = FakeEssenceRepository(canonical = listOf(wind), contributions = emptyList())
-        viewModel = ShareViewModel(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
+        viewModel = ShareViewModel(
+            essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo(),
+            BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepository()),
+        )
         val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val text = EnvelopeCodec.encode(exporter.exportSingle(doom)).text
 
@@ -255,4 +263,12 @@ private class FakeAbilityListingRepository : AbilityListingRepository {
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
     override suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult = ContributionResult.Success
+}
+
+private class FakeCharacterBuildRepository : CharacterBuildRepository {
+    override val builds: Flow<List<CharacterBuild>> = MutableStateFlow(emptyList())
+    override suspend fun getBuilds(): List<CharacterBuild> = emptyList()
+    override suspend fun getBuild(name: String): CharacterBuild? = null
+    override suspend fun saveBuildContribution(build: CharacterBuild): ContributionResult = ContributionResult.Success
+    override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
 }
