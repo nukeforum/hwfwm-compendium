@@ -38,9 +38,6 @@ import wizardry.compendium.essences.model.Essence
  * user is picking their FINAL essence (the other three slots are filled with
  * non-Confluence essences). The segmented control only appears in that final-pick
  * state.
- *
- * Confluences are flagged with a "Confluence" sublabel so they're distinguishable
- * even if a future caller decides to mix them into a single list.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,19 +125,11 @@ fun EssencePickerSheet(
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = option.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                    )
-                                    if (option is Essence.Confluence) {
-                                        Text(
-                                            text = "Confluence",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = option.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.weight(1f),
+                                )
                                 if (isSelected) Icon(Icons.Filled.Check, contentDescription = null)
                             }
                         }
