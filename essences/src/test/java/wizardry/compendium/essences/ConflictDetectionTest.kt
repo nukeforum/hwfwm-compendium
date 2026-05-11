@@ -82,13 +82,45 @@ class EssenceConflictDetectionTest {
     }
 
     @Test
-    fun `same combination producing same confluence name is not a combination conflict`() {
+    fun `contribution confluence that only adds combinations is not a conflict`() {
+        // Same name, contribution sets are a superset of canonical sets → supported
+        // "user-added combinations" pattern. No NameCollision should fire; the repository
+        // merges the additions in on read.
+        val canonicalDoom = confluence("Doom", setOf(set("A", "B", "C")))
+        val contributedDoom = confluence(
+            "Doom",
+            setOf(set("A", "B", "C"), set("D", "E", "F")),
+        )
+        val conflicts = detectEssenceConflicts(listOf(canonicalDoom), listOf(contributedDoom))
+        assertEquals(emptyList<EssenceConflict>(), conflicts)
+    }
+
+    @Test
+    fun `contribution confluence with identical sets to canonical is not a conflict`() {
+        // Trivially additions-only (zero additions). Still no NameCollision.
         val canonicalDoom = confluence("Doom", setOf(set("A", "B", "C")))
         val contributedDoom = confluence("Doom", setOf(set("A", "B", "C")))
         val conflicts = detectEssenceConflicts(listOf(canonicalDoom), listOf(contributedDoom))
-        // only the name collision; no combination collision (same name, same content)
+        assertEquals(emptyList<EssenceConflict>(), conflicts)
+    }
+
+    @Test
+    fun `additions-only contribution still surfaces combination collisions against other canonicals`() {
+        // Doom is additions-only vs canonical Doom, but its new {X,Y,Z} set already produces
+        // canonical Tempest — that's a real combination conflict.
+        val canonicalDoom = confluence("Doom", setOf(set("A", "B", "C")))
+        val canonicalTempest = confluence("Tempest", setOf(set("X", "Y", "Z")))
+        val contributedDoom = confluence(
+            "Doom",
+            setOf(set("A", "B", "C"), set("X", "Y", "Z")),
+        )
+        val conflicts = detectEssenceConflicts(
+            listOf(canonicalDoom, canonicalTempest),
+            listOf(contributedDoom),
+        )
         assertEquals(1, conflicts.size)
-        assertTrue(conflicts.first() is EssenceConflict.NameCollision)
+        val collision = conflicts.first() as EssenceConflict.CombinationCollision
+        assertEquals(canonicalTempest, collision.canonicalOwner)
     }
 
     @Test

@@ -80,6 +80,17 @@ private fun Essence.kindLabel(): String = when (this) {
     else -> "entry"
 }
 
+/**
+ * True when [this] is the supported "user-added combinations" shadow of [canonical]:
+ * every canonical combination is present in this contribution's sets, and the entry's
+ * `isRestricted` flag matches. The contribution may declare additional combinations
+ * beyond what's canonical — those are the user's additions.
+ */
+private fun Essence.Confluence.isAdditionsOnlyShadowOf(canonical: Essence.Confluence): Boolean {
+    if (isRestricted != canonical.isRestricted) return false
+    return confluenceSets.containsAll(canonical.confluenceSets)
+}
+
 private fun String.normalizedName(): String = trim().lowercase()
 
 fun detectEssenceConflicts(
@@ -91,10 +102,16 @@ fun detectEssenceConflicts(
     val conflicts = mutableListOf<EssenceConflict>()
 
     for (contribution in contributions) {
-        val canonicalMatch = canonicalByName[contribution.name.normalizedName()]
-        if (canonicalMatch != null) {
-            conflicts += EssenceConflict.NameCollision(contribution, canonicalMatch)
-        }
+        val canonicalMatch = canonicalByName[contribution.name.normalizedName()] ?: continue
+        // A same-name contribution Confluence that only ADDS combinations to a canonical
+        // Confluence (its sets are a structural superset of the canonical's, and other
+        // top-level fields match) is the supported "user-added combinations" pattern, not
+        // a name conflict. The repository merges the additions in on read.
+        if (contribution is Essence.Confluence &&
+            canonicalMatch is Essence.Confluence &&
+            contribution.isAdditionsOnlyShadowOf(canonicalMatch)
+        ) continue
+        conflicts += EssenceConflict.NameCollision(contribution, canonicalMatch)
     }
 
     val canonicalConfluences = canonical.filterIsInstance<Essence.Confluence>()

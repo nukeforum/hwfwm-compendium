@@ -97,6 +97,29 @@ class DefaultEssenceRepositoryConflictTest {
     }
 
     @Test
+    fun `addCombinationToConfluence on canonical produces no conflict and merges into the canonical entry`() = runTest {
+        val canonicalDoom = confluence("Doom", setOf(set("A", "B", "C")))
+        val repo = repository(
+            canonical = listOf(canonicalDoom),
+            contributions = emptyList(),
+            toggle = true,
+        )
+
+        // Initially canonical is the only entry, no conflicts.
+        assertEquals(0, repo.getConflicts().size)
+
+        // Save a brand-new combination on the canonical Confluence.
+        val newCombo = set("D", "E", "F")
+        repo.addCombinationToConfluence(canonicalDoom, newCombo)
+
+        assertEquals(0, repo.getConflicts().size)
+        val merged = repo.getEssences()
+        val doomInMerged = merged.first { it.name == "Doom" } as Essence.Confluence
+        // The merged Doom should contain both canonical's set AND the user's addition.
+        assertEquals(setOf(set("A", "B", "C"), set("D", "E", "F")), doomInMerged.confluenceSets)
+    }
+
+    @Test
     fun `removing a single conflicting combination keeps the rest of the contribution`() = runTest {
         val canonicalTempest = confluence("Tempest", setOf(set("A", "B", "C")))
         val originalDoom = confluence(
