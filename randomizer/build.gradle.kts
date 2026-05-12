@@ -31,6 +31,7 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation(project(":model-core"))
+    implementation(project(":design"))
     implementation(project(":essences"))
 
     implementation(libs.androidx.core.ktx)

@@ -58,11 +58,19 @@ import wizardry.compendium.characterbuild.contributions.CharacterBuildContributi
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.PasteImportState
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.SaveState
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.Slot
+import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.SlotState
+import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.Property
+import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.DeleteContributionButton
 import wizardry.compendium.ui.EditPreviewToggle
+import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.SearchableSelectionSheet
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.wire.share.RefResolution
 import wizardry.compendium.wire.share.SlotResolution
 
@@ -707,5 +715,91 @@ private fun <T> ChipFlow(
                 colors = AssistChipDefaults.assistChipColors(),
             )
         }
+    }
+}
+
+private fun sampleManifestation(name: String): Essence.Manifestation = Essence.Manifestation(
+    name = name,
+    rank = Rank.Iron,
+    rarity = Rarity.Common,
+    properties = listOf(Property.Magic),
+    description = "Manifested essence of $name",
+    isRestricted = false,
+)
+
+private fun sampleConfluence(): Essence.Confluence = Essence.of(
+    "Storm",
+    restricted = false,
+    ConfluenceSet(
+        sampleManifestation("Water"),
+        sampleManifestation("Wind"),
+        sampleManifestation("Lightning"),
+    ),
+)
+
+private fun sampleForm(): CharacterBuildContributionsViewModel.FormState =
+    CharacterBuildContributionsViewModel.FormState(
+        name = "Pyro Sentinel",
+        race = "Human",
+        racialAbilities = emptyList(),
+        attributes = mapOf(
+            Slot.Power to SlotState(essence = sampleConfluence(), abilities = emptyList()),
+            Slot.Speed to SlotState(essence = sampleManifestation("Fire"), abilities = emptyList()),
+            Slot.Spirit to SlotState(essence = sampleManifestation("Earth"), abilities = emptyList()),
+            Slot.Recovery to SlotState(essence = sampleManifestation("Stone"), abilities = emptyList()),
+        ),
+    )
+
+@PreviewLightDark
+@Composable
+private fun CenteredTextPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        CenteredText("Loading")
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun CollapsibleCardExpandedPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        CollapsibleCard(title = "Power — Fire (3/5)", startExpanded = true) {
+            Text("Slot content goes here.")
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun CollapsibleCardCollapsedPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        CollapsibleCard(title = "Speed — (no essence)", startExpanded = false) {
+            Text("Hidden content.")
+        }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ChipFlowPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ChipFlow(
+            items = listOf("Flame Bolt", "Cinder Trail", "Conflagration"),
+            label = { it },
+            onRemove = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ConfluenceWarningDialogPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ConfluenceWarningDialog(
+            slot = Slot.Power,
+            form = sampleForm(),
+            onSaveAsCombination = {},
+            onChangeConfluence = {},
+            onDismiss = {},
+        )
     }
 }

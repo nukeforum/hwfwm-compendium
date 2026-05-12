@@ -28,6 +28,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 @Composable
 fun AwakeningStoneDetails(
@@ -129,4 +133,34 @@ private fun AwakeningStone.report(): String {
 
         ${effects.joinToString { "Effect: ${it.description}" }}
     """.trimIndent()
+}
+
+@PreviewLightDark
+@Composable
+private fun DetailsCanonicalPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = AwakeningStoneDetailUiState.Success(
+                stone = AwakeningStone.of(name = "Wind", rarity = Rarity.Common),
+                isContribution = false,
+            ),
+            onEdit = {},
+            onShare = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun DetailsContributionPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = AwakeningStoneDetailUiState.Success(
+                stone = AwakeningStone.of(name = "Flame", rarity = Rarity.Uncommon),
+                isContribution = true,
+            ),
+            onEdit = {},
+            onShare = {},
+        )
+    }
 }

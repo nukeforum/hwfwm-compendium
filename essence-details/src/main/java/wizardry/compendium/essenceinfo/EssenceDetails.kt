@@ -23,7 +23,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.Property
+import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.LinkedEssence
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import java.security.InvalidParameterException
 
 @Composable
@@ -235,5 +241,50 @@ private fun ConfluenceCombinationsDisplay(
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
+}
+
+private fun sampleManifestation(): Essence.Manifestation = Essence.Manifestation(
+    name = "Fire",
+    rank = Rank.Iron,
+    rarity = Rarity.Common,
+    properties = listOf(Property.Fire),
+    description = "Manifested essence of fire",
+    isRestricted = false,
+)
+
+@PreviewLightDark
+@Composable
+private fun DetailsManifestationPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = EssenceDetailUiState.Success.ManifestationUiState(
+                essence = sampleManifestation(),
+                previousEssence = null,
+                isContribution = false,
+                knownConfluences = emptyList(),
+            ),
+            onEssenceClick = {},
+            onEdit = {},
+            onShare = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun DetailsManifestationContributionPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = EssenceDetailUiState.Success.ManifestationUiState(
+                essence = sampleManifestation().copy(name = "Spark", rarity = Rarity.Uncommon),
+                previousEssence = null,
+                isContribution = true,
+                knownConfluences = emptyList(),
+            ),
+            onEssenceClick = {},
+            onEdit = {},
+            onShare = {},
+        )
     }
 }

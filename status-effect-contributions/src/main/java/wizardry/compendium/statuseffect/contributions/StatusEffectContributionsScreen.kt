@@ -38,6 +38,9 @@ import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
 import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.DeleteContributionButton
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 // ──────────────────────────────────────────────────────────────────────────────
 // File-scope constants
@@ -402,5 +405,113 @@ private fun PropertiesPicker(
                 )
             }
         }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun StatusEffectFormCreatePreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        StatusEffectForm(
+            initial = null,
+            isEdit = false,
+            saveState = StatusEffectContributionsViewModel.SaveState.Idle,
+            onSave = { _, _, _, _, _ -> },
+            onDelete = {},
+            onImportClick = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun StatusEffectFormEditPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        StatusEffectForm(
+            initial = StatusEffect(
+                name = "Burning",
+                type = StatusType.Affliction.Elemental,
+                properties = listOf(Property.Fire),
+                stackable = true,
+                description = "Fire damage over time.",
+            ),
+            isEdit = true,
+            saveState = StatusEffectContributionsViewModel.SaveState.Idle,
+            onSave = { _, _, _, _, _ -> },
+            onDelete = {},
+            onImportClick = null,
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun StatusEffectFormErrorPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        StatusEffectForm(
+            initial = null,
+            isEdit = false,
+            saveState = StatusEffectContributionsViewModel.SaveState.Error("Name cannot be empty"),
+            onSave = { _, _, _, _, _ -> },
+            onDelete = {},
+            onImportClick = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun TypePickerAfflictionPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        TypePicker(
+            topLevel = TopLevel.Affliction,
+            onTopLevelChange = {},
+            afflictionSub = StatusType.Affliction.Elemental,
+            onAfflictionSubChange = {},
+            boonSub = StatusType.Boon.Holy,
+            onBoonSubChange = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun TypePickerBoonPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        TypePicker(
+            topLevel = TopLevel.Boon,
+            onTopLevelChange = {},
+            afflictionSub = StatusType.Affliction.Curse,
+            onAfflictionSubChange = {},
+            boonSub = StatusType.Boon.Magic,
+            onBoonSubChange = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun PropertiesPickerPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        PropertiesPicker(
+            selected = setOf(Property.Fire, Property.DamageOverTime),
+            onToggle = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun LoadingPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Loading()
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun NotFoundPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        NotFound()
     }
 }

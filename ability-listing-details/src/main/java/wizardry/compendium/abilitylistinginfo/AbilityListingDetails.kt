@@ -32,7 +32,17 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ability.preview.AbilityPreview
 import wizardry.compendium.ability.preview.LocalStatusEffects
 import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.essences.model.AbilityType
+import wizardry.compendium.essences.model.Amount
+import wizardry.compendium.essences.model.Cost
+import wizardry.compendium.essences.model.Effect
+import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.essences.model.Resource
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
+import kotlin.time.Duration
 
 @Composable
 fun AbilityListingDetails(
@@ -131,6 +141,64 @@ private fun Details(
             effects = state.listing.effects,
             selectedRank = state.selectedRank,
             onSelect = onSelectRank,
+        )
+    }
+}
+
+private fun sampleListing(): Ability.Listing = Ability.Listing(
+    name = "Flame Bolt",
+    effects = listOf(
+        Effect.AbilityEffect(
+            rank = Rank.Iron,
+            type = AbilityType.Conjuration,
+            properties = listOf(Property.Fire, Property.Magic),
+            cost = listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
+            cooldown = Duration.ZERO,
+            description = "Hurls a bolt of flame at a target.",
+        ),
+        Effect.AbilityEffect(
+            rank = Rank.Bronze,
+            type = AbilityType.Conjuration,
+            properties = listOf(Property.Fire, Property.Magic),
+            cost = listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
+            cooldown = Duration.ZERO,
+            description = "Bolt fragments on impact, dealing splash damage.",
+        ),
+    ),
+)
+
+@PreviewLightDark
+@Composable
+private fun DetailsContributionPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = AbilityListingDetailUiState.Success(
+                listing = sampleListing(),
+                isContribution = true,
+                statusEffects = emptyList(),
+                selectedRank = null,
+            ),
+            onEdit = {},
+            onShare = {},
+            onSelectRank = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun DetailsCanonicalPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = AbilityListingDetailUiState.Success(
+                listing = sampleListing(),
+                isContribution = false,
+                statusEffects = emptyList(),
+                selectedRank = Rank.Iron,
+            ),
+            onEdit = {},
+            onShare = {},
+            onSelectRank = {},
         )
     }
 }

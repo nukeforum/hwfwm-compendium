@@ -31,6 +31,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 @Composable
 fun ContributionErrorFeedback(error: String?) {
@@ -169,5 +171,59 @@ fun <T : Any> ContributionDropdown(
                 )
             }
         }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ContributionErrorFeedbackPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ContributionErrorFeedback(error = "Name cannot be empty")
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun DeleteContributionButtonPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        DeleteContributionButton(name = "Fire", enabled = true, onDelete = {})
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun EditPreviewToggleEditPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        EditPreviewToggle(isPreview = false, onChange = {})
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun EditPreviewTogglePreviewSelected() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        EditPreviewToggle(isPreview = true, onChange = {})
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ContributionReportCardPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ContributionReportCard(text = "Item: [Fire Essence]\n(iron, common)\n\nFlame and heat manifest.")
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ContributionDropdownPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ContributionDropdown(
+            label = "Rarity",
+            options = listOf("Common", "Uncommon", "Rare"),
+            selected = "Uncommon",
+            optionLabel = { it },
+            onSelected = {},
+        )
     }
 }

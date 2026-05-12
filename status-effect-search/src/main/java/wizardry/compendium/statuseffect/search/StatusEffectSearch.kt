@@ -36,7 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.SearchEmptyState
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 private val AfflictionSubtypes: List<StatusType.Affliction> = listOf(
     StatusType.Affliction.Curse, StatusType.Affliction.Disease, StatusType.Affliction.Elemental,
@@ -251,5 +254,68 @@ private fun typeLabel(type: StatusType): String {
 private fun Loading(modifier: Modifier = Modifier) {
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text("Loading")
+    }
+}
+
+private fun sampleEffects(): List<StatusEffect> = listOf(
+    StatusEffect(
+        name = "Burning",
+        type = StatusType.Affliction.Elemental,
+        properties = emptyList(),
+        stackable = true,
+        description = "Fire damage over time.",
+    ),
+    StatusEffect(
+        name = "Inner Fire",
+        type = StatusType.Boon.Magic,
+        properties = emptyList(),
+        stackable = false,
+        description = "Restores mana over time.",
+    ),
+)
+
+@PreviewLightDark
+@Composable
+private fun StatusEffectRowPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        StatusEffectRow(effect = sampleEffects().first(), onClick = {})
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ScreenPopulatedPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = StatusEffectSearchUiState.Success(
+                effects = sampleEffects(),
+                filterTerm = "",
+                appliedFilter = null,
+            ),
+            onFilterTermChanged = {},
+            onFilterSelected = {},
+            onEffectClicked = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ScreenEmptyPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = StatusEffectSearchUiState.Success(
+                effects = emptyList(),
+                filterTerm = "",
+                appliedFilter = null,
+            ),
+            onFilterTermChanged = {},
+            onFilterSelected = {},
+            onEffectClicked = {},
+            onAddClicked = {},
+        )
     }
 }

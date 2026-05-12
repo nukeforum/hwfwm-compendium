@@ -39,10 +39,23 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ability.preview.AbilityPreview
 import wizardry.compendium.ability.preview.LocalStatusEffects
 import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.essences.model.AbilityType
 import wizardry.compendium.essences.model.AbsorbedEssence
+import wizardry.compendium.essences.model.Amount
+import wizardry.compendium.essences.model.Attribute
 import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.essences.model.Cost
+import wizardry.compendium.essences.model.Effect
+import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.essences.model.Resource
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import kotlin.math.roundToInt
+import kotlin.time.Duration
 
 @Composable
 fun CharacterBuildDetails(
@@ -196,5 +209,91 @@ private fun AbilityCard(ability: Ability, rankCeiling: Rank?) {
             .padding(8.dp),
     ) {
         AbilityPreview(ability = ability, rankCeiling = rankCeiling)
+    }
+}
+
+private fun sampleListing(name: String = "Flame Bolt"): Ability.Listing = Ability.Listing(
+    name = name,
+    effects = listOf(
+        Effect.AbilityEffect(
+            rank = Rank.Iron,
+            type = AbilityType.Conjuration,
+            properties = listOf(Property.Fire, Property.Magic),
+            cost = listOf(Cost.Upfront(Amount.Moderate, Resource.Mana)),
+            cooldown = Duration.ZERO,
+            description = "Hurls a bolt of flame at a target.",
+        ),
+    ),
+)
+
+private fun sampleManifestation(name: String = "Fire"): Essence.Manifestation = Essence.Manifestation(
+    name = name,
+    rank = Rank.Iron,
+    rarity = Rarity.Common,
+    properties = listOf(Property.Fire),
+    description = "Manifested essence of fire",
+    isRestricted = false,
+)
+
+private fun sampleBuild(): CharacterBuild = CharacterBuild(
+    name = "Pyro Sentinel",
+    race = "Human",
+    racialAbilities = listOf(sampleListing("Adaptive Sight")),
+    attributes = setOf(
+        Attribute.Power(essence = AbsorbedEssence(essence = sampleManifestation("Fire"))),
+        Attribute.Speed(),
+        Attribute.Spirit(essence = AbsorbedEssence(essence = sampleManifestation("Wind"))),
+        Attribute.Recovery(),
+    ),
+)
+
+@PreviewLightDark
+@Composable
+private fun BuildHeaderPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        BuildHeader(build = sampleBuild())
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun AttributeSectionFilledPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AttributeSection(
+            label = "Power",
+            essence = AbsorbedEssence(essence = sampleManifestation("Fire")),
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun AttributeSectionEmptyPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AttributeSection(label = "Speed", essence = null)
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun RacialAbilitiesSectionPopulatedPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        RacialAbilitiesSection(abilities = listOf(sampleListing("Adaptive Sight"), sampleListing("Pack Tactics")))
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun RacialAbilitiesSectionEmptyPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        RacialAbilitiesSection(abilities = emptyList())
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun AbilityCardPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        AbilityCard(ability = sampleListing(), rankCeiling = Rank.Iron)
     }
 }

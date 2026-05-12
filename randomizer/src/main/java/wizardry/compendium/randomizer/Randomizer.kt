@@ -10,7 +10,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.Property
+import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 @Composable
 fun Randomizer(
@@ -71,5 +78,64 @@ private fun Loading(modifier: Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         Text(text = "Loading")
+    }
+}
+
+private fun sampleManifestation(name: String): Essence.Manifestation = Essence.Manifestation(
+    name = name,
+    rank = Rank.Iron,
+    rarity = Rarity.Common,
+    properties = listOf(Property.Magic),
+    description = "Manifested essence of $name",
+    isRestricted = false,
+)
+
+@PreviewLightDark
+@Composable
+private fun RandomizerResultWithConfluencePreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        RandomizerResult(
+            randomizedSet = setOf(
+                sampleManifestation("Fire"),
+                sampleManifestation("Wind"),
+                sampleManifestation("Water"),
+                sampleManifestation("Lightning"),
+            ),
+            confluence = Essence.of(
+                "Storm",
+                restricted = false,
+                ConfluenceSet(
+                    sampleManifestation("Water"),
+                    sampleManifestation("Wind"),
+                    sampleManifestation("Lightning"),
+                ),
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun RandomizerResultNoConfluencePreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        RandomizerResult(
+            randomizedSet = setOf(
+                sampleManifestation("Earth"),
+                sampleManifestation("Wood"),
+                sampleManifestation("Sand"),
+                sampleManifestation("Iron"),
+            ),
+            confluence = null,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun RandomizerLoadingPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Loading(modifier = Modifier.fillMaxWidth())
     }
 }

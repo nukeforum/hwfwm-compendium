@@ -33,6 +33,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.ui.PreviewLightDark
+import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 
 @Composable
 fun StatusEffectDetails(
@@ -146,4 +149,46 @@ private fun Details(
 private fun typeText(type: StatusType): String = when (type) {
     is StatusType.Affliction -> "Affliction · ${type::class.simpleName}"
     is StatusType.Boon -> "Boon · ${type::class.simpleName}"
+}
+
+@PreviewLightDark
+@Composable
+private fun DetailsAfflictionPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = StatusEffectDetailUiState.Success(
+                effect = StatusEffect(
+                    name = "Burning",
+                    type = StatusType.Affliction.Elemental,
+                    properties = listOf(Property.Fire, Property.DamageOverTime),
+                    stackable = true,
+                    description = "Inflicts fire damage every second while the affliction is active.",
+                ),
+                isContribution = false,
+            ),
+            onShare = {},
+            onEdit = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun DetailsBoonContributionPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = StatusEffectDetailUiState.Success(
+                effect = StatusEffect(
+                    name = "Inner Fire",
+                    type = StatusType.Boon.Magic,
+                    properties = emptyList(),
+                    stackable = false,
+                    description = "Restores mana over time.",
+                ),
+                isContribution = true,
+            ),
+            onShare = {},
+            onEdit = {},
+        )
+    }
 }
