@@ -570,13 +570,12 @@ private fun BuildImportPreviewSheet(
     onCancel: () -> Unit,
     onSave: () -> Unit,
 ) {
-    // Non-dismissible: user must explicitly Cancel or Save. Blocking the
-    // dismiss at the sheet-state level (confirmValueChange = false) prevents
-    // the sheet from animating away before recomposition re-shows it, which
-    // is what happens if we only no-op onDismissRequest.
+    // Non-dismissible: user must explicitly Cancel or Save. Allow the initial
+    // Hidden → Expanded transition but reject the Expanded → Hidden one so
+    // drag-dismiss is blocked without preventing the sheet from showing.
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
-        confirmValueChange = { false },
+        confirmValueChange = { it != androidx.compose.material3.SheetValue.Hidden },
     )
     ModalBottomSheet(
         onDismissRequest = { /* drag-dismiss is blocked by confirmValueChange */ },
