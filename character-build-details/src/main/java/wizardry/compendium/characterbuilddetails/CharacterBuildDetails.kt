@@ -76,7 +76,8 @@ fun CharacterBuildDetails(
             Details(
                 state = details,
                 onEdit = { onEditContribution(details.build) },
-                viewModel = viewModel,
+                shareText = viewModel::shareText,
+                encodeFile = viewModel::encodeFile,
             )
         }
     }
@@ -96,7 +97,8 @@ private fun Loading() {
 private fun Details(
     state: CharacterBuildDetailUiState.Success,
     onEdit: () -> Unit,
-    viewModel: CharacterBuildDetailViewModel,
+    shareText: () -> String,
+    encodeFile: () -> String,
 ) {
     val context = LocalContext.current
     val sanitized = state.build.name.replace(Regex("[^A-Za-z0-9_.-]"), "_")
@@ -107,7 +109,7 @@ private fun Details(
         if (uri != null) {
             try {
                 context.contentResolver.openOutputStream(uri)?.use { out ->
-                    out.write(viewModel.encodeFile().toByteArray(Charsets.UTF_8))
+                    out.write(encodeFile().toByteArray(Charsets.UTF_8))
                 }
             } catch (_: Exception) {
                 // Silent failure for v1; matches Settings export behavior.
@@ -131,7 +133,7 @@ private fun Details(
                 OutlinedButton(onClick = {
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, viewModel.shareText())
+                        putExtra(Intent.EXTRA_TEXT, shareText())
                     }
                     context.startActivity(Intent.createChooser(intent, "Share build"))
                 }) {
@@ -295,5 +297,21 @@ private fun RacialAbilitiesSectionEmptyPreview() {
 private fun AbilityCardPreview() {
     CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
         AbilityCard(ability = sampleListing(), rankCeiling = Rank.Iron)
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun DetailsPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Details(
+            state = CharacterBuildDetailUiState.Success(
+                build = sampleBuild(),
+                statusEffects = emptyList(),
+            ),
+            onEdit = {},
+            shareText = { "" },
+            encodeFile = { "" },
+        )
     }
 }

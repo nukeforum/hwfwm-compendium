@@ -59,6 +59,7 @@ import wizardry.compendium.characterbuild.contributions.CharacterBuildContributi
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.SaveState
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.Slot
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsViewModel.SlotState
+import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Property
@@ -88,7 +89,6 @@ fun CharacterBuildContributionsScreen(
     val savePrompt by viewModel.saveCombinationPrompt.collectAsState()
     val warningSlot by viewModel.confluenceWarning.collectAsState()
     val availableEssences by viewModel.availableEssences.collectAsState()
-    val availableConfluences by viewModel.availableConfluences.collectAsState()
     val pasteImportState by viewModel.pasteImportState.collectAsState()
 
     val context = LocalContext.current
@@ -126,19 +126,19 @@ fun CharacterBuildContributionsScreen(
         }
     }
 
+    val formCallbacks = rememberFormCallbacks(viewModel)
     when (val current = mode) {
         Mode.Create -> Form(
             isEdit = false,
             startCollapsed = true,
             form = form,
             availableEssences = availableEssences,
-            availableConfluences = availableConfluences,
             saveState = saveState,
             warningSlot = warningSlot,
             onShowWarning = { warningDialogOpen = true },
             essencePickerSlot = essencePickerSlot,
             onEssencePickerSlotChange = { essencePickerSlot = it },
-            viewModel = viewModel,
+            callbacks = formCallbacks,
             onImportFromFile = { openDocumentLauncher.launch(arrayOf("text/*")) },
         )
         Mode.Edit.Loading -> CenteredText("Loading")
@@ -148,13 +148,12 @@ fun CharacterBuildContributionsScreen(
             startCollapsed = true,
             form = form,
             availableEssences = availableEssences,
-            availableConfluences = availableConfluences,
             saveState = saveState,
             warningSlot = warningSlot,
             onShowWarning = { warningDialogOpen = true },
             essencePickerSlot = essencePickerSlot,
             onEssencePickerSlotChange = { essencePickerSlot = it },
-            viewModel = viewModel,
+            callbacks = formCallbacks,
             onImportFromFile = null,
         )
     }
@@ -201,6 +200,42 @@ private fun CenteredText(text: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text(text) }
 }
 
+private data class FormCallbacks(
+    val onNameChange: (String) -> Unit,
+    val onRaceChange: (String) -> Unit,
+    val onAddRacialAbility: (Ability.Listing) -> Unit,
+    val onRemoveRacialAbility: (String) -> Unit,
+    val onAddAbilityToSlot: (Slot, Ability.Listing) -> Unit,
+    val onRemoveAbilityFromSlot: (Slot, String) -> Unit,
+    val onRequestConfluencePick: (Slot, Essence.Confluence) -> Unit,
+    val onRequestEssenceChange: (Slot, Essence?) -> Unit,
+    val racialAbilityCandidates: () -> List<Ability.Listing>,
+    val slotAbilityCandidates: () -> List<Ability.Listing>,
+    val confluencePickerRowsFor: (Slot) -> List<CharacterBuildContributionsViewModel.ConfluencePickerRow>,
+    val onSave: () -> Unit,
+    val onDelete: () -> Unit,
+)
+
+@Composable
+private fun rememberFormCallbacks(viewModel: CharacterBuildContributionsViewModel): FormCallbacks =
+    remember(viewModel) {
+        FormCallbacks(
+            onNameChange = viewModel::setName,
+            onRaceChange = viewModel::setRace,
+            onAddRacialAbility = viewModel::addRacialAbility,
+            onRemoveRacialAbility = viewModel::removeRacialAbility,
+            onAddAbilityToSlot = viewModel::addAbilityToSlot,
+            onRemoveAbilityFromSlot = viewModel::removeAbilityFromSlot,
+            onRequestConfluencePick = viewModel::requestConfluencePick,
+            onRequestEssenceChange = viewModel::requestEssenceChange,
+            racialAbilityCandidates = viewModel::racialAbilityCandidates,
+            slotAbilityCandidates = viewModel::slotAbilityCandidates,
+            confluencePickerRowsFor = viewModel::confluencePickerRowsFor,
+            onSave = viewModel::save,
+            onDelete = viewModel::deleteContribution,
+        )
+    }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Form(
@@ -208,13 +243,12 @@ private fun Form(
     startCollapsed: Boolean,
     form: CharacterBuildContributionsViewModel.FormState,
     availableEssences: List<Essence.Manifestation>,
-    availableConfluences: List<Essence.Confluence>,
     saveState: SaveState,
     warningSlot: Slot?,
     onShowWarning: () -> Unit,
     essencePickerSlot: Slot?,
     onEssencePickerSlotChange: (Slot?) -> Unit,
-    viewModel: CharacterBuildContributionsViewModel,
+    callbacks: FormCallbacks,
     onImportFromFile: (() -> Unit)?,
 ) {
     var preview by rememberSaveable { mutableStateOf(false) }
@@ -249,7 +283,7 @@ private fun Form(
         } else {
             OutlinedTextField(
                 value = form.name,
-                onValueChange = viewModel::setName,
+                onValueChange = callbacks.onNameChange,
                 label = { Text("Name *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -257,7 +291,7 @@ private fun Form(
             )
             OutlinedTextField(
                 value = form.race,
-                onValueChange = viewModel::setRace,
+                onValueChange = callbacks.onRaceChange,
                 label = { Text("Race *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -270,7 +304,7 @@ private fun Form(
                 ChipFlow(
                     items = form.racialAbilities,
                     label = { it.name },
-                    onRemove = { viewModel.removeRacialAbility(it.name) },
+                    onRemove = { callbacks.onRemoveRacialAbility(it.name) },
                 )
                 OutlinedButton(
                     onClick = { racialPickerOpen = true },
@@ -315,7 +349,7 @@ private fun Form(
                         ChipFlow(
                             items = state.abilities,
                             label = { it.name },
-                            onRemove = { viewModel.removeAbilityFromSlot(slot, it.name) },
+                            onRemove = { callbacks.onRemoveAbilityFromSlot(slot, it.name) },
                         )
                         OutlinedButton(
                             onClick = { abilityPickerSlot = slot },
@@ -335,7 +369,7 @@ private fun Form(
         )
 
         Button(
-            onClick = viewModel::save,
+            onClick = callbacks.onSave,
             modifier = Modifier.fillMaxWidth(),
             enabled = canSave,
         ) {
@@ -346,7 +380,7 @@ private fun Form(
             DeleteContributionButton(
                 name = form.name,
                 enabled = !saving,
-                onDelete = viewModel::deleteContribution,
+                onDelete = callbacks.onDelete,
             )
         }
     }
@@ -354,21 +388,21 @@ private fun Form(
     if (racialPickerOpen) {
         SearchableSelectionSheet(
             title = "Racial abilities",
-            options = viewModel.racialAbilityCandidates() - form.racialAbilities.toSet(),
+            options = callbacks.racialAbilityCandidates() - form.racialAbilities.toSet(),
             initiallySelected = emptySet(),
             multiSelect = true,
             maxSelections = 6 - form.racialAbilities.size,
             labelOf = { it.name },
             onDismiss = { racialPickerOpen = false },
             onConfirm = { picks ->
-                picks.forEach { viewModel.addRacialAbility(it) }
+                picks.forEach { callbacks.onAddRacialAbility(it) }
                 racialPickerOpen = false
             },
         )
     }
 
     essencePickerSlot?.let { slot ->
-        val rows = viewModel.confluencePickerRowsFor(slot)
+        val rows = callbacks.confluencePickerRowsFor(slot)
         val subtitleByName = rows.associate { it.confluence.name to it.matchedEssences }
         val sortedConfluences = rows.map { it.confluence }
         EssencePickerSheet(
@@ -380,8 +414,8 @@ private fun Form(
             onDismiss = { onEssencePickerSlotChange(null) },
             onConfirm = { pick ->
                 when (pick) {
-                    is Essence.Confluence -> viewModel.requestConfluencePick(slot, pick)
-                    else -> viewModel.requestEssenceChange(slot, pick)
+                    is Essence.Confluence -> callbacks.onRequestConfluencePick(slot, pick)
+                    else -> callbacks.onRequestEssenceChange(slot, pick)
                 }
                 onEssencePickerSlotChange(null)
             },
@@ -397,28 +431,59 @@ private fun Form(
         val current = form.attributes[slot]?.abilities.orEmpty().toSet()
         SearchableSelectionSheet(
             title = "$slot abilities",
-            options = viewModel.slotAbilityCandidates() - current,
+            options = callbacks.slotAbilityCandidates() - current,
             initiallySelected = emptySet(),
             multiSelect = true,
             maxSelections = 5 - current.size,
             labelOf = { it.name },
             onDismiss = { abilityPickerSlot = null },
             onConfirm = { picks ->
-                picks.forEach { viewModel.addAbilityToSlot(slot, it) }
+                picks.forEach { callbacks.onAddAbilityToSlot(slot, it) }
                 abilityPickerSlot = null
             },
         )
     }
 }
 
+private fun stubFormCallbacks(): FormCallbacks = FormCallbacks(
+    onNameChange = {},
+    onRaceChange = {},
+    onAddRacialAbility = {},
+    onRemoveRacialAbility = {},
+    onAddAbilityToSlot = { _, _ -> },
+    onRemoveAbilityFromSlot = { _, _ -> },
+    onRequestConfluencePick = { _, _ -> },
+    onRequestEssenceChange = { _, _ -> },
+    racialAbilityCandidates = { emptyList() },
+    slotAbilityCandidates = { emptyList() },
+    confluencePickerRowsFor = { emptyList() },
+    onSave = {},
+    onDelete = {},
+)
+
 @Composable
 private fun EssencePromptDialog(
     prompt: EssenceChangePrompt,
     viewModel: CharacterBuildContributionsViewModel,
 ) {
+    EssencePromptDialog(
+        prompt = prompt,
+        onClearAbilities = viewModel::confirmEssenceChangeClearingAbilities,
+        onKeepAbilities = viewModel::confirmEssenceChangeKeepingAbilities,
+        onCancel = viewModel::cancelEssenceChange,
+    )
+}
+
+@Composable
+private fun EssencePromptDialog(
+    prompt: EssenceChangePrompt,
+    onClearAbilities: () -> Unit,
+    onKeepAbilities: () -> Unit,
+    onCancel: () -> Unit,
+) {
     val targetLabel = prompt.target?.name ?: "(no essence)"
     AlertDialog(
-        onDismissRequest = viewModel::cancelEssenceChange,
+        onDismissRequest = onCancel,
         title = { Text("Change essence") },
         text = {
             Text(
@@ -427,13 +492,13 @@ private fun EssencePromptDialog(
             )
         },
         confirmButton = {
-            Button(onClick = viewModel::confirmEssenceChangeClearingAbilities) { Text("Yes") }
+            Button(onClick = onClearAbilities) { Text("Yes") }
         },
         dismissButton = {
             Row {
-                OutlinedButton(onClick = viewModel::confirmEssenceChangeKeepingAbilities) { Text("No") }
+                OutlinedButton(onClick = onKeepAbilities) { Text("No") }
                 OutlinedButton(
-                    onClick = viewModel::cancelEssenceChange,
+                    onClick = onCancel,
                     modifier = Modifier.padding(start = 8.dp),
                 ) { Text("Cancel") }
             }
@@ -446,8 +511,21 @@ private fun ConfluenceSetPickerDialog(
     prompt: CharacterBuildContributionsViewModel.ConfluenceSetPrompt,
     viewModel: CharacterBuildContributionsViewModel,
 ) {
+    ConfluenceSetPickerDialog(
+        prompt = prompt,
+        onPick = viewModel::confirmConfluenceSetPick,
+        onCancel = viewModel::cancelConfluenceSetPick,
+    )
+}
+
+@Composable
+private fun ConfluenceSetPickerDialog(
+    prompt: CharacterBuildContributionsViewModel.ConfluenceSetPrompt,
+    onPick: (ConfluenceSet) -> Unit,
+    onCancel: () -> Unit,
+) {
     AlertDialog(
-        onDismissRequest = viewModel::cancelConfluenceSetPick,
+        onDismissRequest = onCancel,
         title = { Text("Choose ${prompt.confluence.name} set") },
         text = {
             Column {
@@ -456,7 +534,7 @@ private fun ConfluenceSetPickerDialog(
                 prompt.sets.forEach { set ->
                     val names = set.set.map { it.name }.sorted().joinToString(" · ")
                     OutlinedButton(
-                        onClick = { viewModel.confirmConfluenceSetPick(set) },
+                        onClick = { onPick(set) },
                         modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                     ) { Text(names) }
                 }
@@ -464,7 +542,7 @@ private fun ConfluenceSetPickerDialog(
         },
         confirmButton = {},
         dismissButton = {
-            OutlinedButton(onClick = viewModel::cancelConfluenceSetPick) { Text("Cancel") }
+            OutlinedButton(onClick = onCancel) { Text("Cancel") }
         },
     )
 }
@@ -474,23 +552,36 @@ private fun SaveCombinationDialog(
     prompt: CharacterBuildContributionsViewModel.SaveCombinationPrompt,
     viewModel: CharacterBuildContributionsViewModel,
 ) {
+    SaveCombinationDialog(
+        prompt = prompt,
+        onConfirm = viewModel::confirmSaveCombination,
+        onSkip = { viewModel.dismissSaveCombinationPrompt(complete = true) },
+        onCancel = { viewModel.dismissSaveCombinationPrompt(complete = false) },
+    )
+}
+
+@Composable
+private fun SaveCombinationDialog(
+    prompt: CharacterBuildContributionsViewModel.SaveCombinationPrompt,
+    onConfirm: () -> Unit,
+    onSkip: () -> Unit,
+    onCancel: () -> Unit,
+) {
     val combo = prompt.combination.joinToString(" + ") { it.name }
     AlertDialog(
-        onDismissRequest = { viewModel.dismissSaveCombinationPrompt(complete = false) },
+        onDismissRequest = onCancel,
         title = { Text("Save new combination?") },
         text = {
             Text("$combo isn't a known set for ${prompt.confluence.name}. Save this as a new combination?")
         },
         confirmButton = {
-            Button(onClick = viewModel::confirmSaveCombination) { Text("Yes") }
+            Button(onClick = onConfirm) { Text("Yes") }
         },
         dismissButton = {
             Row {
-                OutlinedButton(onClick = { viewModel.dismissSaveCombinationPrompt(complete = true) }) {
-                    Text("No")
-                }
+                OutlinedButton(onClick = onSkip) { Text("No") }
                 OutlinedButton(
-                    onClick = { viewModel.dismissSaveCombinationPrompt(complete = false) },
+                    onClick = onCancel,
                     modifier = Modifier.padding(start = 8.dp),
                 ) { Text("Cancel") }
             }
@@ -800,6 +891,131 @@ private fun ConfluenceWarningDialogPreview() {
             onSaveAsCombination = {},
             onChangeConfluence = {},
             onDismiss = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun EssencePromptDialogPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        EssencePromptDialog(
+            prompt = EssenceChangePrompt(slot = Slot.Power, target = sampleManifestation("Water")),
+            onClearAbilities = {},
+            onKeepAbilities = {},
+            onCancel = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ConfluenceSetPickerDialogPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        ConfluenceSetPickerDialog(
+            prompt = CharacterBuildContributionsViewModel.ConfluenceSetPrompt(
+                slot = Slot.Recovery,
+                confluence = sampleConfluence(),
+                sets = listOf(
+                    ConfluenceSet(
+                        sampleManifestation("Water"),
+                        sampleManifestation("Wind"),
+                        sampleManifestation("Lightning"),
+                    ),
+                    ConfluenceSet(
+                        sampleManifestation("Ice"),
+                        sampleManifestation("Wind"),
+                        sampleManifestation("Cloud"),
+                    ),
+                ),
+            ),
+            onPick = {},
+            onCancel = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun SaveCombinationDialogPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        SaveCombinationDialog(
+            prompt = CharacterBuildContributionsViewModel.SaveCombinationPrompt(
+                slot = Slot.Power,
+                confluence = sampleConfluence(),
+                combination = listOf(
+                    sampleManifestation("Fire"),
+                    sampleManifestation("Earth"),
+                    sampleManifestation("Stone"),
+                ),
+            ),
+            onConfirm = {},
+            onSkip = {},
+            onCancel = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun FormCreatePreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Form(
+            isEdit = false,
+            startCollapsed = false,
+            form = sampleForm(),
+            availableEssences = listOf(
+                sampleManifestation("Fire"),
+                sampleManifestation("Water"),
+                sampleManifestation("Wind"),
+            ),
+            saveState = SaveState.Idle,
+            warningSlot = null,
+            onShowWarning = {},
+            essencePickerSlot = null,
+            onEssencePickerSlotChange = {},
+            callbacks = stubFormCallbacks(),
+            onImportFromFile = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun FormEditWithWarningPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Form(
+            isEdit = true,
+            startCollapsed = true,
+            form = sampleForm(),
+            availableEssences = emptyList(),
+            saveState = SaveState.Idle,
+            warningSlot = Slot.Power,
+            onShowWarning = {},
+            essencePickerSlot = null,
+            onEssencePickerSlotChange = {},
+            callbacks = stubFormCallbacks(),
+            onImportFromFile = null,
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun FormErrorPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Form(
+            isEdit = false,
+            startCollapsed = true,
+            form = sampleForm(),
+            availableEssences = emptyList(),
+            saveState = SaveState.Error("A build named \"Pyro Sentinel\" already exists."),
+            warningSlot = null,
+            onShowWarning = {},
+            essencePickerSlot = null,
+            onEssencePickerSlotChange = {},
+            callbacks = stubFormCallbacks(),
+            onImportFromFile = {},
         )
     }
 }
