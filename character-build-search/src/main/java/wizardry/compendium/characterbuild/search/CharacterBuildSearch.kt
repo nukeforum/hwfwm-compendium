@@ -141,3 +141,49 @@ private fun CharacterBuildListItemPreview() {
         )
     }
 }
+
+@PreviewLightDark
+@Composable
+private fun ScreenPopulatedPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = CharacterBuildSearchUiState.Success(
+                builds = listOf(
+                    CharacterBuild(name = "Jason", race = "Outworlder", racialAbilities = emptyList()),
+                    CharacterBuild(name = "Pyro Sentinel", race = "Human", racialAbilities = emptyList()),
+                    CharacterBuild(name = "Storm Caller", race = "Elf", racialAbilities = emptyList()),
+                ),
+                filterTerm = "",
+            ),
+            onFilterTermChanged = {},
+            onBuildClicked = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ScreenEmptyPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = CharacterBuildSearchUiState.Success(
+                builds = emptyList(),
+                filterTerm = "xyz",
+            ),
+            onFilterTermChanged = {},
+            onBuildClicked = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun LoadingPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Loading(modifier = Modifier.fillMaxSize())
+    }
+}

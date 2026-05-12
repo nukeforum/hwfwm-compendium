@@ -207,3 +207,53 @@ private fun AwakeningStoneListItemPreview() {
         )
     }
 }
+
+@PreviewLightDark
+@Composable
+private fun ScreenPopulatedPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = AwakeningStoneSearchUiState.Success(
+                stones = listOf(
+                    AwakeningStone.of(name = "Wind", rarity = Rarity.Common),
+                    AwakeningStone.of(name = "Flame", rarity = Rarity.Uncommon),
+                    AwakeningStone.of(name = "Storm", rarity = Rarity.Rare),
+                ),
+                filterTerm = "",
+                appliedFilters = emptyList(),
+            ),
+            onFilterTermChanged = {},
+            onFilterSelected = {},
+            onStoneClicked = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ScreenEmptyPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = AwakeningStoneSearchUiState.Success(
+                stones = emptyList(),
+                filterTerm = "xyz",
+                appliedFilters = emptyList(),
+            ),
+            onFilterTermChanged = {},
+            onFilterSelected = {},
+            onStoneClicked = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun LoadingPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Loading(modifier = Modifier.fillMaxSize())
+    }
+}

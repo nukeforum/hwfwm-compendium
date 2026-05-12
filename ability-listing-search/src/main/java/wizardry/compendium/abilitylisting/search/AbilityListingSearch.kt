@@ -142,3 +142,49 @@ private fun AbilityListingListItemPreview() {
         )
     }
 }
+
+@PreviewLightDark
+@Composable
+private fun ScreenPopulatedPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = AbilityListingSearchUiState.Success(
+                listings = listOf(
+                    Ability.Listing.of("Flame Bolt"),
+                    Ability.Listing.of("Cinder Trail"),
+                    Ability.Listing.of("Conflagration"),
+                ),
+                filterTerm = "",
+            ),
+            onFilterTermChanged = {},
+            onListingClicked = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ScreenEmptyPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = AbilityListingSearchUiState.Success(
+                listings = emptyList(),
+                filterTerm = "xyz",
+            ),
+            onFilterTermChanged = {},
+            onListingClicked = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun LoadingPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Loading(modifier = Modifier.fillMaxSize())
+    }
+}

@@ -206,3 +206,53 @@ fun EssenceListItemPreview() {
         EssenceListItem(essence = essence)
     }
 }
+
+@PreviewLightDark
+@Composable
+private fun ScreenPopulatedPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = SearchUiState.Success(
+                essences = listOf(
+                    Essence.of(name = "Fire", description = "Manifested essence of fire", rarity = Rarity.Common, restricted = false),
+                    Essence.of(name = "Wind", description = "Manifested essence of wind", rarity = Rarity.Uncommon, restricted = false),
+                    Essence.of(name = "Sin", description = "Manifested essence of transgression", rarity = Rarity.Legendary, restricted = false),
+                ),
+                filterTerm = "",
+                appliedFilters = emptyList(),
+            ),
+            onEssenceClicked = {},
+            onFilterTermChanged = {},
+            onFilterSelected = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun ScreenEmptyPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Screen(
+            modifier = Modifier.fillMaxSize(),
+            state = SearchUiState.Success(
+                essences = emptyList(),
+                filterTerm = "xyz",
+                appliedFilters = emptyList(),
+            ),
+            onEssenceClicked = {},
+            onFilterTermChanged = {},
+            onFilterSelected = {},
+            onAddClicked = {},
+        )
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun LoadingPreview() {
+    CompendiumTheme(themeMode = ThemeMode.System, dynamicColor = false) {
+        Loading(modifier = Modifier.fillMaxSize())
+    }
+}
