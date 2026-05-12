@@ -60,13 +60,12 @@ class EssenceDatabase @Inject constructor(driver: SqlDriver) {
         val confluences = db.essencesQueries.selectAllConfluences().executeAsList()
             .mapNotNull { row ->
                 val sets = confluenceSets[row.name]
-                    ?.map { setRow ->
+                    ?.mapNotNull { setRow ->
+                        val e1 = manifestationsByName[setRow.essence1] ?: return@mapNotNull null
+                        val e2 = manifestationsByName[setRow.essence2] ?: return@mapNotNull null
+                        val e3 = manifestationsByName[setRow.essence3] ?: return@mapNotNull null
                         ConfluenceSet(
-                            set = setOf(
-                                manifestationsByName.getValue(setRow.essence1),
-                                manifestationsByName.getValue(setRow.essence2),
-                                manifestationsByName.getValue(setRow.essence3),
-                            ),
+                            set = setOf(e1, e2, e3),
                             isRestricted = setRow.is_restricted == 1L,
                         )
                     }
