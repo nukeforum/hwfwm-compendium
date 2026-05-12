@@ -29,9 +29,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import wizardry.compendium.about.AboutScreen
-import wizardry.compendium.abilitylisting.contributions.AbilityListingContributionsScreen
-import wizardry.compendium.abilitylisting.search.AbilityListingSearch
-import wizardry.compendium.abilitylistinginfo.AbilityListingDetails
+import wizardry.compendium.abilitylisting.contributions.AbilityContributionsScreen
+import wizardry.compendium.abilitylisting.search.AbilitySearch
+import wizardry.compendium.abilitylistinginfo.AbilityDetails
 import wizardry.compendium.awakeningstone.contributions.AwakeningStoneContributionsScreen
 import wizardry.compendium.conflicts.ConflictsScreen
 import wizardry.compendium.conflicts.ConflictsViewModel
@@ -115,9 +115,9 @@ class MainActivity : ComponentActivity() {
                                         navController.navigate(Nav.AwakeningStoneContributions.newRoute)
                                     }
                                 }
-                                if (currentRoute == Nav.AbilityListingSearch.route) {
+                                if (currentRoute == Nav.AbilitySearch.route) {
                                     ContributeButton {
-                                        navController.navigate(Nav.AbilityListingContributions.newRoute)
+                                        navController.navigate(Nav.AbilityContributions.newRoute)
                                     }
                                 }
                                 if (currentRoute == Nav.StatusEffectSearch.route) {
@@ -150,7 +150,7 @@ class MainActivity : ComponentActivity() {
                             LandingScreen(
                                 onEssenceClicked = { navController.navigate(Nav.EssenceSearch.route) },
                                 onAwakeningStoneClicked = { navController.navigate(Nav.AwakeningStoneSearch.route) },
-                                onAbilityListingClicked = { navController.navigate(Nav.AbilityListingSearch.route) },
+                                onAbilitiesClicked = { navController.navigate(Nav.AbilitySearch.route) },
                                 onStatusEffectClicked = { navController.navigate(Nav.StatusEffectSearch.route) },
                                 onCharacterBuildClicked = { navController.navigate(Nav.CharacterBuildSearch.route) },
                             )
@@ -246,7 +246,7 @@ class MainActivity : ComponentActivity() {
                                 onEditAwakeningStoneContribution = { name ->
                                     navController.navigate("stoneContributions?name=${android.net.Uri.encode(name)}")
                                 },
-                                onEditAbilityListingContribution = { name ->
+                                onEditAbilityContribution = { name ->
                                     navController.navigate("abilityListingContributions?name=${android.net.Uri.encode(name)}")
                                 },
                                 onEditStatusEffectContribution = { name ->
@@ -266,7 +266,7 @@ class MainActivity : ComponentActivity() {
                         ) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
                             val editName = backStackEntry.arguments?.getString(Nav.Contributions.ARG_NAME)
-                            title = if (editName != null) "Edit Contribution" else "Add Contribution"
+                            title = if (editName != null) "Edit Essence" else "Add Essence"
                             EssenceContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.EssenceSearch.route, false) },
@@ -308,42 +308,42 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
-                        composable(Nav.AbilityListingSearch.route) { backStackEntry ->
+                        composable(Nav.AbilitySearch.route) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
-                            title = "Ability Listing Search"
-                            AbilityListingSearch(
-                                onListingClicked = { listing ->
-                                    navController.navigate(Nav.AbilityListingDetail.buildRoute(listing))
+                            title = "Ability Search"
+                            AbilitySearch(
+                                onAbilityClicked = { ability ->
+                                    navController.navigate(Nav.AbilityDetail.buildRoute(ability))
                                 },
                                 onAddClicked = {
-                                    navController.navigate(Nav.AbilityListingContributions.newRoute)
+                                    navController.navigate(Nav.AbilityContributions.newRoute)
                                 },
                             )
                         }
                         composable(
-                            Nav.AbilityListingDetail.route,
+                            Nav.AbilityDetail.route,
                             arguments = listOf(
-                                navArgument(Nav.AbilityListingDetail.ARG_NAME) { type = NavType.StringType }
+                                navArgument(Nav.AbilityDetail.ARG_NAME) { type = NavType.StringType }
                             )
                         ) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
-                            val listingName = backStackEntry.arguments!!.getString(Nav.AbilityListingDetail.ARG_NAME)!!
-                            title = listingName
-                            AbilityListingDetails(
-                                listingName = listingName,
-                                onListingLoaded = { title = it.name },
-                                onEditContribution = { listing ->
-                                    navController.navigate(Nav.AbilityListingContributions.buildEditRoute(listing))
+                            val abilityName = backStackEntry.arguments!!.getString(Nav.AbilityDetail.ARG_NAME)!!
+                            title = abilityName
+                            AbilityDetails(
+                                abilityName = abilityName,
+                                onAbilityLoaded = { title = it.name },
+                                onEditContribution = { ability ->
+                                    navController.navigate(Nav.AbilityContributions.buildEditRoute(ability))
                                 },
-                                onShareContribution = { listing ->
-                                    fireShareIntent(activityContext, shareViewModel.encode(listing))
+                                onShareContribution = { ability ->
+                                    fireShareIntent(activityContext, shareViewModel.encode(ability))
                                 },
                             )
                         }
                         composable(
-                            Nav.AbilityListingContributions.route,
+                            Nav.AbilityContributions.route,
                             arguments = listOf(
-                                navArgument(Nav.AbilityListingContributions.ARG_NAME) {
+                                navArgument(Nav.AbilityContributions.ARG_NAME) {
                                     type = NavType.StringType
                                     nullable = true
                                     defaultValue = null
@@ -351,13 +351,13 @@ class MainActivity : ComponentActivity() {
                             ),
                         ) { backStackEntry ->
                             currentRoute = backStackEntry.destination.route
-                            val editName = backStackEntry.arguments?.getString(Nav.AbilityListingContributions.ARG_NAME)
-                            title = if (editName != null) "Edit Ability Listing" else "Add Ability Listing"
-                            AbilityListingContributionsScreen(
+                            val editName = backStackEntry.arguments?.getString(Nav.AbilityContributions.ARG_NAME)
+                            title = if (editName != null) "Edit Ability" else "Add Ability"
+                            AbilityContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
-                                onContributionDeleted = { navController.popBackStack(Nav.AbilityListingSearch.route, false) },
+                                onContributionDeleted = { navController.popBackStack(Nav.AbilitySearch.route, false) },
                                 onPasteImport = { text ->
-                                    when (val result = shareViewModel.decodeSingleListing(text)) {
+                                    when (val result = shareViewModel.decodeSingleAbility(text)) {
                                         is ShareViewModel.DecodedSingle.Loaded -> result.model to null
                                         is ShareViewModel.DecodedSingle.Failed -> null to result.reason
                                     }

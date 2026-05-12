@@ -36,7 +36,7 @@ import wizardry.compendium.essences.StatusEffectConflict
 fun ConflictsScreen(
     onEditEssenceContribution: (name: String) -> Unit,
     onEditAwakeningStoneContribution: (name: String) -> Unit,
-    onEditAbilityListingContribution: (name: String) -> Unit,
+    onEditAbilityContribution: (name: String) -> Unit,
     onEditStatusEffectContribution: (name: String) -> Unit,
     viewModel: ConflictsViewModel = hiltViewModel(),
 ) {
@@ -65,7 +65,7 @@ fun ConflictsScreen(
             items(state.awakeningStone) { ConflictRow(it) { selected = it } }
         }
         if (state.abilityListing.isNotEmpty()) {
-            item { GroupHeader("Ability Listings") }
+            item { GroupHeader("Abilities") }
             items(state.abilityListing) { ConflictRow(it) { selected = it } }
         }
         if (state.statusEffect.isNotEmpty()) {
@@ -85,7 +85,7 @@ fun ConflictsScreen(
                 when (current) {
                     is EssenceConflict -> onEditEssenceContribution(name)
                     is AwakeningStoneConflict -> onEditAwakeningStoneContribution(name)
-                    is AbilityListingConflict -> onEditAbilityListingContribution(name)
+                    is AbilityListingConflict -> onEditAbilityContribution(name)
                     is StatusEffectConflict -> onEditStatusEffectContribution(name)
                 }
             },

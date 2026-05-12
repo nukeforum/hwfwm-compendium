@@ -65,7 +65,7 @@ sealed interface AbilityListingConflict : Conflict {
         val canonical: Ability.Listing,
     ) : AbilityListingConflict {
         override val title get() = contribution.name
-        override val summary get() = "Name conflicts with a canonical ability listing"
+        override val summary get() = "Name conflicts with a canonical ability"
         override val key get() = ConflictKey(DOMAIN, "name::${contribution.name}")
     }
 

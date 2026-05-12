@@ -25,7 +25,7 @@ import wizardry.compendium.ui.theme.ThemeMode
 fun LandingScreen(
     onEssenceClicked: () -> Unit,
     onAwakeningStoneClicked: () -> Unit,
-    onAbilityListingClicked: () -> Unit,
+    onAbilitiesClicked: () -> Unit,
     onStatusEffectClicked: () -> Unit,
     onCharacterBuildClicked: () -> Unit,
 ) {
@@ -66,11 +66,11 @@ fun LandingScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             PanelButton(
-                label = "Ability Listings",
+                label = "Abilities",
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize(),
-                onClick = onAbilityListingClicked,
+                onClick = onAbilitiesClicked,
             )
             PanelButton(
                 label = "Status Effects",
@@ -127,7 +127,7 @@ private fun LandingScreenPreview() {
         LandingScreen(
             onEssenceClicked = {},
             onAwakeningStoneClicked = {},
-            onAbilityListingClicked = {},
+            onAbilitiesClicked = {},
             onStatusEffectClicked = {},
             onCharacterBuildClicked = {},
         )

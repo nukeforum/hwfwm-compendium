@@ -45,24 +45,24 @@ import wizardry.compendium.ui.theme.ThemeMode
 import kotlin.time.Duration
 
 @Composable
-fun AbilityListingDetails(
-    listingName: String,
-    onListingLoaded: (Ability.Listing) -> Unit,
+fun AbilityDetails(
+    abilityName: String,
+    onAbilityLoaded: (Ability.Listing) -> Unit,
     onEditContribution: (Ability.Listing) -> Unit = {},
     onShareContribution: (Ability.Listing) -> Unit = {},
     viewModel: AbilityListingDetailViewModel = hiltViewModel(),
 ) {
-    LaunchedEffect(listingName) {
-        viewModel.load(listingName)
+    LaunchedEffect(abilityName) {
+        viewModel.load(abilityName)
     }
 
     val state by viewModel.state.collectAsState()
 
     when (val details = state) {
-        is AbilityListingDetailUiState.Error -> ErrorMessage(details.exception.message ?: "Unable to load ability listing")
+        is AbilityListingDetailUiState.Error -> ErrorMessage(details.exception.message ?: "Unable to load ability")
         AbilityListingDetailUiState.Loading -> Loading()
         is AbilityListingDetailUiState.Success -> {
-            onListingLoaded(details.listing)
+            onAbilityLoaded(details.listing)
             Details(
                 state = details,
                 onEdit = { onEditContribution(details.listing) },

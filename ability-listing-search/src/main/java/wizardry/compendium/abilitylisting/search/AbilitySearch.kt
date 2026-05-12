@@ -33,8 +33,8 @@ import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable
-fun AbilityListingSearch(
-    onListingClicked: (Ability.Listing) -> Unit,
+fun AbilitySearch(
+    onAbilityClicked: (Ability.Listing) -> Unit,
     onAddClicked: () -> Unit,
     viewModel: AbilityListingSearchViewModel = hiltViewModel(),
 ) {
@@ -51,7 +51,7 @@ fun AbilityListingSearch(
             modifier = Modifier.fillMaxSize(),
             state = result,
             onFilterTermChanged = viewModel::setFilterTerm,
-            onListingClicked = onListingClicked,
+            onListingClicked = onAbilityClicked,
             onAddClicked = onAddClicked,
         )
     }

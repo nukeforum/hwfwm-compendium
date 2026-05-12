@@ -106,7 +106,7 @@ private fun ContributionDomainPickerPreview() {
                 DomainPickerRow(key = "essences", label = "Essences", count = 12, countSuffix = "", selected = true, enabled = true),
                 DomainPickerRow(key = "confluences", label = "Confluences", count = 3, countSuffix = "", selected = true, enabled = true),
                 DomainPickerRow(key = "stones", label = "Awakening Stones", count = 5, countSuffix = "", selected = false, enabled = true),
-                DomainPickerRow(key = "listings", label = "Ability Listings", count = 8, countSuffix = "", selected = true, enabled = true),
+                DomainPickerRow(key = "listings", label = "Abilities", count = 8, countSuffix = "", selected = true, enabled = true),
                 DomainPickerRow(key = "effects", label = "Status Effects", count = 0, countSuffix = "", selected = false, enabled = false),
             ),
             onToggle = {},

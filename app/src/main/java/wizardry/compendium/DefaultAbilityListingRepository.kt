@@ -71,7 +71,7 @@ class DefaultAbilityListingRepository @Inject constructor(
         val contributedNames = existing.map { it.name.normalized() }.toSet()
         if (key in canonicalNames || key in contributedNames) {
             return@withLock ContributionResult.Failure(
-                "An ability listing named \"${listing.name}\" already exists"
+                "An ability named \"${listing.name}\" already exists"
             )
         }
         contributionsCache.contents = existing + listing
@@ -104,7 +104,7 @@ class DefaultAbilityListingRepository @Inject constructor(
         val existing = contributionsCache.contents
         if (existing.none { it.name.normalized() == key }) {
             return@withLock ContributionResult.Failure(
-                "No contributed ability listing named \"${listing.name}\""
+                "No contributed ability named \"${listing.name}\""
             )
         }
         contributionsCache.contents = existing.map {

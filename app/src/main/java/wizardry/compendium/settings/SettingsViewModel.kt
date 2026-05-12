@@ -271,7 +271,7 @@ class SettingsViewModel @Inject constructor(
             row(ContributionDomain.Essences, "Essences", mfns),
             row(ContributionDomain.Confluences, "Confluences", confs),
             row(ContributionDomain.AwakeningStones, "Awakening Stones", stones),
-            row(ContributionDomain.AbilityListings, "Ability Listings", listings),
+            row(ContributionDomain.AbilityListings, "Abilities", listings),
             row(ContributionDomain.StatusEffects, "Status Effects", effects),
         )
     }
@@ -294,7 +294,7 @@ class SettingsViewModel @Inject constructor(
             importRow(ContributionDomain.Essences, "Essences", envelope.manifestations.size),
             importRow(ContributionDomain.Confluences, "Confluences", envelope.confluences.size),
             importRow(ContributionDomain.AwakeningStones, "Awakening Stones", envelope.stones.size),
-            importRow(ContributionDomain.AbilityListings, "Ability Listings", envelope.listings.size),
+            importRow(ContributionDomain.AbilityListings, "Abilities", envelope.listings.size),
             importRow(ContributionDomain.StatusEffects, "Status Effects", envelope.statusEffects.size),
         )
     }

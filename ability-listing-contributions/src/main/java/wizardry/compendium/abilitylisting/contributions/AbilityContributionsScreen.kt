@@ -85,7 +85,7 @@ import wizardry.compendium.ui.DeleteContributionButton
 import kotlin.time.Duration
 
 @Composable
-fun AbilityListingContributionsScreen(
+fun AbilityContributionsScreen(
     onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
     /**
@@ -122,7 +122,7 @@ fun AbilityListingContributionsScreen(
         AbilityListingContributionsViewModel.Mode.Edit.NotFound -> Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
-        ) { Text("This ability listing is not a user contribution and cannot be edited.") }
+        ) { Text("This ability is not a user contribution and cannot be edited.") }
         AbilityListingContributionsViewModel.Mode.Create -> AbilityListingForm(
             initialName = importedName,
             isEdit = false,
@@ -157,7 +157,7 @@ fun AbilityListingContributionsScreen(
     if (showImportDialog) {
         AlertDialog(
             onDismissRequest = { showImportDialog = false },
-            title = { Text("Import Ability Listing") },
+            title = { Text("Import Ability") },
             text = {
                 OutlinedTextField(
                     value = pasteText,
@@ -284,7 +284,7 @@ private fun AbilityListingForm(
             modifier = Modifier.fillMaxWidth(),
             enabled = canSave,
         ) {
-            Text(if (isEdit) "Update Ability Listing" else "Save Ability Listing")
+            Text(if (isEdit) "Update Ability" else "Save Ability")
         }
 
         if (isEdit) {

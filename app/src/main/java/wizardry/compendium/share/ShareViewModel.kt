@@ -127,11 +127,11 @@ class ShareViewModel @Inject constructor(
         }
     }
 
-    fun decodeSingleListing(text: String): DecodedSingle<Ability.Listing> = decodeSingle(text) { envelope ->
+    fun decodeSingleAbility(text: String): DecodedSingle<Ability.Listing> = decodeSingle(text) { envelope ->
         val others = envelope.manifestations.size + envelope.confluences.size + envelope.stones.size
         when {
             envelope.listings.size != 1 || others > 0 -> DecodedSingle.Failed(
-                "This share doesn't contain exactly one ability listing. Use Settings → Import for multi-entry shares.",
+                "This share doesn't contain exactly one ability. Use Settings → Import for multi-entry shares.",
             )
             else -> DecodedSingle.Loaded(EnvelopeMapper.toModel(envelope.listings.single()))
         }

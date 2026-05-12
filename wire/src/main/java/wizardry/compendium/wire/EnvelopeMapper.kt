@@ -175,7 +175,7 @@ object EnvelopeMapper {
                 effects = wire.effects.map { effectToModel(it) },
             )
         } catch (e: IllegalArgumentException) {
-            throw WireDecodeException("Failed to decode ability listing '${wire.name}': ${e.message}", e)
+            throw WireDecodeException("Failed to decode ability '${wire.name}': ${e.message}", e)
         }
     }
 

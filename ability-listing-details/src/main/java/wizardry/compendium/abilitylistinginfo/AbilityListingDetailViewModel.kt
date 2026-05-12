@@ -56,7 +56,7 @@ class AbilityListingDetailViewModel @Inject constructor(
             if (listing == null) {
                 _state.emit(
                     AbilityListingDetailUiState.Error(
-                        IllegalArgumentException("no ability listing found with name: $listingName"),
+                        IllegalArgumentException("no ability found with name: $listingName"),
                     ),
                 )
                 return@launch

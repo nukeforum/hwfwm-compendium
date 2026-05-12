@@ -11,7 +11,7 @@ sealed class Nav(val route: String) {
     object Landing : Nav("landing")
     object EssenceSearch : Nav("search")
     object AwakeningStoneSearch : Nav("stoneSearch")
-    object AbilityListingSearch : Nav("abilityListingSearch")
+    object AbilitySearch : Nav("abilityListingSearch")
     object EssenceRandomizer : Nav("randomizer")
     object Settings : Nav("settings")
     object About : Nav("about")
@@ -26,7 +26,7 @@ sealed class Nav(val route: String) {
         const val newRoute = "stoneContributions"
         fun buildEditRoute(stone: AwakeningStone) = "stoneContributions?name=${Uri.encode(stone.name)}"
     }
-    object AbilityListingContributions : Nav("abilityListingContributions?name={name}") {
+    object AbilityContributions : Nav("abilityListingContributions?name={name}") {
         const val ARG_NAME = "name"
         const val newRoute = "abilityListingContributions"
         fun buildEditRoute(listing: Ability.Listing) = "abilityListingContributions?name=${Uri.encode(listing.name)}"
@@ -39,7 +39,7 @@ sealed class Nav(val route: String) {
         const val ARG_NAME = "stoneName"
         fun buildRoute(stone: AwakeningStone) = "stoneDetail/${Uri.encode(stone.name)}"
     }
-    object AbilityListingDetail : Nav("abilityListingDetail/{listingName}") {
+    object AbilityDetail : Nav("abilityListingDetail/{listingName}") {
         const val ARG_NAME = "listingName"
         fun buildRoute(listing: Ability.Listing) = "abilityListingDetail/${Uri.encode(listing.name)}"
     }

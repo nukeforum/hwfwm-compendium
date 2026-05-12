@@ -347,8 +347,8 @@ fun SettingsContent(
             onCheckedChange = onAwakeningStoneContributionsToggled,
         )
         ToggleRow(
-            title = "My Ability Listings",
-            subtitle = "Include your submitted ability listings",
+            title = "My Abilities",
+            subtitle = "Include your submitted abilities",
             checked = abilityListingContributionsEnabled,
             conflictCount = abilityListingConflictCount,
             onCheckedChange = onAbilityListingContributionsToggled,
