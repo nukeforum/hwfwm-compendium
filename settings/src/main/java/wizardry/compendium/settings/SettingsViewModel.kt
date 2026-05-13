@@ -138,19 +138,7 @@ class SettingsViewModel @Inject constructor(
         _ioState.value = IoState.Encoding
         viewModelScope.launch(ioDispatcher) {
             val encoded = wireIo.exportFiltered(selection)
-            _ioState.value = if (encoded.fitsInShareLimit) {
-                IoState.ReadyToShare(
-                    text = encoded.text,
-                    byteSize = encoded.byteSize,
-                    selection = selection,
-                )
-            } else {
-                IoState.ShareTooLarge(
-                    byteSize = encoded.byteSize,
-                    limit = encoded.shareSizeLimitBytes,
-                    selection = selection,
-                )
-            }
+            _ioState.value = encodedToIoState(encoded, selection)
         }
     }
 
@@ -164,19 +152,7 @@ class SettingsViewModel @Inject constructor(
         _ioState.value = IoState.Encoding
         viewModelScope.launch(ioDispatcher) {
             val encoded = wireIo.exportFiltered(selection)
-            _ioState.value = if (encoded.fitsInShareLimit) {
-                IoState.ReadyToShare(
-                    text = encoded.text,
-                    byteSize = encoded.byteSize,
-                    selection = selection,
-                )
-            } else {
-                IoState.ShareTooLarge(
-                    byteSize = encoded.byteSize,
-                    limit = encoded.shareSizeLimitBytes,
-                    selection = selection,
-                )
-            }
+            _ioState.value = encodedToIoState(encoded, selection)
         }
     }
 
@@ -238,6 +214,23 @@ class SettingsViewModel @Inject constructor(
             row(ContributionDomain.AwakeningStones, "Awakening Stones", counts.stones),
             row(ContributionDomain.AbilityListings, "Abilities", counts.listings),
             row(ContributionDomain.StatusEffects, "Status Effects", counts.effects),
+        )
+    }
+
+    private fun encodedToIoState(
+        encoded: WireIoRepository.EncodedShare,
+        selection: Set<ContributionDomain>,
+    ): IoState = if (encoded.fitsInShareLimit) {
+        IoState.ReadyToShare(
+            text = encoded.text,
+            byteSize = encoded.byteSize,
+            selection = selection,
+        )
+    } else {
+        IoState.ShareTooLarge(
+            byteSize = encoded.byteSize,
+            limit = encoded.shareSizeLimitBytes,
+            selection = selection,
         )
     }
 
