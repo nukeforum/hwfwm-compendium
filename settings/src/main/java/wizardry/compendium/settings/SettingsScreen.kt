@@ -26,7 +26,6 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import wizardry.compendium.ui.theme.ThemeMode
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -43,6 +42,7 @@ import wizardry.compendium.ui.ContributionDomainPicker
 import wizardry.compendium.ui.DomainPickerRow
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
+import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.ImportSummary
 

@@ -94,7 +94,6 @@ dependencies {
     ksp(libs.hilt.compiler)
 
     implementation(libs.sqldelight.android.driver)
-    implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)
