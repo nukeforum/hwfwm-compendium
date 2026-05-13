@@ -17,18 +17,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class AwakeningStoneSearchViewModel
-@Inject constructor(
+class AwakeningStoneSearchViewModel(
     awakeningStoneRepository: AwakeningStoneRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    /**
-     * Background dispatcher for repository work. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as
-     * a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    @Inject
+    constructor(awakeningStoneRepository: AwakeningStoneRepository) :
+        this(awakeningStoneRepository, Dispatchers.IO)
 
     private val stonesFlow = MutableStateFlow(emptyList<AwakeningStone>())
     private val filterTermFlow = MutableStateFlow("")

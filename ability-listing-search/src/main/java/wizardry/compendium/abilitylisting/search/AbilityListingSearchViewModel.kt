@@ -16,18 +16,14 @@ import wizardry.compendium.essences.model.Ability
 import javax.inject.Inject
 
 @HiltViewModel
-class AbilityListingSearchViewModel
-@Inject constructor(
+class AbilityListingSearchViewModel(
     abilityListingRepository: AbilityListingRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    /**
-     * Background dispatcher for repository work. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as
-     * a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    @Inject
+    constructor(abilityListingRepository: AbilityListingRepository) :
+        this(abilityListingRepository, Dispatchers.IO)
 
     private val listingsFlow = MutableStateFlow(emptyList<Ability.Listing>())
     private val filterTermFlow = MutableStateFlow("")

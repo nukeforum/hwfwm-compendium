@@ -14,18 +14,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class EssenceDetailViewModel
-@Inject constructor(
+class EssenceDetailViewModel(
     private val essenceRepository: EssenceRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    /**
-     * Background dispatcher for repository work. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as
-     * a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    @Inject
+    constructor(essenceRepository: EssenceRepository) : this(essenceRepository, Dispatchers.IO)
 
     private val history = ArrayDeque<Essence>()
     private val _state = MutableStateFlow<EssenceDetailUiState>(EssenceDetailUiState.Loading)

@@ -14,18 +14,14 @@ import wizardry.compendium.essences.model.AwakeningStone
 import javax.inject.Inject
 
 @HiltViewModel
-class AwakeningStoneDetailViewModel
-@Inject constructor(
+class AwakeningStoneDetailViewModel(
     private val awakeningStoneRepository: AwakeningStoneRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    /**
-     * Background dispatcher for repository work. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as
-     * a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    @Inject
+    constructor(awakeningStoneRepository: AwakeningStoneRepository) :
+        this(awakeningStoneRepository, Dispatchers.IO)
 
     private val _state = MutableStateFlow<AwakeningStoneDetailUiState>(AwakeningStoneDetailUiState.Loading)
     val state = _state.asStateFlow()

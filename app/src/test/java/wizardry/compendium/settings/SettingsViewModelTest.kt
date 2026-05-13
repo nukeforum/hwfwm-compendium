@@ -78,10 +78,8 @@ class SettingsViewModelTest {
             awakeningStoneRepository = stoneRepo,
             abilityListingRepository = listingRepo,
             statusEffectRepository = effectRepo,
+            ioDispatcher = dispatcher,
         )
-        // Route the VM's encode/decode/import work through the test
-        // dispatcher so `advanceUntilIdle` deterministically waits for it.
-        viewModel.ioDispatcher = dispatcher
     }
 
     @After

@@ -24,22 +24,30 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class EssenceContributionsViewModel @Inject constructor(
+class EssenceContributionsViewModel(
     savedStateHandle: SavedStateHandle,
     private val essenceRepository: EssenceRepository,
     awakeningStoneRepository: AwakeningStoneRepository,
     abilityListingRepository: AbilityListingRepository,
     statusEffectRepository: StatusEffectRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
-    /**
-     * Background dispatcher for repository work. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as
-     * a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    @Inject
+    constructor(
+        savedStateHandle: SavedStateHandle,
+        essenceRepository: EssenceRepository,
+        awakeningStoneRepository: AwakeningStoneRepository,
+        abilityListingRepository: AbilityListingRepository,
+        statusEffectRepository: StatusEffectRepository,
+    ) : this(
+        savedStateHandle,
+        essenceRepository,
+        awakeningStoneRepository,
+        abilityListingRepository,
+        statusEffectRepository,
+        Dispatchers.IO,
+    )
 
     private val wireImporter = WireImporter(
         essenceRepository,

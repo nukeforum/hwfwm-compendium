@@ -13,18 +13,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SearchViewModel
-@Inject constructor(
+class SearchViewModel(
     essenceRepository: EssenceRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    /**
-     * Background dispatcher for repository work. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as
-     * a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    @Inject
+    constructor(essenceRepository: EssenceRepository) : this(essenceRepository, Dispatchers.IO)
 
     private val essencesFlow = MutableStateFlow(emptyList<Essence>())
     private val filtersFlow = MutableStateFlow(SearchFilter.options.associateBy { it.name })

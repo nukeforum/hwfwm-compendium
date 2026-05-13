@@ -44,7 +44,7 @@ class CharacterBuildDetailViewModelTest {
     @Test
     fun `load by name emits Success`() = runTest {
         val repo = FakeRepo(listOf(build("Jason"), build("Humphrey")))
-        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), exporter()).also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), exporter(), dispatcher)
 
         vm.load("Humphrey")
         advanceUntilIdle()
@@ -55,8 +55,7 @@ class CharacterBuildDetailViewModelTest {
 
     @Test
     fun `load by unknown name emits Error`() = runTest {
-        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList()), FakeStatusEffectRepo(), exporter())
-            .also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList()), FakeStatusEffectRepo(), exporter(), dispatcher)
 
         vm.load("ghost")
         advanceUntilIdle()
@@ -68,7 +67,7 @@ class CharacterBuildDetailViewModelTest {
     @Test
     fun `flow update refreshes the loaded build`() = runTest {
         val repo = FakeRepo(listOf(build("Jason", race = "Outworlder")))
-        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), exporter()).also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), exporter(), dispatcher)
 
         vm.load("Jason")
         advanceUntilIdle()

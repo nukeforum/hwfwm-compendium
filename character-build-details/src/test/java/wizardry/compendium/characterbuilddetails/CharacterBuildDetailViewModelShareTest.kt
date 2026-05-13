@@ -52,8 +52,7 @@ class CharacterBuildDetailViewModelShareTest {
             abilityListingRepository = FakeAbilityListingRepo(),
             statusEffectRepository = statusEffectRepo,
         )
-        val vm = CharacterBuildDetailViewModel(buildRepo, statusEffectRepo, exporter)
-            .also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildDetailViewModel(buildRepo, statusEffectRepo, exporter, dispatcher)
 
         vm.load("Frosty")
         advanceUntilIdle()
@@ -76,8 +75,7 @@ class CharacterBuildDetailViewModelShareTest {
             abilityListingRepository = FakeAbilityListingRepo(),
             statusEffectRepository = FakeStatusEffectRepo(),
         )
-        val vm = CharacterBuildDetailViewModel(FakeBuildRepo(emptyList()), FakeStatusEffectRepo(), exporter)
-            .also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildDetailViewModel(FakeBuildRepo(emptyList()), FakeStatusEffectRepo(), exporter, dispatcher)
 
         // No load() — state is Loading.
         assertEquals("", vm.shareText())

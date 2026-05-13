@@ -32,21 +32,27 @@ data class ConflictsState(
 }
 
 @HiltViewModel
-class ConflictsViewModel @Inject constructor(
+class ConflictsViewModel(
     private val essenceRepository: EssenceRepository,
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
-    /**
-     * Background dispatcher for repository writes. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as a
-     * settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    @Inject
+    constructor(
+        essenceRepository: EssenceRepository,
+        awakeningStoneRepository: AwakeningStoneRepository,
+        abilityListingRepository: AbilityListingRepository,
+        statusEffectRepository: StatusEffectRepository,
+    ) : this(
+        essenceRepository,
+        awakeningStoneRepository,
+        abilityListingRepository,
+        statusEffectRepository,
+        Dispatchers.IO,
+    )
 
     val state: StateFlow<ConflictsState> = combine(
         essenceRepository.conflicts,

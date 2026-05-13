@@ -18,20 +18,19 @@ import wizardry.compendium.wire.WireExporter
 import javax.inject.Inject
 
 @HiltViewModel
-class CharacterBuildDetailViewModel @Inject constructor(
+class CharacterBuildDetailViewModel(
     private val repository: CharacterBuildRepository,
     private val statusEffectRepository: StatusEffectRepository,
     private val wireExporter: WireExporter,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
-    /**
-     * Background dispatcher for repository work. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as
-     * a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    @Inject
+    constructor(
+        repository: CharacterBuildRepository,
+        statusEffectRepository: StatusEffectRepository,
+        wireExporter: WireExporter,
+    ) : this(repository, statusEffectRepository, wireExporter, Dispatchers.IO)
 
     private val _state = MutableStateFlow<CharacterBuildDetailUiState>(CharacterBuildDetailUiState.Loading)
     val state = _state.asStateFlow()

@@ -33,21 +33,30 @@ import wizardry.compendium.wire.filteredTo
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
+class SettingsViewModel(
     private val preferencesRepository: PreferencesRepository,
     private val essenceRepository: EssenceRepository,
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    /**
-     * Background dispatcher for encode/decode/import work. Visible for
-     * testing so unit tests can substitute the runTest dispatcher; defaults
-     * to [Dispatchers.IO] in production. Constructor stays Hilt-friendly by
-     * exposing this only as a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    @Inject
+    constructor(
+        preferencesRepository: PreferencesRepository,
+        essenceRepository: EssenceRepository,
+        awakeningStoneRepository: AwakeningStoneRepository,
+        abilityListingRepository: AbilityListingRepository,
+        statusEffectRepository: StatusEffectRepository,
+    ) : this(
+        preferencesRepository,
+        essenceRepository,
+        awakeningStoneRepository,
+        abilityListingRepository,
+        statusEffectRepository,
+        Dispatchers.IO,
+    )
 
     val essenceContributionsEnabled = preferencesRepository.essenceContributionsEnabled
     val awakeningStoneContributionsEnabled = preferencesRepository.awakeningStoneContributionsEnabled

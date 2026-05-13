@@ -32,7 +32,7 @@ class CharacterBuildSearchViewModelTest {
     @Test
     fun `initial state shows all builds with empty filter`() = runTest {
         val repo = FakeRepo(listOf(build("Alpha"), build("Beta")))
-        val vm = CharacterBuildSearchViewModel(repo).also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildSearchViewModel(repo, dispatcher)
         advanceUntilIdle()
 
         val state = vm.state.first { it is CharacterBuildSearchUiState.Success } as CharacterBuildSearchUiState.Success
@@ -43,7 +43,7 @@ class CharacterBuildSearchViewModelTest {
     @Test
     fun `name filter is case-insensitive substring match`() = runTest {
         val repo = FakeRepo(listOf(build("Alpha"), build("Beta"), build("Gamma Beta")))
-        val vm = CharacterBuildSearchViewModel(repo).also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildSearchViewModel(repo, dispatcher)
         advanceUntilIdle()
 
         vm.setFilterTerm("beta")
@@ -55,7 +55,7 @@ class CharacterBuildSearchViewModelTest {
 
     @Test
     fun `empty repo emits Success with empty list, not Loading`() = runTest {
-        val vm = CharacterBuildSearchViewModel(FakeRepo(emptyList())).also { it.ioDispatcher = dispatcher }
+        val vm = CharacterBuildSearchViewModel(FakeRepo(emptyList()), dispatcher)
         advanceUntilIdle()
 
         val state = vm.state.first { it is CharacterBuildSearchUiState.Success } as CharacterBuildSearchUiState.Success

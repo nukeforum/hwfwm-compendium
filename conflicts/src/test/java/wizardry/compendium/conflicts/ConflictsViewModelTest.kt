@@ -65,8 +65,7 @@ class ConflictsViewModelTest {
                 AbilityListingConflict.NameCollision(listing("Fireball"), listing("Fireball")),
             ),
         )
-        val vm = ConflictsViewModel(essenceRepo, stoneRepo, abilityRepo, FakeStatusEffectRepo())
-            .also { it.ioDispatcher = dispatcher }
+        val vm = ConflictsViewModel(essenceRepo, stoneRepo, abilityRepo, FakeStatusEffectRepo(), dispatcher)
 
         // Subscribe so stateIn starts collecting
         val collector = launch { vm.state.collect {} }
@@ -84,8 +83,7 @@ class ConflictsViewModelTest {
     @Test
     fun `delete essence contribution dispatches to repository`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
-            .also { it.ioDispatcher = dispatcher }
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), dispatcher)
 
         vm.deleteEssenceContribution("Wind")
         advanceUntilIdle()
@@ -96,8 +94,7 @@ class ConflictsViewModelTest {
     @Test
     fun `remove single combination keeps remaining combinations on contribution`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
-            .also { it.ioDispatcher = dispatcher }
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), dispatcher)
 
         val original = confluence(
             "Doom",
@@ -114,8 +111,7 @@ class ConflictsViewModelTest {
     @Test
     fun `remove last combination deletes the contribution entirely`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo())
-            .also { it.ioDispatcher = dispatcher }
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), dispatcher)
 
         val original = confluence("Doom", setOf(set("A", "B", "C")))
         vm.removeCombinationFromContribution(original, set("A", "B", "C"))

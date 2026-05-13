@@ -57,7 +57,8 @@ class EssenceContributionsViewModelPasteImportTest {
             awakeningStoneRepository = stoneRepo,
             abilityListingRepository = listingRepo,
             statusEffectRepository = fakeStatusEffectRepo(),
-        ).also { it.ioDispatcher = dispatcher }
+            ioDispatcher = dispatcher,
+        )
     }
 
     @After
@@ -171,7 +172,8 @@ class EssenceContributionsViewModelPasteImportTest {
             awakeningStoneRepository = stoneRepo,
             abilityListingRepository = listingRepo,
             statusEffectRepository = fakeStatusEffectRepo(),
-        ).also { it.ioDispatcher = dispatcher }
+            ioDispatcher = dispatcher,
+        )
         // Build an envelope that contains a manifestation so the throwing
         // saveManifestationContribution path is actually reached.
         val manifestation = Essence.of("Wind", "", Rarity.Common, false)

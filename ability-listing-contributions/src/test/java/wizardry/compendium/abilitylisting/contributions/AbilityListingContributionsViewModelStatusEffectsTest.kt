@@ -56,7 +56,8 @@ class AbilityListingContributionsViewModelStatusEffectsTest {
             savedStateHandle = SavedStateHandle(),
             abilityListingRepository = NoopAbilityListingRepository,
             statusEffectRepository = repo,
-        ).also { it.ioDispatcher = dispatcher }
+            ioDispatcher = dispatcher,
+        )
         assertEquals(listOf("Bleeding"), vm.statusEffects.first().map { it.name })
     }
 

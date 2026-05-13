@@ -16,18 +16,17 @@ import wizardry.compendium.essences.model.Rank
 import javax.inject.Inject
 
 @HiltViewModel
-class AbilityListingDetailViewModel @Inject constructor(
+class AbilityListingDetailViewModel(
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-    /**
-     * Background dispatcher for repository work. Visible for testing so unit
-     * tests can substitute the runTest dispatcher; defaults to [Dispatchers.IO]
-     * in production. Constructor stays Hilt-friendly by exposing this only as
-     * a settable property.
-     */
-    @Suppress("MemberVisibilityCanBePrivate")
-    var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+    @Inject
+    constructor(
+        abilityListingRepository: AbilityListingRepository,
+        statusEffectRepository: StatusEffectRepository,
+    ) : this(abilityListingRepository, statusEffectRepository, Dispatchers.IO)
 
     private val _state = MutableStateFlow<AbilityListingDetailUiState>(AbilityListingDetailUiState.Loading)
     val state = _state.asStateFlow()
