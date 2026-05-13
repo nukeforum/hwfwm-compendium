@@ -2,7 +2,6 @@ package wizardry.compendium.di
 
 import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,41 +26,10 @@ import wizardry.compendium.persistence.EssenceCache
 import wizardry.compendium.persistence.EssenceDatabase
 import wizardry.compendium.persistence.StatusEffectCache
 import wizardry.compendium.persistence.StatusEffectDatabase
-import wizardry.compendium.preferences.AbilityListingContributionsToggle
-import wizardry.compendium.preferences.AwakeningStoneContributionsToggle
-import wizardry.compendium.preferences.DataStorePreferencesRepository
-import wizardry.compendium.preferences.EssenceContributionsToggle
-import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggle
-import wizardry.compendium.preferences.PreferencesRepository
-import wizardry.compendium.preferences.StatusEffectContributionsToggle
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DatabaseModule {
-
-    @Binds
-    @Singleton
-    abstract fun bindPreferencesRepository(impl: DataStorePreferencesRepository): PreferencesRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindEssenceContributionsToggle(impl: DataStorePreferencesRepository): EssenceContributionsToggle
-
-    @Binds
-    @Singleton
-    abstract fun bindAwakeningStoneContributionsToggle(impl: DataStorePreferencesRepository): AwakeningStoneContributionsToggle
-
-    @Binds
-    @Singleton
-    abstract fun bindAbilityListingContributionsToggle(impl: DataStorePreferencesRepository): AbilityListingContributionsToggle
-
-    @Binds
-    @Singleton
-    abstract fun bindStatusEffectContributionsToggle(impl: DataStorePreferencesRepository): StatusEffectContributionsToggle
-
-    @Binds
-    @Singleton
-    abstract fun bindEssencesAsAwakeningStonesToggle(impl: DataStorePreferencesRepository): EssencesAsAwakeningStonesToggle
 
     companion object {
         @Provides

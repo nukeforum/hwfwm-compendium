@@ -15,12 +15,6 @@ import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.StatusEffectRepository
-import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
-import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
-import wizardry.compendium.preferences.DataStorePreferencesRepository
-import wizardry.compendium.preferences.EssenceContributionsToggleFlow
-import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggleFlow
-import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -35,31 +29,11 @@ interface EssenceModule {
 
     @Singleton
     @Binds
-    fun bindEssenceContributionsToggleFlow(impl: DataStorePreferencesRepository): EssenceContributionsToggleFlow
-
-    @Singleton
-    @Binds
-    fun bindAwakeningStoneContributionsToggleFlow(impl: DataStorePreferencesRepository): AwakeningStoneContributionsToggleFlow
-
-    @Singleton
-    @Binds
-    fun bindEssencesAsAwakeningStonesToggleFlow(impl: DataStorePreferencesRepository): EssencesAsAwakeningStonesToggleFlow
-
-    @Singleton
-    @Binds
     fun bindAbilityListingRepository(impl: DefaultAbilityListingRepository): AbilityListingRepository
 
     @Singleton
     @Binds
-    fun bindAbilityListingContributionsToggleFlow(impl: DataStorePreferencesRepository): AbilityListingContributionsToggleFlow
-
-    @Singleton
-    @Binds
     fun bindStatusEffectRepository(impl: DefaultStatusEffectRepository): StatusEffectRepository
-
-    @Singleton
-    @Binds
-    fun bindStatusEffectContributionsToggleFlow(impl: DataStorePreferencesRepository): StatusEffectContributionsToggleFlow
 
     @Singleton
     @Binds
