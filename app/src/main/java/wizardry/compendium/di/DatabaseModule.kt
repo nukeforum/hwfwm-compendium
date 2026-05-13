@@ -3,10 +3,10 @@ package wizardry.compendium.di
 import android.content.Context
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import wizardry.compendium.persistence.AbilityListingCache
-import wizardry.compendium.persistence.AbilityListingContributionsToggle
+import wizardry.compendium.preferences.AbilityListingContributionsToggle
 import wizardry.compendium.persistence.AbilityListingDatabase
 import wizardry.compendium.persistence.AwakeningStoneCache
-import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
+import wizardry.compendium.preferences.AwakeningStoneContributionsToggle
 import wizardry.compendium.persistence.AwakeningStoneDatabase
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.CharacterBuildCache
@@ -19,11 +19,11 @@ import wizardry.compendium.persistence.DatabaseCharacterBuildCache
 import wizardry.compendium.persistence.DatabaseEssenceCache
 import wizardry.compendium.persistence.DatabaseStatusEffectCache
 import wizardry.compendium.persistence.EssenceCache
-import wizardry.compendium.persistence.EssenceContributionsToggle
+import wizardry.compendium.preferences.EssenceContributionsToggle
 import wizardry.compendium.persistence.EssenceDatabase
-import wizardry.compendium.persistence.EssencesAsAwakeningStonesToggle
+import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggle
 import wizardry.compendium.persistence.StatusEffectCache
-import wizardry.compendium.persistence.StatusEffectContributionsToggle
+import wizardry.compendium.preferences.StatusEffectContributionsToggle
 import wizardry.compendium.persistence.StatusEffectDatabase
 import wizardry.compendium.preferences.DataStorePreferencesRepository
 import wizardry.compendium.preferences.PreferencesRepository

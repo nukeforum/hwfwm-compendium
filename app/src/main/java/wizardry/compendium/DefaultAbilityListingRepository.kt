@@ -7,14 +7,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import wizardry.compendium.essences.AbilityListingConflict
-import wizardry.compendium.essences.AbilityListingContributionsToggleFlow
+import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.essences.detectAbilityListingConflicts
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.persistence.AbilityListingCache
-import wizardry.compendium.persistence.AbilityListingContributionsToggle
+import wizardry.compendium.preferences.AbilityListingContributionsToggle
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
 import javax.inject.Inject

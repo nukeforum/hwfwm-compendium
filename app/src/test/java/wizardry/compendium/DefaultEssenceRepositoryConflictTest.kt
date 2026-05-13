@@ -8,13 +8,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.essences.EssenceConflict
-import wizardry.compendium.essences.EssenceContributionsToggleFlow
+import wizardry.compendium.preferences.EssenceContributionsToggleFlow
 import wizardry.compendium.essences.dataloader.EssenceDataLoader
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.persistence.EssenceCache
-import wizardry.compendium.persistence.EssenceContributionsToggle
+import wizardry.compendium.preferences.EssenceContributionsToggle
 
 class DefaultEssenceRepositoryConflictTest {
 

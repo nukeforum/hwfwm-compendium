@@ -1,11 +1,11 @@
 package wizardry.compendium
 
 import wizardry.compendium.essences.AwakeningStoneConflict
-import wizardry.compendium.essences.AwakeningStoneContributionsToggleFlow
+import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.essences.EssencesAsAwakeningStonesToggleFlow
+import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggleFlow
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.essences.detectAwakeningStoneConflicts
 import wizardry.compendium.essences.manifestationsNotMatchingStones
@@ -13,10 +13,10 @@ import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.toAwakeningStone
 import wizardry.compendium.persistence.AwakeningStoneCache
-import wizardry.compendium.persistence.AwakeningStoneContributionsToggle
+import wizardry.compendium.preferences.AwakeningStoneContributionsToggle
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
-import wizardry.compendium.persistence.EssencesAsAwakeningStonesToggle
+import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine

@@ -1,4 +1,4 @@
-package wizardry.compendium.essences
+package wizardry.compendium.preferences
 
 import kotlinx.coroutines.flow.Flow
 

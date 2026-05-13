@@ -1,4 +1,4 @@
-package wizardry.compendium.persistence
+package wizardry.compendium.preferences
 
 interface StatusEffectContributionsToggle {
     val isStatusEffectContributionsEnabled: Boolean

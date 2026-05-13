@@ -8,7 +8,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.StatusEffectConflict
-import wizardry.compendium.essences.StatusEffectContributionsToggleFlow
+import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.dataloader.StatusEffectDataLoader
 import wizardry.compendium.essences.detectStatusEffectConflicts
@@ -16,7 +16,7 @@ import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.StatusEffectCache
-import wizardry.compendium.persistence.StatusEffectContributionsToggle
+import wizardry.compendium.preferences.StatusEffectContributionsToggle
 import javax.inject.Inject
 import javax.inject.Singleton
 

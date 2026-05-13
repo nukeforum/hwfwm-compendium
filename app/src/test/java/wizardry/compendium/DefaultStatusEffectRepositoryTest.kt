@@ -6,12 +6,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.essences.ContributionResult
-import wizardry.compendium.essences.StatusEffectContributionsToggleFlow
+import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow
 import wizardry.compendium.essences.dataloader.StatusEffectDataLoader
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
 import wizardry.compendium.persistence.StatusEffectCache
-import wizardry.compendium.persistence.StatusEffectContributionsToggle
+import wizardry.compendium.preferences.StatusEffectContributionsToggle
 
 class DefaultStatusEffectRepositoryTest {
 
