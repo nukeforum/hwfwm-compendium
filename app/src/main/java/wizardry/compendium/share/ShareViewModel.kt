@@ -17,14 +17,17 @@ import wizardry.compendium.wire.share.BuildShareDecoder
 import javax.inject.Inject
 
 /**
- * Encodes a single contributed entity into a share-ready text blob.
+ * Encodes a single contributed entity into a share-ready text blob and
+ * decodes paste-buffers from share intents back into model objects for
+ * the contribute-form pre-fill flow.
  *
  * # Why a ViewModel rather than a top-level function
  *
- * The single-entity export functions on `WireExporter` don't actually
- * touch the repositories — but the existing exporter API takes them in
- * its constructor (for `exportAll`). Wrapping in a Hilt VM gets the repo
- * injection for free without contorting the exporter.
+ * Hilt + lifecycle scoping. `decodeConfluenceBundle` reads the receiver's
+ * current essences (via `essenceRepository.getEssences()`) to compute
+ * which manifestations in the share are new vs. already-known and which
+ * combination references resolve, so it benefits from a Hilt-injected
+ * `EssenceRepository`.
  *
  * # Synchronous API
  *

@@ -31,7 +31,7 @@ import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.wire.WireExporter
+import wizardry.compendium.wire.repo.WireIoRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharacterBuildDetailViewModelShareTest {
@@ -46,13 +46,13 @@ class CharacterBuildDetailViewModelShareTest {
         val build = CharacterBuild(name = "Frosty", race = "Human", racialAbilities = emptyList())
         val buildRepo = FakeBuildRepo(listOf(build))
         val statusEffectRepo = FakeStatusEffectRepo()
-        val exporter = WireExporter(
+        val wireIo = WireIoRepository(
             essenceRepository = FakeEssenceRepo(),
             awakeningStoneRepository = FakeAwakeningStoneRepo(),
             abilityListingRepository = FakeAbilityListingRepo(),
             statusEffectRepository = statusEffectRepo,
         )
-        val vm = CharacterBuildDetailViewModel(buildRepo, statusEffectRepo, exporter, dispatcher)
+        val vm = CharacterBuildDetailViewModel(buildRepo, statusEffectRepo, wireIo, dispatcher)
 
         vm.load("Frosty")
         advanceUntilIdle()
@@ -69,13 +69,13 @@ class CharacterBuildDetailViewModelShareTest {
 
     @Test
     fun `shareText and encodeFile return empty when state is not Success`() = runTest {
-        val exporter = WireExporter(
+        val wireIo = WireIoRepository(
             essenceRepository = FakeEssenceRepo(),
             awakeningStoneRepository = FakeAwakeningStoneRepo(),
             abilityListingRepository = FakeAbilityListingRepo(),
             statusEffectRepository = FakeStatusEffectRepo(),
         )
-        val vm = CharacterBuildDetailViewModel(FakeBuildRepo(emptyList()), FakeStatusEffectRepo(), exporter, dispatcher)
+        val vm = CharacterBuildDetailViewModel(FakeBuildRepo(emptyList()), FakeStatusEffectRepo(), wireIo, dispatcher)
 
         // No load() — state is Loading.
         assertEquals("", vm.shareText())

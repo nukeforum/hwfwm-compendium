@@ -13,15 +13,14 @@ import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.ui.coroutines.IoDispatcher
-import wizardry.compendium.wire.EnvelopeCodec
-import wizardry.compendium.wire.WireExporter
+import wizardry.compendium.wire.repo.WireIoRepository
 import javax.inject.Inject
 
 @HiltViewModel
 class CharacterBuildDetailViewModel @Inject constructor(
     private val repository: CharacterBuildRepository,
     private val statusEffectRepository: StatusEffectRepository,
-    private val wireExporter: WireExporter,
+    private val wireIo: WireIoRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -83,6 +82,6 @@ class CharacterBuildDetailViewModel @Inject constructor(
      */
     fun encodeFile(): String {
         val success = state.value as? CharacterBuildDetailUiState.Success ?: return ""
-        return EnvelopeCodec.encode(wireExporter.exportSingle(success.build)).text
+        return wireIo.encodeSingle(success.build)
     }
 }

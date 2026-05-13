@@ -31,7 +31,7 @@ import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.wire.WireExporter
+import wizardry.compendium.wire.repo.WireIoRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharacterBuildDetailViewModelTest {
@@ -44,7 +44,7 @@ class CharacterBuildDetailViewModelTest {
     @Test
     fun `load by name emits Success`() = runTest {
         val repo = FakeRepo(listOf(build("Jason"), build("Humphrey")))
-        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), exporter(), dispatcher)
+        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), wireIo(), dispatcher)
 
         vm.load("Humphrey")
         advanceUntilIdle()
@@ -55,7 +55,7 @@ class CharacterBuildDetailViewModelTest {
 
     @Test
     fun `load by unknown name emits Error`() = runTest {
-        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList()), FakeStatusEffectRepo(), exporter(), dispatcher)
+        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList()), FakeStatusEffectRepo(), wireIo(), dispatcher)
 
         vm.load("ghost")
         advanceUntilIdle()
@@ -67,7 +67,7 @@ class CharacterBuildDetailViewModelTest {
     @Test
     fun `flow update refreshes the loaded build`() = runTest {
         val repo = FakeRepo(listOf(build("Jason", race = "Outworlder")))
-        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), exporter(), dispatcher)
+        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), wireIo(), dispatcher)
 
         vm.load("Jason")
         advanceUntilIdle()
@@ -82,7 +82,7 @@ class CharacterBuildDetailViewModelTest {
     private fun build(name: String, race: String = "Race"): CharacterBuild =
         CharacterBuild(name = name, race = race, racialAbilities = emptyList())
 
-    private fun exporter(): WireExporter = WireExporter(
+    private fun wireIo(): WireIoRepository = WireIoRepository(
         essenceRepository = StubEssenceRepo(),
         awakeningStoneRepository = StubAwakeningStoneRepo(),
         abilityListingRepository = StubAbilityListingRepo(),
