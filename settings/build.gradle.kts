@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":design"))
     implementation(project(":essences"))
     implementation(project(":wire"))
+    implementation(project(":wire-repo"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.datastore.preferences)

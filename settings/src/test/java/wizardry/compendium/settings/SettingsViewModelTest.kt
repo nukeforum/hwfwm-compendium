@@ -34,6 +34,7 @@ import wizardry.compendium.preferences.PreferencesRepository
 import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.EnvelopeCodec
+import wizardry.compendium.wire.repo.WireIoRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelTest {
@@ -62,6 +63,7 @@ class SettingsViewModelTest {
     private lateinit var listingRepo: StubAbilityListingRepository
     private lateinit var effectRepo: StubStatusEffectRepository
     private lateinit var prefs: StubPreferencesRepository
+    private lateinit var wireIo: WireIoRepository
     private lateinit var viewModel: SettingsViewModel
 
     @Before
@@ -72,12 +74,19 @@ class SettingsViewModelTest {
         listingRepo = StubAbilityListingRepository(contributions = emptyList())
         effectRepo = StubStatusEffectRepository(contributions = emptyList())
         prefs = StubPreferencesRepository()
+        wireIo = WireIoRepository(
+            essenceRepository = essenceRepo,
+            awakeningStoneRepository = stoneRepo,
+            abilityListingRepository = listingRepo,
+            statusEffectRepository = effectRepo,
+        )
         viewModel = SettingsViewModel(
             preferencesRepository = prefs,
             essenceRepository = essenceRepo,
             awakeningStoneRepository = stoneRepo,
             abilityListingRepository = listingRepo,
             statusEffectRepository = effectRepo,
+            wireIo = wireIo,
             ioDispatcher = dispatcher,
         )
     }

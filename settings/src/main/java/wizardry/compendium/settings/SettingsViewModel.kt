@@ -16,20 +16,14 @@ import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.StatusEffectRepository
-import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.preferences.PreferencesRepository
 import wizardry.compendium.ui.DomainPickerRow
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.Envelope
-import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.ImportSummary
-import wizardry.compendium.wire.WireDecodeException
-import wizardry.compendium.wire.WireExporter
-import wizardry.compendium.wire.WireImporter
-import wizardry.compendium.wire.WireVersionUnsupported
-import wizardry.compendium.wire.filteredTo
+import wizardry.compendium.wire.repo.WireIoRepository
 import javax.inject.Inject
 
 @HiltViewModel
@@ -39,6 +33,7 @@ class SettingsViewModel @Inject constructor(
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
+    private val wireIo: WireIoRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -66,19 +61,6 @@ class SettingsViewModel @Inject constructor(
     val awakeningStoneConflictCount = awakeningStoneRepository.conflicts.map { it.size }
     val abilityListingConflictCount = abilityListingRepository.conflicts.map { it.size }
     val statusEffectConflictCount = statusEffectRepository.conflicts.map { it.size }
-
-    private val exporter = WireExporter(
-        essenceRepository,
-        awakeningStoneRepository,
-        abilityListingRepository,
-        statusEffectRepository,
-    )
-    private val importer = WireImporter(
-        essenceRepository,
-        awakeningStoneRepository,
-        abilityListingRepository,
-        statusEffectRepository,
-    )
 
     /**
      * Modal state machine for the multi-step export and import flows.
@@ -155,14 +137,17 @@ class SettingsViewModel @Inject constructor(
         if (selection.isEmpty()) return  // button should already be disabled
         _ioState.value = IoState.Encoding
         viewModelScope.launch(ioDispatcher) {
-            val envelope = exporter.exportFiltered(selection)
-            val encoded = EnvelopeCodec.encode(envelope)
+            val encoded = wireIo.exportFiltered(selection)
             _ioState.value = if (encoded.fitsInShareLimit) {
-                IoState.ReadyToShare(text = encoded.text, byteSize = encoded.byteSize, selection = selection)
+                IoState.ReadyToShare(
+                    text = encoded.text,
+                    byteSize = encoded.byteSize,
+                    selection = selection,
+                )
             } else {
                 IoState.ShareTooLarge(
                     byteSize = encoded.byteSize,
-                    limit = EnvelopeCodec.ShareSizeLimitBytes,
+                    limit = encoded.shareSizeLimitBytes,
                     selection = selection,
                 )
             }
@@ -178,14 +163,17 @@ class SettingsViewModel @Inject constructor(
         if (selection.isEmpty()) return
         _ioState.value = IoState.Encoding
         viewModelScope.launch(ioDispatcher) {
-            val envelope = exporter.exportFiltered(selection)
-            val encoded = EnvelopeCodec.encode(envelope)
+            val encoded = wireIo.exportFiltered(selection)
             _ioState.value = if (encoded.fitsInShareLimit) {
-                IoState.ReadyToShare(text = encoded.text, byteSize = encoded.byteSize, selection = selection)
+                IoState.ReadyToShare(
+                    text = encoded.text,
+                    byteSize = encoded.byteSize,
+                    selection = selection,
+                )
             } else {
                 IoState.ShareTooLarge(
                     byteSize = encoded.byteSize,
-                    limit = EnvelopeCodec.ShareSizeLimitBytes,
+                    limit = encoded.shareSizeLimitBytes,
                     selection = selection,
                 )
             }
@@ -197,26 +185,16 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun pasteImport(text: String) {
-        if (text.isBlank()) {
-            _ioState.value = IoState.ImportFailed("Paste is empty.")
-            return
-        }
         _ioState.value = IoState.Decoding
         viewModelScope.launch(ioDispatcher) {
-            try {
-                val envelope = EnvelopeCodec.decode(text)
-                val rows = buildImportRows(envelope)
-                _ioState.value = IoState.ImportPreviewOpen(envelope = envelope, rows = rows)
-            } catch (e: WireVersionUnsupported) {
-                _ioState.value = IoState.ImportFailed(
-                    "This share was created with a newer version of the app. Update the app to import it.",
-                )
-            } catch (e: WireDecodeException) {
-                _ioState.value = IoState.ImportFailed(
-                    e.message ?: "Pasted data is not a valid contributions share.",
-                )
-            } catch (e: Exception) {
-                _ioState.value = IoState.ImportFailed("Import failed: ${e.message}")
+            when (val result = wireIo.decodeEnvelopeOrFailed(text)) {
+                is WireIoRepository.DecodeResult.Decoded -> {
+                    val rows = buildImportRows(result.envelope)
+                    _ioState.value = IoState.ImportPreviewOpen(envelope = result.envelope, rows = rows)
+                }
+                is WireIoRepository.DecodeResult.Failed -> {
+                    _ioState.value = IoState.ImportFailed(result.reason)
+                }
             }
         }
     }
@@ -233,11 +211,10 @@ class SettingsViewModel @Inject constructor(
         val current = _ioState.value as? IoState.ImportPreviewOpen ?: return
         val selection = current.rows.filter { it.selected }.map { it.key }.toSet()
         if (selection.isEmpty()) return
-        val filtered = current.envelope.filteredTo(selection)
         _ioState.value = IoState.Importing
         viewModelScope.launch(ioDispatcher) {
             try {
-                val summary = importer.import(filtered)
+                val summary = wireIo.import(current.envelope, selection)
                 _ioState.value = IoState.ImportComplete(summary)
             } catch (e: Exception) {
                 _ioState.value = IoState.ImportFailed("Import failed: ${e.message}")
@@ -254,18 +231,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     private suspend fun buildExportRows(): List<DomainPickerRow<ContributionDomain>> {
-        val essences = essenceRepository.getContributions()
-        val mfns = essences.count { it is Essence.Manifestation }
-        val confs = essences.count { it is Essence.Confluence }
-        val stones = awakeningStoneRepository.getContributions().size
-        val listings = abilityListingRepository.getContributions().size
-        val effects = statusEffectRepository.getContributions().size
+        val counts = wireIo.exportCounts()
         return listOf(
-            row(ContributionDomain.Essences, "Essences", mfns),
-            row(ContributionDomain.Confluences, "Confluences", confs),
-            row(ContributionDomain.AwakeningStones, "Awakening Stones", stones),
-            row(ContributionDomain.AbilityListings, "Abilities", listings),
-            row(ContributionDomain.StatusEffects, "Status Effects", effects),
+            row(ContributionDomain.Essences, "Essences", counts.manifestations),
+            row(ContributionDomain.Confluences, "Confluences", counts.confluences),
+            row(ContributionDomain.AwakeningStones, "Awakening Stones", counts.stones),
+            row(ContributionDomain.AbilityListings, "Abilities", counts.listings),
+            row(ContributionDomain.StatusEffects, "Status Effects", counts.effects),
         )
     }
 
