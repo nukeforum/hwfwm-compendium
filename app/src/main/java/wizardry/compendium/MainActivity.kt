@@ -1,8 +1,10 @@
 package wizardry.compendium
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -11,55 +13,63 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.Color
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import dagger.hilt.android.AndroidEntryPoint
 import wizardry.compendium.about.AboutScreen
 import wizardry.compendium.abilitylisting.contributions.AbilityContributionsScreen
 import wizardry.compendium.abilitylisting.search.AbilitySearch
 import wizardry.compendium.abilitylistinginfo.AbilityDetails
 import wizardry.compendium.awakeningstone.contributions.AwakeningStoneContributionsScreen
-import wizardry.compendium.conflicts.ConflictsScreen
-import wizardry.compendium.conflicts.ConflictsViewModel
-import wizardry.compendium.share.ShareViewModel
-import android.content.Intent as AndroidIntent
-import android.content.Context
 import wizardry.compendium.awakeningstone.search.AwakeningStoneSearch
 import wizardry.compendium.awakeningstoneinfo.AwakeningStoneDetails
 import wizardry.compendium.characterbuild.contributions.CharacterBuildContributionsScreen
 import wizardry.compendium.characterbuild.search.CharacterBuildSearch
 import wizardry.compendium.characterbuilddetails.CharacterBuildDetails
+import wizardry.compendium.conflicts.ConflictsScreen
+import wizardry.compendium.conflicts.ConflictsViewModel
 import wizardry.compendium.essence.contributions.EssenceContributionsScreen
-import wizardry.compendium.statuseffect.contributions.StatusEffectContributionsScreen
-import wizardry.compendium.statuseffect.details.StatusEffectDetails
-import wizardry.compendium.statuseffect.search.StatusEffectSearch
 import wizardry.compendium.essenceinfo.EssenceDetails
 import wizardry.compendium.randomizer.Randomizer
 import wizardry.compendium.search.EssenceSearch
 import wizardry.compendium.settings.SettingsScreen
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
+import wizardry.compendium.share.ShareViewModel
+import wizardry.compendium.statuseffect.contributions.StatusEffectContributionsScreen
+import wizardry.compendium.statuseffect.details.StatusEffectDetails
+import wizardry.compendium.statuseffect.search.StatusEffectSearch
 import wizardry.compendium.theme.ThemeSettingsViewModel
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.ui.theme.ThemeMode
-import dagger.hilt.android.AndroidEntryPoint
+import android.content.Intent as AndroidIntent
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -69,10 +79,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val navController = rememberNavController()
-            var currentRoute by remember { mutableStateOf<String?>(null) }
-            var title by remember { mutableStateOf("Magic Society Compendium") }
+            val backStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = backStackEntry?.destination?.route
             val shareViewModel = hiltViewModel<ShareViewModel>()
-            val activityContext: Context = this
             val themeSettingsViewModel = hiltViewModel<ThemeSettingsViewModel>()
             val themeMode by themeSettingsViewModel.themeMode.collectAsState()
             val dynamicColor by themeSettingsViewModel.dynamicColorEnabled.collectAsState()
@@ -84,49 +93,50 @@ class MainActivity : ComponentActivity() {
                 }
                 val view = LocalView.current
                 if (!view.isInEditMode) {
-                    SideEffect {
+                    DisposableEffect(useDark) {
                         WindowCompat.setDecorFitsSystemWindows(window, false)
                         WindowInsetsControllerCompat(window, view).apply {
                             isAppearanceLightStatusBars = !useDark
                             isAppearanceLightNavigationBars = !useDark
                         }
+                        onDispose { }
                     }
                 }
+
+                // Async-loaded entity title (set by detail screens via onXLoaded). Re-keyed per route.
+                var loadedTitle by remember(currentRoute) { mutableStateOf<String?>(null) }
+                val defaultTitle = titleForRoute(currentRoute, backStackEntry)
+                val title = loadedTitle ?: defaultTitle
+
                 Scaffold(
                     topBar = {
                         TopAppBar(
                             title = { Text(text = title) },
                             navigationIcon = {
-                                if (currentRoute != Nav.Landing.route) {
+                                if (currentRoute != null && currentRoute != Nav.Landing.route) {
                                     BackButton { navController.popBackStack() }
                                 }
                             },
                             actions = {
-                                if (currentRoute == Nav.EssenceSearch.route) {
-                                    RandomizerButton {
-                                        navController.navigate(Nav.EssenceRandomizer.route)
+                                when (currentRoute) {
+                                    Nav.EssenceSearch.route -> {
+                                        RandomizerButton {
+                                            navController.navigate(Nav.EssenceRandomizer.route)
+                                        }
+                                        ContributeButton {
+                                            navController.navigate(Nav.Contributions.newRoute)
+                                        }
                                     }
-                                    ContributeButton {
-                                        navController.navigate(Nav.Contributions.newRoute)
-                                    }
-                                }
-                                if (currentRoute == Nav.AwakeningStoneSearch.route) {
-                                    ContributeButton {
+                                    Nav.AwakeningStoneSearch.route -> ContributeButton {
                                         navController.navigate(Nav.AwakeningStoneContributions.newRoute)
                                     }
-                                }
-                                if (currentRoute == Nav.AbilitySearch.route) {
-                                    ContributeButton {
+                                    Nav.AbilitySearch.route -> ContributeButton {
                                         navController.navigate(Nav.AbilityContributions.newRoute)
                                     }
-                                }
-                                if (currentRoute == Nav.StatusEffectSearch.route) {
-                                    ContributeButton {
+                                    Nav.StatusEffectSearch.route -> ContributeButton {
                                         navController.navigate(Nav.StatusEffectContributions.newRoute)
                                     }
-                                }
-                                if (currentRoute == Nav.CharacterBuildSearch.route) {
-                                    ContributeButton {
+                                    Nav.CharacterBuildSearch.route -> ContributeButton {
                                         navController.navigate(Nav.CharacterBuildContributions.newRoute)
                                     }
                                 }
@@ -144,9 +154,7 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         startDestination = Nav.Landing.route
                     ) {
-                        composable(Nav.Landing.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Magic Society Compendium"
+                        composable(Nav.Landing.route) {
                             LandingScreen(
                                 onEssenceClicked = { navController.navigate(Nav.EssenceSearch.route) },
                                 onAwakeningStoneClicked = { navController.navigate(Nav.AwakeningStoneSearch.route) },
@@ -155,9 +163,7 @@ class MainActivity : ComponentActivity() {
                                 onCharacterBuildClicked = { navController.navigate(Nav.CharacterBuildSearch.route) },
                             )
                         }
-                        composable(Nav.EssenceSearch.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Essence Search"
+                        composable(Nav.EssenceSearch.route) {
                             EssenceSearch(
                                 onEssenceClicked = { essence ->
                                     navController.navigate(Nav.EssenceDetail.buildRoute(essence))
@@ -167,9 +173,7 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
-                        composable(Nav.AwakeningStoneSearch.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Awakening Stone Search"
+                        composable(Nav.AwakeningStoneSearch.route) {
                             AwakeningStoneSearch(
                                 onStoneClicked = { stone ->
                                     navController.navigate(Nav.AwakeningStoneDetail.buildRoute(stone))
@@ -184,18 +188,19 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(
                                 navArgument(Nav.EssenceDetail.ARG_NAME) { type = NavType.StringType }
                             )
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val essenceName = backStackEntry.arguments!!.getString(Nav.EssenceDetail.ARG_NAME)!!
-                            title = essenceName
+                        ) { entry ->
+                            val essenceName = requireNotNull(entry.arguments?.getString(Nav.EssenceDetail.ARG_NAME)) {
+                                "${Nav.EssenceDetail.ARG_NAME} required for ${Nav.EssenceDetail.route}"
+                            }
+                            val context = LocalContext.current
                             EssenceDetails(
                                 essenceName = essenceName,
-                                onEssenceLoaded = { title = it.name },
+                                onEssenceLoaded = { loadedTitle = it.name },
                                 onEditContribution = { essence ->
                                     navController.navigate(Nav.Contributions.buildEditRoute(essence))
                                 },
                                 onShareContribution = { essence ->
-                                    fireShareIntent(activityContext, shareViewModel.encode(essence))
+                                    fireShareIntent(context, shareViewModel.encode(essence))
                                 },
                             )
                         }
@@ -204,53 +209,46 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(
                                 navArgument(Nav.AwakeningStoneDetail.ARG_NAME) { type = NavType.StringType }
                             )
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val stoneName = backStackEntry.arguments!!.getString(Nav.AwakeningStoneDetail.ARG_NAME)!!
-                            title = stoneName
+                        ) { entry ->
+                            val stoneName = requireNotNull(entry.arguments?.getString(Nav.AwakeningStoneDetail.ARG_NAME)) {
+                                "${Nav.AwakeningStoneDetail.ARG_NAME} required for ${Nav.AwakeningStoneDetail.route}"
+                            }
+                            val context = LocalContext.current
                             AwakeningStoneDetails(
                                 stoneName = stoneName,
-                                onStoneLoaded = { title = it.name },
+                                onStoneLoaded = { loadedTitle = it.name },
                                 onEditContribution = { stone ->
                                     navController.navigate(Nav.AwakeningStoneContributions.buildEditRoute(stone))
                                 },
                                 onShareContribution = { stone ->
-                                    fireShareIntent(activityContext, shareViewModel.encode(stone))
+                                    fireShareIntent(context, shareViewModel.encode(stone))
                                 },
                             )
                         }
-                        composable(Nav.EssenceRandomizer.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Randomizer"
+                        composable(Nav.EssenceRandomizer.route) {
                             Randomizer()
                         }
-                        composable(Nav.Settings.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Settings"
+                        composable(Nav.Settings.route) {
                             SettingsScreen(
                                 onAboutClick = { navController.navigate(Nav.About.route) },
                             )
                         }
-                        composable(Nav.About.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "About"
+                        composable(Nav.About.route) {
                             AboutScreen()
                         }
-                        composable(Nav.Conflicts.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Resolve Conflicts"
+                        composable(Nav.Conflicts.route) {
                             ConflictsScreen(
                                 onEditEssenceContribution = { name ->
-                                    navController.navigate("contributions?name=${android.net.Uri.encode(name)}")
+                                    navController.navigate(Nav.Contributions.buildEditRouteByName(name))
                                 },
                                 onEditAwakeningStoneContribution = { name ->
-                                    navController.navigate("stoneContributions?name=${android.net.Uri.encode(name)}")
+                                    navController.navigate(Nav.AwakeningStoneContributions.buildEditRouteByName(name))
                                 },
                                 onEditAbilityContribution = { name ->
-                                    navController.navigate("abilityListingContributions?name=${android.net.Uri.encode(name)}")
+                                    navController.navigate(Nav.AbilityContributions.buildEditRouteByName(name))
                                 },
                                 onEditStatusEffectContribution = { name ->
-                                    navController.navigate("statusEffectContributions?name=${android.net.Uri.encode(name)}")
+                                    navController.navigate(Nav.StatusEffectContributions.buildEditRouteByName(name))
                                 },
                             )
                         }
@@ -263,10 +261,7 @@ class MainActivity : ComponentActivity() {
                                     defaultValue = null
                                 }
                             ),
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val editName = backStackEntry.arguments?.getString(Nav.Contributions.ARG_NAME)
-                            title = if (editName != null) "Edit Essence" else "Add Essence"
+                        ) {
                             EssenceContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.EssenceSearch.route, false) },
@@ -293,10 +288,7 @@ class MainActivity : ComponentActivity() {
                                     defaultValue = null
                                 }
                             ),
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val editName = backStackEntry.arguments?.getString(Nav.AwakeningStoneContributions.ARG_NAME)
-                            title = if (editName != null) "Edit Awakening Stone" else "Add Awakening Stone"
+                        ) {
                             AwakeningStoneContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.AwakeningStoneSearch.route, false) },
@@ -308,9 +300,7 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
-                        composable(Nav.AbilitySearch.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Ability Search"
+                        composable(Nav.AbilitySearch.route) {
                             AbilitySearch(
                                 onAbilityClicked = { ability ->
                                     navController.navigate(Nav.AbilityDetail.buildRoute(ability))
@@ -325,18 +315,19 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(
                                 navArgument(Nav.AbilityDetail.ARG_NAME) { type = NavType.StringType }
                             )
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val abilityName = backStackEntry.arguments!!.getString(Nav.AbilityDetail.ARG_NAME)!!
-                            title = abilityName
+                        ) { entry ->
+                            val abilityName = requireNotNull(entry.arguments?.getString(Nav.AbilityDetail.ARG_NAME)) {
+                                "${Nav.AbilityDetail.ARG_NAME} required for ${Nav.AbilityDetail.route}"
+                            }
+                            val context = LocalContext.current
                             AbilityDetails(
                                 abilityName = abilityName,
-                                onAbilityLoaded = { title = it.name },
+                                onAbilityLoaded = { loadedTitle = it.name },
                                 onEditContribution = { ability ->
                                     navController.navigate(Nav.AbilityContributions.buildEditRoute(ability))
                                 },
                                 onShareContribution = { ability ->
-                                    fireShareIntent(activityContext, shareViewModel.encode(ability))
+                                    fireShareIntent(context, shareViewModel.encode(ability))
                                 },
                             )
                         }
@@ -349,10 +340,7 @@ class MainActivity : ComponentActivity() {
                                     defaultValue = null
                                 }
                             ),
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val editName = backStackEntry.arguments?.getString(Nav.AbilityContributions.ARG_NAME)
-                            title = if (editName != null) "Edit Ability" else "Add Ability"
+                        ) {
                             AbilityContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.AbilitySearch.route, false) },
@@ -364,9 +352,7 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
-                        composable(Nav.StatusEffectSearch.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Status Effect Search"
+                        composable(Nav.StatusEffectSearch.route) {
                             StatusEffectSearch(
                                 onEffectClicked = { effect ->
                                     navController.navigate(Nav.StatusEffectDetail.buildRoute(effect))
@@ -381,18 +367,19 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(
                                 navArgument(Nav.StatusEffectDetail.ARG_NAME) { type = NavType.StringType }
                             )
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val effectName = backStackEntry.arguments!!.getString(Nav.StatusEffectDetail.ARG_NAME)!!
-                            title = effectName
+                        ) { entry ->
+                            val effectName = requireNotNull(entry.arguments?.getString(Nav.StatusEffectDetail.ARG_NAME)) {
+                                "${Nav.StatusEffectDetail.ARG_NAME} required for ${Nav.StatusEffectDetail.route}"
+                            }
+                            val context = LocalContext.current
                             StatusEffectDetails(
                                 effectName = effectName,
-                                onEffectLoaded = { title = it.name },
+                                onEffectLoaded = { loadedTitle = it.name },
                                 onEditContribution = { effect ->
                                     navController.navigate(Nav.StatusEffectContributions.buildEditRoute(effect))
                                 },
                                 onShareContribution = { effect ->
-                                    fireShareIntent(activityContext, shareViewModel.encode(effect))
+                                    fireShareIntent(context, shareViewModel.encode(effect))
                                 },
                             )
                         }
@@ -405,10 +392,7 @@ class MainActivity : ComponentActivity() {
                                     defaultValue = null
                                 }
                             ),
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val editName = backStackEntry.arguments?.getString(Nav.StatusEffectContributions.ARG_NAME)
-                            title = if (editName != null) "Edit Status Effect" else "Add Status Effect"
+                        ) {
                             StatusEffectContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.StatusEffectSearch.route, false) },
@@ -420,9 +404,7 @@ class MainActivity : ComponentActivity() {
                                 },
                             )
                         }
-                        composable(Nav.CharacterBuildSearch.route) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            title = "Character Build Search"
+                        composable(Nav.CharacterBuildSearch.route) {
                             CharacterBuildSearch(
                                 onBuildClicked = { build ->
                                     navController.navigate(Nav.CharacterBuildDetail.buildRoute(build))
@@ -437,13 +419,13 @@ class MainActivity : ComponentActivity() {
                             arguments = listOf(
                                 navArgument(Nav.CharacterBuildDetail.ARG_NAME) { type = NavType.StringType }
                             ),
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val buildName = backStackEntry.arguments!!.getString(Nav.CharacterBuildDetail.ARG_NAME)!!
-                            title = buildName
+                        ) { entry ->
+                            val buildName = requireNotNull(entry.arguments?.getString(Nav.CharacterBuildDetail.ARG_NAME)) {
+                                "${Nav.CharacterBuildDetail.ARG_NAME} required for ${Nav.CharacterBuildDetail.route}"
+                            }
                             CharacterBuildDetails(
                                 buildName = buildName,
-                                onBuildLoaded = { title = it.name },
+                                onBuildLoaded = { loadedTitle = it.name },
                                 onEditContribution = { build ->
                                     navController.navigate(Nav.CharacterBuildContributions.buildEditRoute(build))
                                 },
@@ -458,10 +440,7 @@ class MainActivity : ComponentActivity() {
                                     defaultValue = null
                                 }
                             ),
-                        ) { backStackEntry ->
-                            currentRoute = backStackEntry.destination.route
-                            val editName = backStackEntry.arguments?.getString(Nav.CharacterBuildContributions.ARG_NAME)
-                            title = if (editName != null) "Edit Build" else "Add Build"
+                        ) {
                             CharacterBuildContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.CharacterBuildSearch.route, false) },
@@ -472,6 +451,35 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
+
+private fun titleForRoute(route: String?, entry: NavBackStackEntry?): String = when (route) {
+    null, Nav.Landing.route -> "Magic Society Compendium"
+    Nav.EssenceSearch.route -> "Essence Search"
+    Nav.AwakeningStoneSearch.route -> "Awakening Stone Search"
+    Nav.AbilitySearch.route -> "Ability Search"
+    Nav.StatusEffectSearch.route -> "Status Effect Search"
+    Nav.CharacterBuildSearch.route -> "Character Build Search"
+    Nav.EssenceRandomizer.route -> "Randomizer"
+    Nav.Settings.route -> "Settings"
+    Nav.About.route -> "About"
+    Nav.Conflicts.route -> "Resolve Conflicts"
+    Nav.EssenceDetail.route -> entry?.arguments?.getString(Nav.EssenceDetail.ARG_NAME).orEmpty()
+    Nav.AwakeningStoneDetail.route -> entry?.arguments?.getString(Nav.AwakeningStoneDetail.ARG_NAME).orEmpty()
+    Nav.AbilityDetail.route -> entry?.arguments?.getString(Nav.AbilityDetail.ARG_NAME).orEmpty()
+    Nav.StatusEffectDetail.route -> entry?.arguments?.getString(Nav.StatusEffectDetail.ARG_NAME).orEmpty()
+    Nav.CharacterBuildDetail.route -> entry?.arguments?.getString(Nav.CharacterBuildDetail.ARG_NAME).orEmpty()
+    Nav.Contributions.route ->
+        if (entry?.arguments?.getString(Nav.Contributions.ARG_NAME) != null) "Edit Essence" else "Add Essence"
+    Nav.AwakeningStoneContributions.route ->
+        if (entry?.arguments?.getString(Nav.AwakeningStoneContributions.ARG_NAME) != null) "Edit Awakening Stone" else "Add Awakening Stone"
+    Nav.AbilityContributions.route ->
+        if (entry?.arguments?.getString(Nav.AbilityContributions.ARG_NAME) != null) "Edit Ability" else "Add Ability"
+    Nav.StatusEffectContributions.route ->
+        if (entry?.arguments?.getString(Nav.StatusEffectContributions.ARG_NAME) != null) "Edit Status Effect" else "Add Status Effect"
+    Nav.CharacterBuildContributions.route ->
+        if (entry?.arguments?.getString(Nav.CharacterBuildContributions.ARG_NAME) != null) "Edit Build" else "Add Build"
+    else -> "Magic Society Compendium"
 }
 
 @Composable
@@ -501,12 +509,19 @@ private fun ConflictsBadge(
     viewModel: ConflictsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
-    if (state.total == 0) return
-    IconButton(onClick = navigate) {
+    val total = state.total
+    if (total == 0) return
+    val description = pluralStringResource(R.plurals.contribution_conflicts, total, total)
+    IconButton(
+        onClick = navigate,
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            liveRegion = LiveRegionMode.Polite
+        },
+    ) {
         Icon(
             imageVector = Icons.Filled.Warning,
-            contentDescription = "${state.total} contribution conflict(s)",
-            tint = Color(0xFFD32F2F),
+            contentDescription = description,
+            tint = MaterialTheme.colorScheme.error,
         )
     }
 }

@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Compendium</string>
+    <plurals name="contribution_conflicts">
+        <item quantity="one">%d contribution conflict</item>
+        <item quantity="other">%d contribution conflicts</item>
+    </plurals>
 </resources>

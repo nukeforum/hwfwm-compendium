@@ -19,17 +19,20 @@ sealed class Nav(val route: String) {
     object Contributions : Nav("contributions?name={name}") {
         const val ARG_NAME = "name"
         const val newRoute = "contributions"
-        fun buildEditRoute(essence: Essence) = "contributions?name=${Uri.encode(essence.name)}"
+        fun buildEditRoute(essence: Essence) = buildEditRouteByName(essence.name)
+        fun buildEditRouteByName(name: String) = "contributions?name=${Uri.encode(name)}"
     }
     object AwakeningStoneContributions : Nav("stoneContributions?name={name}") {
         const val ARG_NAME = "name"
         const val newRoute = "stoneContributions"
-        fun buildEditRoute(stone: AwakeningStone) = "stoneContributions?name=${Uri.encode(stone.name)}"
+        fun buildEditRoute(stone: AwakeningStone) = buildEditRouteByName(stone.name)
+        fun buildEditRouteByName(name: String) = "stoneContributions?name=${Uri.encode(name)}"
     }
     object AbilityContributions : Nav("abilityListingContributions?name={name}") {
         const val ARG_NAME = "name"
         const val newRoute = "abilityListingContributions"
-        fun buildEditRoute(listing: Ability.Listing) = "abilityListingContributions?name=${Uri.encode(listing.name)}"
+        fun buildEditRoute(listing: Ability.Listing) = buildEditRouteByName(listing.name)
+        fun buildEditRouteByName(name: String) = "abilityListingContributions?name=${Uri.encode(name)}"
     }
     object EssenceDetail : Nav("detail/{essenceName}") {
         const val ARG_NAME = "essenceName"
@@ -47,7 +50,8 @@ sealed class Nav(val route: String) {
     object StatusEffectContributions : Nav("statusEffectContributions?name={name}") {
         const val ARG_NAME = "name"
         const val newRoute = "statusEffectContributions"
-        fun buildEditRoute(effect: StatusEffect) = "statusEffectContributions?name=${Uri.encode(effect.name)}"
+        fun buildEditRoute(effect: StatusEffect) = buildEditRouteByName(effect.name)
+        fun buildEditRouteByName(name: String) = "statusEffectContributions?name=${Uri.encode(name)}"
     }
     object StatusEffectDetail : Nav("statusEffectDetail/{statusEffectName}") {
         const val ARG_NAME = "statusEffectName"
