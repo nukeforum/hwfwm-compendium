@@ -6,11 +6,11 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.persistence.AbilityListingCache
 import wizardry.compendium.preferences.AbilityListingContributionsToggle
+import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
 
 class DefaultAbilityListingRepositoryConflictTest {
 

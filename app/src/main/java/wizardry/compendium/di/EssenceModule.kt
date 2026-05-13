@@ -1,26 +1,26 @@
 package wizardry.compendium.di
 
-import wizardry.compendium.DefaultAbilityListingRepository
-import wizardry.compendium.DefaultAwakeningStoneRepository
-import wizardry.compendium.DefaultCharacterBuildRepository
-import wizardry.compendium.DefaultEssenceRepository
-import wizardry.compendium.DefaultStatusEffectRepository
-import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
-import wizardry.compendium.essences.AbilityListingRepository
-import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
-import wizardry.compendium.essences.AwakeningStoneRepository
-import wizardry.compendium.essences.CharacterBuildRepository
-import wizardry.compendium.preferences.EssenceContributionsToggleFlow
-import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggleFlow
-import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow
-import wizardry.compendium.essences.StatusEffectRepository
-import wizardry.compendium.preferences.DataStorePreferencesRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import wizardry.compendium.DefaultAbilityListingRepository
+import wizardry.compendium.DefaultAwakeningStoneRepository
+import wizardry.compendium.DefaultCharacterBuildRepository
+import wizardry.compendium.DefaultEssenceRepository
+import wizardry.compendium.DefaultStatusEffectRepository
+import wizardry.compendium.essences.AbilityListingRepository
+import wizardry.compendium.essences.AwakeningStoneRepository
+import wizardry.compendium.essences.CharacterBuildRepository
+import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
+import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
+import wizardry.compendium.preferences.DataStorePreferencesRepository
+import wizardry.compendium.preferences.EssenceContributionsToggleFlow
+import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggleFlow
+import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow
 
 @Module
 @InstallIn(SingletonComponent::class)

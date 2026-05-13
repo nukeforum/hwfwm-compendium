@@ -6,11 +6,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggleFlow
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.ConfluenceSet
@@ -18,7 +16,9 @@ import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.persistence.AwakeningStoneCache
 import wizardry.compendium.preferences.AwakeningStoneContributionsToggle
+import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggle
+import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggleFlow
 
 class DefaultAwakeningStoneRepositoryConflictTest {
 

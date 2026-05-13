@@ -1,11 +1,17 @@
 package wizardry.compendium
 
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import wizardry.compendium.essences.AwakeningStoneConflict
-import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggleFlow
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.essences.detectAwakeningStoneConflicts
 import wizardry.compendium.essences.manifestationsNotMatchingStones
@@ -13,18 +19,12 @@ import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.toAwakeningStone
 import wizardry.compendium.persistence.AwakeningStoneCache
-import wizardry.compendium.preferences.AwakeningStoneContributionsToggle
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
+import wizardry.compendium.preferences.AwakeningStoneContributionsToggle
+import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggle
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import javax.inject.Inject
-import javax.inject.Singleton
+import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggleFlow
 
 @Singleton
 class DefaultAwakeningStoneRepository @Inject constructor(

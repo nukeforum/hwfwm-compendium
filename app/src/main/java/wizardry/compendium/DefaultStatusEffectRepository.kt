@@ -1,5 +1,7 @@
 package wizardry.compendium
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -8,7 +10,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.StatusEffectConflict
-import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.dataloader.StatusEffectDataLoader
 import wizardry.compendium.essences.detectStatusEffectConflicts
@@ -17,8 +18,7 @@ import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.StatusEffectCache
 import wizardry.compendium.preferences.StatusEffectContributionsToggle
-import javax.inject.Inject
-import javax.inject.Singleton
+import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow
 
 @Singleton
 class DefaultStatusEffectRepository @Inject constructor(

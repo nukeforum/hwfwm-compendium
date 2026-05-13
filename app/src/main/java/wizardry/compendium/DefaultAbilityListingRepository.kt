@@ -1,5 +1,7 @@
 package wizardry.compendium
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
@@ -7,18 +9,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import wizardry.compendium.essences.AbilityListingConflict
-import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.essences.detectAbilityListingConflicts
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.persistence.AbilityListingCache
-import wizardry.compendium.preferences.AbilityListingContributionsToggle
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
-import javax.inject.Inject
-import javax.inject.Singleton
+import wizardry.compendium.preferences.AbilityListingContributionsToggle
+import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
 
 @Singleton
 class DefaultAbilityListingRepository @Inject constructor(
