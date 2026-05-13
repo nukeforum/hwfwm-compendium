@@ -29,6 +29,7 @@ import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.wire.repo.WireIoRepository
 import wizardry.compendium.wire.share.BuildShareDecoder
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -52,7 +53,17 @@ class ShareViewModelBuildTest {
         statusRepo = SvbStatusEffectRepo()
         buildRepo = SvbBuildRepo()
         decoder = BuildShareDecoder(essenceRepo, listingRepo, buildRepo)
-        viewModel = ShareViewModel(essenceRepo, stoneRepo, listingRepo, statusRepo, decoder)
+        val wireIo = WireIoRepository(
+            essenceRepository = essenceRepo,
+            awakeningStoneRepository = stoneRepo,
+            abilityListingRepository = listingRepo,
+            statusEffectRepository = statusRepo,
+        )
+        viewModel = ShareViewModel(
+            essenceRepository = essenceRepo,
+            wireIo = wireIo,
+            buildShareDecoder = decoder,
+        )
     }
 
     @After

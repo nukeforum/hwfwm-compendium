@@ -82,6 +82,7 @@ dependencies {
     implementation(project(":status-effect-details"))
     implementation(project(":status-effect-search"))
     implementation(project(":wire"))
+    implementation(project(":wire-repo"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

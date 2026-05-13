@@ -32,6 +32,7 @@ import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.WireExporter
+import wizardry.compendium.wire.repo.WireIoRepository
 import wizardry.compendium.wire.share.BuildShareDecoder
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -58,9 +59,16 @@ class ShareViewModelDecodeConfluenceBundleTest {
         essenceRepo = FakeEssenceRepository(canonical = emptyList(), contributions = emptyList())
         stoneRepo = FakeAwakeningStoneRepository()
         listingRepo = FakeAbilityListingRepository()
+        val wireIo = WireIoRepository(
+            essenceRepository = essenceRepo,
+            awakeningStoneRepository = stoneRepo,
+            abilityListingRepository = listingRepo,
+            statusEffectRepository = fakeStatusEffectRepo(),
+        )
         viewModel = ShareViewModel(
-            essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo(),
-            BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepository()),
+            essenceRepository = essenceRepo,
+            wireIo = wireIo,
+            buildShareDecoder = BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepository()),
         )
     }
 
@@ -89,9 +97,16 @@ class ShareViewModelDecodeConfluenceBundleTest {
     @Test
     fun `marks bundled essences as not new when already in repo`() = runTest(dispatcher) {
         essenceRepo = FakeEssenceRepository(canonical = listOf(wind), contributions = emptyList())
+        val wireIo = WireIoRepository(
+            essenceRepository = essenceRepo,
+            awakeningStoneRepository = stoneRepo,
+            abilityListingRepository = listingRepo,
+            statusEffectRepository = fakeStatusEffectRepo(),
+        )
         viewModel = ShareViewModel(
-            essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo(),
-            BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepository()),
+            essenceRepository = essenceRepo,
+            wireIo = wireIo,
+            buildShareDecoder = BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepository()),
         )
         val exporter = WireExporter(essenceRepo, stoneRepo, listingRepo, fakeStatusEffectRepo())
         val text = EnvelopeCodec.encode(exporter.exportSingle(doom)).text

@@ -18,6 +18,7 @@ import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.EnvelopeMapper
+import wizardry.compendium.wire.repo.WireIoRepository
 import wizardry.compendium.wire.share.BuildShareDecoder
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,13 +39,19 @@ class ShareViewModelDecodeSingleStatusEffectTest {
     fun setUp() {
         Dispatchers.setMain(dispatcher)
         val essenceRepo = FakeEssenceRepositoryForStatusEffectTest()
+        val stoneRepo = FakeAwakeningStoneRepositoryForStatusEffectTest()
         val listingRepo = FakeAbilityListingRepositoryForStatusEffectTest()
+        val effectRepo = fakeStatusEffectRepoForTest()
+        val wireIo = WireIoRepository(
+            essenceRepository = essenceRepo,
+            awakeningStoneRepository = stoneRepo,
+            abilityListingRepository = listingRepo,
+            statusEffectRepository = effectRepo,
+        )
         viewModel = ShareViewModel(
-            essenceRepo,
-            FakeAwakeningStoneRepositoryForStatusEffectTest(),
-            listingRepo,
-            fakeStatusEffectRepoForTest(),
-            BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepositoryForStatusEffectTest()),
+            essenceRepository = essenceRepo,
+            wireIo = wireIo,
+            buildShareDecoder = BuildShareDecoder(essenceRepo, listingRepo, FakeCharacterBuildRepositoryForStatusEffectTest()),
         )
     }
 

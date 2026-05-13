@@ -3,21 +3,15 @@ package wizardry.compendium.share
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import wizardry.compendium.ability.preview.AbilityTextRenderer
-import wizardry.compendium.essences.AbilityListingRepository
-import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.wire.Envelope
-import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.EnvelopeMapper
-import wizardry.compendium.wire.WireDecodeException
-import wizardry.compendium.wire.WireExporter
-import wizardry.compendium.wire.WireVersionUnsupported
+import wizardry.compendium.wire.repo.WireIoRepository
 import wizardry.compendium.wire.share.BuildImportPreview
 import wizardry.compendium.wire.share.BuildShareDecoder
 import javax.inject.Inject
@@ -42,36 +36,19 @@ import javax.inject.Inject
 @HiltViewModel
 class ShareViewModel @Inject constructor(
     private val essenceRepository: EssenceRepository,
-    awakeningStoneRepository: AwakeningStoneRepository,
-    abilityListingRepository: AbilityListingRepository,
-    statusEffectRepository: StatusEffectRepository,
+    private val wireIo: WireIoRepository,
     private val buildShareDecoder: BuildShareDecoder,
 ) : ViewModel() {
 
-    private val exporter = WireExporter(
-        essenceRepository,
-        awakeningStoneRepository,
-        abilityListingRepository,
-        statusEffectRepository,
-    )
+    fun encode(essence: Essence): String = wireIo.encodeSingle(essence)
 
-    fun encode(essence: Essence): String = when (essence) {
-        is Essence.Manifestation -> EnvelopeCodec.encode(exporter.exportSingle(essence)).text
-        is Essence.Confluence -> EnvelopeCodec.encode(exporter.exportSingle(essence)).text
-        else -> error("Unsupported Essence subtype: ${essence::class}")
-    }
+    fun encode(stone: AwakeningStone): String = wireIo.encodeSingle(stone)
 
-    fun encode(stone: AwakeningStone): String =
-        EnvelopeCodec.encode(exporter.exportSingle(stone)).text
+    fun encode(listing: Ability.Listing): String = wireIo.encodeSingle(listing)
 
-    fun encode(listing: Ability.Listing): String =
-        EnvelopeCodec.encode(exporter.exportSingle(listing)).text
+    fun encode(effect: StatusEffect): String = wireIo.encodeSingle(effect)
 
-    fun encode(effect: StatusEffect): String =
-        EnvelopeCodec.encode(exporter.exportSingle(effect)).text
-
-    fun encodeBuild(build: CharacterBuild): String =
-        EnvelopeCodec.encode(exporter.exportSingle(build)).text
+    fun encodeBuild(build: CharacterBuild): String = wireIo.encodeSingle(build)
 
     fun renderBuildAsText(
         build: CharacterBuild,
@@ -164,9 +141,9 @@ class ShareViewModel @Inject constructor(
      * references that aren't bundled and aren't in the DB.
      */
     suspend fun decodeConfluenceBundle(text: String): DecodedSingle<ConfluenceImportPreview> {
-        val envelope = when (val r = decodeEnvelopeOrFailed(text)) {
-            is EnvelopeResult.Failed -> return DecodedSingle.Failed(r.reason)
-            is EnvelopeResult.Decoded -> r.envelope
+        val envelope = when (val r = wireIo.decodeEnvelopeOrFailed(text)) {
+            is WireIoRepository.DecodeResult.Failed -> return DecodedSingle.Failed(r.reason)
+            is WireIoRepository.DecodeResult.Decoded -> r.envelope
         }
 
         val others = envelope.stones.size + envelope.listings.size
@@ -222,31 +199,8 @@ class ShareViewModel @Inject constructor(
     private inline fun <T> decodeSingle(
         text: String,
         extract: (Envelope) -> DecodedSingle<T>,
-    ): DecodedSingle<T> = when (val r = decodeEnvelopeOrFailed(text)) {
-        is EnvelopeResult.Failed -> DecodedSingle.Failed(r.reason)
-        is EnvelopeResult.Decoded -> extract(r.envelope)
-    }
-
-    /**
-     * Shared envelope-decoding step for all paste-buffer entry points.
-     * Centralizes the empty-paste / version-unsupported / decode-failure /
-     * generic-exception ladder so each consumer can focus on shape checks.
-     */
-    private fun decodeEnvelopeOrFailed(text: String): EnvelopeResult {
-        if (text.isBlank()) return EnvelopeResult.Failed("Paste is empty.")
-        return try {
-            EnvelopeResult.Decoded(EnvelopeCodec.decode(text))
-        } catch (e: WireVersionUnsupported) {
-            EnvelopeResult.Failed("This share was made with a newer app version. Update to import.")
-        } catch (e: WireDecodeException) {
-            EnvelopeResult.Failed(e.message ?: "Pasted data is not a valid contribution share.")
-        } catch (e: Exception) {
-            EnvelopeResult.Failed("Import failed: ${e.message}")
-        }
-    }
-
-    private sealed interface EnvelopeResult {
-        data class Decoded(val envelope: Envelope) : EnvelopeResult
-        data class Failed(val reason: String) : EnvelopeResult
+    ): DecodedSingle<T> = when (val r = wireIo.decodeEnvelopeOrFailed(text)) {
+        is WireIoRepository.DecodeResult.Failed -> DecodedSingle.Failed(r.reason)
+        is WireIoRepository.DecodeResult.Decoded -> extract(r.envelope)
     }
 }
