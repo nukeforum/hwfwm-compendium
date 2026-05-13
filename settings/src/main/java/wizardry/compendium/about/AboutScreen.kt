@@ -12,14 +12,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import wizardry.compendium.BuildConfig
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.ui.theme.ThemeMode
 
 @Composable
-fun AboutScreen() {
-    AboutContent(versionName = BuildConfig.VERSION_NAME)
+fun AboutScreen(versionName: String) {
+    AboutContent(versionName = versionName)
 }
 
 @Composable

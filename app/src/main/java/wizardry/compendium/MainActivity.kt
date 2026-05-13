@@ -234,7 +234,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(Nav.About.route) {
-                            AboutScreen()
+                            AboutScreen(versionName = BuildConfig.VERSION_NAME)
                         }
                         composable(Nav.Conflicts.route) {
                             ConflictsScreen(
