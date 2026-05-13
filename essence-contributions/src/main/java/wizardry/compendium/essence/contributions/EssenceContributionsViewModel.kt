@@ -12,11 +12,11 @@ import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.share.ConfluenceImportPreview
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import wizardry.compendium.wire.ImportSummary
 import wizardry.compendium.wire.WireImporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,30 +24,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class EssenceContributionsViewModel(
+class EssenceContributionsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val essenceRepository: EssenceRepository,
     awakeningStoneRepository: AwakeningStoneRepository,
     abilityListingRepository: AbilityListingRepository,
     statusEffectRepository: StatusEffectRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(
-        savedStateHandle: SavedStateHandle,
-        essenceRepository: EssenceRepository,
-        awakeningStoneRepository: AwakeningStoneRepository,
-        abilityListingRepository: AbilityListingRepository,
-        statusEffectRepository: StatusEffectRepository,
-    ) : this(
-        savedStateHandle,
-        essenceRepository,
-        awakeningStoneRepository,
-        abilityListingRepository,
-        statusEffectRepository,
-        Dispatchers.IO,
-    )
 
     private val wireImporter = WireImporter(
         essenceRepository,

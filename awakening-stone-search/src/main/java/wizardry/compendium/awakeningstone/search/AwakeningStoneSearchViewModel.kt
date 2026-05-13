@@ -6,7 +6,6 @@ import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.model.AwakeningStone
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
@@ -14,17 +13,14 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
 @HiltViewModel
-class AwakeningStoneSearchViewModel(
+class AwakeningStoneSearchViewModel @Inject constructor(
     awakeningStoneRepository: AwakeningStoneRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(awakeningStoneRepository: AwakeningStoneRepository) :
-        this(awakeningStoneRepository, Dispatchers.IO)
 
     private val stonesFlow = MutableStateFlow(emptyList<AwakeningStone>())
     private val filterTermFlow = MutableStateFlow("")

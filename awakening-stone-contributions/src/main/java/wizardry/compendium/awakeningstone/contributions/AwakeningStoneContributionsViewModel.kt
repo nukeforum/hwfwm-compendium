@@ -10,24 +10,18 @@ import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Rarity
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
 @HiltViewModel
-class AwakeningStoneContributionsViewModel(
+class AwakeningStoneContributionsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val awakeningStoneRepository: AwakeningStoneRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(
-        savedStateHandle: SavedStateHandle,
-        awakeningStoneRepository: AwakeningStoneRepository,
-    ) : this(savedStateHandle, awakeningStoneRepository, Dispatchers.IO)
 
     private val editName: String? = savedStateHandle.get<String>("name")
 

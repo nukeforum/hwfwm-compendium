@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
@@ -13,24 +12,18 @@ import wizardry.compendium.ability.preview.AbilityTextRenderer
 import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.WireExporter
 import javax.inject.Inject
 
 @HiltViewModel
-class CharacterBuildDetailViewModel(
+class CharacterBuildDetailViewModel @Inject constructor(
     private val repository: CharacterBuildRepository,
     private val statusEffectRepository: StatusEffectRepository,
     private val wireExporter: WireExporter,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(
-        repository: CharacterBuildRepository,
-        statusEffectRepository: StatusEffectRepository,
-        wireExporter: WireExporter,
-    ) : this(repository, statusEffectRepository, wireExporter, Dispatchers.IO)
 
     private val _state = MutableStateFlow<CharacterBuildDetailUiState>(CharacterBuildDetailUiState.Loading)
     val state = _state.asStateFlow()

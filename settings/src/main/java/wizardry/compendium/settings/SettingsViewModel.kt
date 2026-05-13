@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +19,7 @@ import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.preferences.PreferencesRepository
 import wizardry.compendium.ui.DomainPickerRow
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import wizardry.compendium.ui.theme.ThemeMode
 import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.Envelope
@@ -33,30 +33,14 @@ import wizardry.compendium.wire.filteredTo
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel(
+class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val essenceRepository: EssenceRepository,
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(
-        preferencesRepository: PreferencesRepository,
-        essenceRepository: EssenceRepository,
-        awakeningStoneRepository: AwakeningStoneRepository,
-        abilityListingRepository: AbilityListingRepository,
-        statusEffectRepository: StatusEffectRepository,
-    ) : this(
-        preferencesRepository,
-        essenceRepository,
-        awakeningStoneRepository,
-        abilityListingRepository,
-        statusEffectRepository,
-        Dispatchers.IO,
-    )
 
     val essenceContributionsEnabled = preferencesRepository.essenceContributionsEnabled
     val awakeningStoneContributionsEnabled = preferencesRepository.awakeningStoneContributionsEnabled

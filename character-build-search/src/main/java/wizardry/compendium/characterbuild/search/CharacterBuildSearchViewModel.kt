@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
@@ -13,16 +12,14 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
 @HiltViewModel
-class CharacterBuildSearchViewModel(
+class CharacterBuildSearchViewModel @Inject constructor(
     repository: CharacterBuildRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(repository: CharacterBuildRepository) : this(repository, Dispatchers.IO)
 
     private val buildsFlow = MutableStateFlow(emptyList<CharacterBuild>())
     private val filterTermFlow = MutableStateFlow("")

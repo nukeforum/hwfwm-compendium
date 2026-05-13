@@ -4,24 +4,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
 @HiltViewModel
-class AwakeningStoneDetailViewModel(
+class AwakeningStoneDetailViewModel @Inject constructor(
     private val awakeningStoneRepository: AwakeningStoneRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(awakeningStoneRepository: AwakeningStoneRepository) :
-        this(awakeningStoneRepository, Dispatchers.IO)
 
     private val _state = MutableStateFlow<AwakeningStoneDetailUiState>(AwakeningStoneDetailUiState.Loading)
     val state = _state.asStateFlow()

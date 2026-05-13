@@ -7,20 +7,17 @@ import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
 @HiltViewModel
-class RandomizerViewModel(
+class RandomizerViewModel @Inject constructor(
     essenceRepository: EssenceRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(essenceRepository: EssenceRepository) : this(essenceRepository, Dispatchers.IO)
 
     private val manifestations = MutableStateFlow(emptyList<Essence.Manifestation>())
     private val confluences = MutableStateFlow(emptyList<Essence.Confluence>())

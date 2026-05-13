@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +22,7 @@ import wizardry.compendium.essences.model.Cost
 import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -31,19 +31,12 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @HiltViewModel
-class AbilityListingContributionsViewModel(
+class AbilityListingContributionsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(
-        savedStateHandle: SavedStateHandle,
-        abilityListingRepository: AbilityListingRepository,
-        statusEffectRepository: StatusEffectRepository,
-    ) : this(savedStateHandle, abilityListingRepository, statusEffectRepository, Dispatchers.IO)
 
     private val editName: String? = savedStateHandle.get<String>("name")
 

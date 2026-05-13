@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -20,6 +19,7 @@ import wizardry.compendium.essences.StatusEffectConflict
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
 data class ConflictsState(
@@ -32,27 +32,13 @@ data class ConflictsState(
 }
 
 @HiltViewModel
-class ConflictsViewModel(
+class ConflictsViewModel @Inject constructor(
     private val essenceRepository: EssenceRepository,
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
-    private val ioDispatcher: CoroutineDispatcher,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
-
-    @Inject
-    constructor(
-        essenceRepository: EssenceRepository,
-        awakeningStoneRepository: AwakeningStoneRepository,
-        abilityListingRepository: AbilityListingRepository,
-        statusEffectRepository: StatusEffectRepository,
-    ) : this(
-        essenceRepository,
-        awakeningStoneRepository,
-        abilityListingRepository,
-        statusEffectRepository,
-        Dispatchers.IO,
-    )
 
     val state: StateFlow<ConflictsState> = combine(
         essenceRepository.conflicts,
