@@ -108,19 +108,19 @@ class WireIoRepository @Inject constructor(
         data class Decoded(val envelope: Envelope) : DecodeResult
         data class Failed(val reason: String) : DecodeResult
     }
+
+    data class EncodedShare(
+        val text: String,
+        val byteSize: Int,
+        val fitsInShareLimit: Boolean,
+        val shareSizeLimitBytes: Int,
+    )
+
+    data class ExportCounts(
+        val manifestations: Int,
+        val confluences: Int,
+        val stones: Int,
+        val listings: Int,
+        val effects: Int,
+    )
 }
-
-data class EncodedShare(
-    val text: String,
-    val byteSize: Int,
-    val fitsInShareLimit: Boolean,
-    val shareSizeLimitBytes: Int,
-)
-
-data class ExportCounts(
-    val manifestations: Int,
-    val confluences: Int,
-    val stones: Int,
-    val listings: Int,
-    val effects: Int,
-)

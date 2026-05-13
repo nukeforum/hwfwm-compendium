@@ -68,11 +68,17 @@ class WireIoRepositoryTest {
 
     @Test
     fun `exportFiltered with Essences selection encodes only manifestations and reports fit`() = runTest {
-        val encoded = repo().exportFiltered(setOf(ContributionDomain.Essences))
+        val source = repo()
+        val encoded = source.exportFiltered(setOf(ContributionDomain.Essences))
         assertTrue(encoded.text.isNotEmpty())
         assertTrue(encoded.byteSize > 0)
         assertTrue(encoded.fitsInShareLimit)
         assertEquals(100 * 1024, encoded.shareSizeLimitBytes)
+        val decoded = source.decodeEnvelopeOrFailed(encoded.text)
+        assertTrue(decoded is WireIoRepository.DecodeResult.Decoded)
+        val envelope = (decoded as WireIoRepository.DecodeResult.Decoded).envelope
+        assertEquals(1, envelope.manifestations.size)
+        assertTrue(envelope.stones.isEmpty())
     }
 
     @Test
