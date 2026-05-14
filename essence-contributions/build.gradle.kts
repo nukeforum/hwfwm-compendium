@@ -32,6 +32,7 @@ dependencies {
 
     implementation(project(":design"))
     implementation(project(":essences"))
+    implementation(project(":share"))
     implementation(project(":wire"))
 
     implementation(libs.androidx.core.ktx)
