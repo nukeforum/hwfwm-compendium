@@ -12,8 +12,8 @@ import org.junit.Test
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 
 class StatusEffectSearchViewModelTest {
 

@@ -1,11 +1,11 @@
 package wizardry.compendium
 
 import android.net.Uri
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.CharacterBuild
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.CharacterBuild
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.StatusEffect
 
 sealed class Nav(val route: String) {
     object Landing : Nav("landing")

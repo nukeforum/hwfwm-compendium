@@ -1,6 +1,6 @@
 package wizardry.compendium.awakeningstone.search
 
-import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.domain.model.AwakeningStone
 
 sealed interface AwakeningStoneSearchUiState {
     data object Loading : AwakeningStoneSearchUiState

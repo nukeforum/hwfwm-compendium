@@ -1,8 +1,8 @@
 package wizardry.compendium.persistence
 
 import app.cash.sqldelight.db.SqlDriver
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Rarity
 import javax.inject.Inject
 
 class AwakeningStoneDatabase @Inject constructor(driver: SqlDriver) {

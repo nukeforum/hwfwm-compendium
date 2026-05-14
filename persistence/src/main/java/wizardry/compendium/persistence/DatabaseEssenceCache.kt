@@ -1,6 +1,6 @@
 package wizardry.compendium.persistence
 
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.Essence
 import javax.inject.Inject
 
 class DatabaseEssenceCache @Inject constructor(

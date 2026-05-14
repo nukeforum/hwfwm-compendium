@@ -1,7 +1,7 @@
 package wizardry.compendium.repositories
 
 import kotlinx.coroutines.flow.Flow
-import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.domain.model.CharacterBuild
 
 interface CharacterBuildRepository {
     val builds: Flow<List<CharacterBuild>>

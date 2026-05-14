@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.AwakeningStoneRepository
-import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.domain.model.AwakeningStone
 import wizardry.compendium.share.AwakeningStoneShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject

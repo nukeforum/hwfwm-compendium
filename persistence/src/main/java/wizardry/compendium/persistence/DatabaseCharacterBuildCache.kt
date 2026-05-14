@@ -1,6 +1,6 @@
 package wizardry.compendium.persistence
 
-import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.domain.model.CharacterBuild
 import javax.inject.Inject
 
 class DatabaseCharacterBuildCache @Inject constructor(

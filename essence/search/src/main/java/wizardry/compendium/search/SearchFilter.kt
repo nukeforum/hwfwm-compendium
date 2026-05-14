@@ -1,7 +1,7 @@
 package wizardry.compendium.search
 
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rarity
 
 sealed interface SearchFilter {
     val name: String get() = this::class.java.simpleName

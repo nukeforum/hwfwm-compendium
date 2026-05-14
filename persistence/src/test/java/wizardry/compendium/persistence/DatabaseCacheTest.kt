@@ -5,13 +5,13 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.Rarity
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.Rarity
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 
 class DatabaseCacheTest {
 

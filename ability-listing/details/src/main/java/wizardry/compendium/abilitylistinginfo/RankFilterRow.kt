@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import wizardry.compendium.essences.model.Effect
-import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.domain.model.Effect
+import wizardry.compendium.domain.model.Rank
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.preferences.ThemeMode
@@ -69,7 +69,7 @@ private fun RankFilterRowPreview(
             .map { rank ->
                 Effect.AbilityEffect(
                     rank = rank,
-                    type = wizardry.compendium.essences.model.AbilityType.Conjuration,
+                    type = wizardry.compendium.domain.model.AbilityType.Conjuration,
                     properties = emptyList(),
                     cost = emptyList(),
                     cooldown = kotlin.time.Duration.ZERO,

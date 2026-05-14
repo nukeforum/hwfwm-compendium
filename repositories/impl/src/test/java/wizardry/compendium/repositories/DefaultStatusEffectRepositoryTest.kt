@@ -7,8 +7,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.essences.dataloader.StatusEffectDataLoader
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 import wizardry.compendium.persistence.StatusEffectCache
 import wizardry.compendium.preferences.StatusEffectContributionsToggle
 import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow

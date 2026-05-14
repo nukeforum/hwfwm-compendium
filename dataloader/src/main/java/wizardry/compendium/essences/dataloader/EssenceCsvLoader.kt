@@ -1,8 +1,8 @@
 package wizardry.compendium.essences.dataloader
 
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rarity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

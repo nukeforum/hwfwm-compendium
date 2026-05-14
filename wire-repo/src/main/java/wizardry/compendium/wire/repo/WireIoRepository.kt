@@ -4,11 +4,11 @@ import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.CharacterBuild
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.CharacterBuild
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeCodec

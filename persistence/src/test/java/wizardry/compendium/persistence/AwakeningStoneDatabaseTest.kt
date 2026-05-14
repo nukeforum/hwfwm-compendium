@@ -3,8 +3,8 @@ package wizardry.compendium.persistence
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Rarity
 
 class AwakeningStoneDatabaseTest {
 

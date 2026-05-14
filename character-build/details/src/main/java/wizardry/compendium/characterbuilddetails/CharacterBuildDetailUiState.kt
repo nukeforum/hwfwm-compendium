@@ -1,7 +1,7 @@
 package wizardry.compendium.characterbuilddetails
 
-import wizardry.compendium.essences.model.CharacterBuild
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.CharacterBuild
+import wizardry.compendium.domain.model.StatusEffect
 
 sealed interface CharacterBuildDetailUiState {
     data object Loading : CharacterBuildDetailUiState

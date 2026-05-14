@@ -1,6 +1,6 @@
 package wizardry.compendium.persistence
 
-import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.domain.model.Ability
 import javax.inject.Inject
 
 class DatabaseAbilityListingCache @Inject constructor(

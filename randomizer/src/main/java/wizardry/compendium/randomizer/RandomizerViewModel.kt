@@ -3,8 +3,8 @@ package wizardry.compendium.randomizer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import wizardry.compendium.repositories.EssenceRepository
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow

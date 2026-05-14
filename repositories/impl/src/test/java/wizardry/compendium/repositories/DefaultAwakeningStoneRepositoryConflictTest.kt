@@ -10,10 +10,10 @@ import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.persistence.AwakeningStoneCache
 import wizardry.compendium.preferences.AwakeningStoneContributionsToggle
 import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow

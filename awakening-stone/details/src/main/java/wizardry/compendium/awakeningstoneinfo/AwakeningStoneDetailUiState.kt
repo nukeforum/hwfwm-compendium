@@ -1,6 +1,6 @@
 package wizardry.compendium.awakeningstoneinfo
 
-import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.domain.model.AwakeningStone
 
 sealed interface AwakeningStoneDetailUiState {
     data object Loading : AwakeningStoneDetailUiState

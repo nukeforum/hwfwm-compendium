@@ -8,9 +8,9 @@ import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.share.ConfluenceImportPreview
 import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.share.EssenceShareUseCase

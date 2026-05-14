@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.CharacterBuildRepository
-import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.domain.model.CharacterBuild
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 

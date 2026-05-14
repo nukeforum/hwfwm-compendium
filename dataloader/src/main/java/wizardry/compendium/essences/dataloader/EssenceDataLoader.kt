@@ -1,6 +1,6 @@
 package wizardry.compendium.essences.dataloader
 
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.Essence
 
 /**
  * Defines the contract for loading [Essence] data.

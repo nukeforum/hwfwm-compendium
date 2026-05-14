@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.domain.model.CharacterBuild
 import wizardry.compendium.share.CharacterBuildShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject

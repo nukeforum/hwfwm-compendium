@@ -21,12 +21,12 @@ import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 import wizardry.compendium.share.StatusEffectShareUseCase
 import wizardry.compendium.wire.repo.WireIoRepository
 
@@ -94,7 +94,7 @@ private object StubEssenceRepo : EssenceRepository {
     ) = ContributionResult.Success
     override suspend fun addCombinationToConfluence(
         target: Essence.Confluence,
-        combination: wizardry.compendium.essences.model.ConfluenceSet,
+        combination: wizardry.compendium.domain.model.ConfluenceSet,
     ) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success

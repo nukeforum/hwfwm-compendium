@@ -1,6 +1,6 @@
 package wizardry.compendium.share
 
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.wire.Envelope
 
 /**

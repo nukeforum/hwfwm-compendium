@@ -1,7 +1,7 @@
 package wizardry.compendium.awakeningstone.search
 
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Rarity
 
 sealed interface AwakeningStoneSearchFilter {
     val name: String get() = this::class.java.simpleName

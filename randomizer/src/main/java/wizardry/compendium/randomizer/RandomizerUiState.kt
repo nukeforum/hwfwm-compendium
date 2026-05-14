@@ -1,6 +1,6 @@
 package wizardry.compendium.randomizer
 
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.Essence
 
 sealed interface RandomizerUiState {
     object Loading : RandomizerUiState

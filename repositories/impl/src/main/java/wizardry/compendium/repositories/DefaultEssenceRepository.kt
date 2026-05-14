@@ -13,8 +13,8 @@ import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.dataloader.EssenceDataLoader
 import wizardry.compendium.repositories.detectEssenceConflicts
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.EssenceCache

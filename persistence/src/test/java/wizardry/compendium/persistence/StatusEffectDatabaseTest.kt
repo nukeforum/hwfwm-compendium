@@ -3,9 +3,9 @@ package wizardry.compendium.persistence
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 
 class StatusEffectDatabaseTest {
 

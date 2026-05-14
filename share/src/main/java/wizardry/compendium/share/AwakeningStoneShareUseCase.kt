@@ -1,6 +1,6 @@
 package wizardry.compendium.share
 
-import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.domain.model.AwakeningStone
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeMapper
 import wizardry.compendium.wire.repo.WireIoRepository

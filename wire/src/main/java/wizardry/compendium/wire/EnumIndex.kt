@@ -1,12 +1,12 @@
 package wizardry.compendium.wire
 
-import wizardry.compendium.essences.model.AbilityType
-import wizardry.compendium.essences.model.Amount
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.Rarity
-import wizardry.compendium.essences.model.Resource
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.AbilityType
+import wizardry.compendium.domain.model.Amount
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.Rarity
+import wizardry.compendium.domain.model.Resource
+import wizardry.compendium.domain.model.StatusType
 
 /**
  * Wire-format integer indices for the model enums and sealed-interface
@@ -21,7 +21,7 @@ import wizardry.compendium.essences.model.StatusType
  * Today, this file is hand-maintained — if you add a value to one of these
  * sealed types or enums, append it here too. The KSP processor's @WireEnum
  * lock currently does NOT cover dependency-module declarations (the model
- * lives in `:essences`); a future tier will extend the processor to scan
+ * lives in `:domain`); a future tier will extend the processor to scan
  * a configurable list of FQNs from dependency modules and lock the order
  * automatically. Until then, code review is the gate.
  *

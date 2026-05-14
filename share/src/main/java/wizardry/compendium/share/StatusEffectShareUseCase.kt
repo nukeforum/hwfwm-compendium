@@ -1,6 +1,6 @@
 package wizardry.compendium.share
 
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeMapper
 import wizardry.compendium.wire.repo.WireIoRepository

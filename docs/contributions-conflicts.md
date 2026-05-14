@@ -58,7 +58,7 @@ suspend fun getConflicts(): List<XConflict>
 ```
 
 The flow is recomputed any time canonical or contributions change. The pure
-detection functions live in `:essences`:
+detection functions live in `:repositories:api` alongside the `Conflict` types:
 
 - `detectEssenceConflicts(canonical, contributions)`
 - `detectAwakeningStoneConflicts(canonical, contributions)`
@@ -66,7 +66,7 @@ detection functions live in `:essences`:
 
 These are the source of truth for "is this combination of canonical and
 contributions in conflict." Tests live in
-`essences/src/test/.../ConflictDetectionTest.kt`.
+`repositories/api/src/test/.../ConflictDetectionTest.kt`.
 
 ## Resolution
 
@@ -86,7 +86,7 @@ There is no "ignore" or "snooze". Resolution is the only path forward.
 
 When you introduce a new contribution domain, follow this checklist:
 
-1. **Define a `Conflict` sealed type** in `:essences/Conflict.kt`. It must
+1. **Define a `Conflict` sealed type** in `:repositories:api/Conflict.kt`. It must
    implement `Conflict` (so it has `title`, `summary`, `key`). Add at minimum a
    `NameCollision` variant. Add domain-specific variants where they apply
    (e.g., `CombinationCollision` for essences).
@@ -111,7 +111,7 @@ When you introduce a new contribution domain, follow this checklist:
 8. **Top bar badge**: nothing to do — `ConflictsBadge` already reads the
    aggregated `state.total`.
 9. **Tests**:
-   - Pure detection tests in `essences/src/test`.
+   - Pure detection tests in `repositories/api/src/test`.
    - Read-path gating + delete tests in `app/src/test/.../Default*RepositoryConflictTest.kt`.
    - Aggregation + resolution tests in `conflicts/src/test/.../ConflictsViewModelTest.kt`.
 

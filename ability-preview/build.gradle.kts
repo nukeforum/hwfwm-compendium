@@ -32,7 +32,7 @@ dependencies {
 
     implementation(project(":model-core"))
     implementation(project(":design"))
-    implementation(project(":essences"))
+    implementation(project(":domain"))
 
     implementation(libs.androidx.core.ktx)
 

@@ -30,8 +30,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.preferences.ThemeMode

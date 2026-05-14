@@ -1,6 +1,6 @@
 package wizardry.compendium.statuseffect.search
 
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.StatusEffect
 
 sealed interface StatusEffectSearchUiState {
     data object Loading : StatusEffectSearchUiState

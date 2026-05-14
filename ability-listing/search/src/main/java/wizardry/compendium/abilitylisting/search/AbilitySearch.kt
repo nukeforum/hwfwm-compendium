@@ -24,7 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.ui.R
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.SearchEmptyState

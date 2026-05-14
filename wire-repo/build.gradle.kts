@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":essences"))
+    implementation(project(":domain"))
     implementation(project(":repositories:api"))
     implementation(project(":wire"))
 

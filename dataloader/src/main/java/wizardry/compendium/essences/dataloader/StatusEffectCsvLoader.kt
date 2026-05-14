@@ -2,9 +2,9 @@ package wizardry.compendium.essences.dataloader
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 import javax.inject.Inject
 import kotlin.reflect.KClass
 

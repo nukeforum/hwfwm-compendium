@@ -1,8 +1,8 @@
 package wizardry.compendium.share
 
 import wizardry.compendium.ability.preview.AbilityTextRenderer
-import wizardry.compendium.essences.model.CharacterBuild
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.CharacterBuild
+import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.wire.repo.WireIoRepository
 import wizardry.compendium.wire.share.BuildImportPreview
 import wizardry.compendium.wire.share.BuildShareDecoder

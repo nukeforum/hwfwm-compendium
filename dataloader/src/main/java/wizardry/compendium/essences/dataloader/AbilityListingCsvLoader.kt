@@ -2,7 +2,7 @@ package wizardry.compendium.essences.dataloader
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.domain.model.Ability
 import javax.inject.Inject
 
 class AbilityListingCsvLoader

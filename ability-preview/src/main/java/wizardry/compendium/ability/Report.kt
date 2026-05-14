@@ -19,19 +19,19 @@ import wizardry.compendium.ability.preview.annotatedDescription
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.preferences.ThemeMode
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AbilityType
-import wizardry.compendium.essences.model.Amount
-import wizardry.compendium.essences.model.Cost
-import wizardry.compendium.essences.model.Effect
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.RankedEffectLine
-import wizardry.compendium.essences.model.Resource
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
-import wizardry.compendium.essences.model.collectLinkedStatusEffects
-import wizardry.compendium.essences.model.viewAt
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AbilityType
+import wizardry.compendium.domain.model.Amount
+import wizardry.compendium.domain.model.Cost
+import wizardry.compendium.domain.model.Effect
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.RankedEffectLine
+import wizardry.compendium.domain.model.Resource
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
+import wizardry.compendium.domain.model.collectLinkedStatusEffects
+import wizardry.compendium.domain.model.viewAt
 import kotlin.time.Duration
 
 /**

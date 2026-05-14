@@ -1,8 +1,8 @@
 package wizardry.compendium.repositories
 
 import kotlinx.coroutines.flow.Flow
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
 
 interface EssenceRepository {
     val essences: Flow<List<Essence>>

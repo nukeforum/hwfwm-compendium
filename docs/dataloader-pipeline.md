@@ -46,7 +46,7 @@ files just for consistency.
 ## Code path
 
 The dataloader is a JVM-only Gradle module (`dataloader/`, applies the
-`compendium.jvm` convention plugin) that depends on `:essences` for the model
+`compendium.jvm` convention plugin) that depends on `:domain` for the model
 types. It deliberately has no Android dependency — `FileStreamSource` is the
 seam.
 

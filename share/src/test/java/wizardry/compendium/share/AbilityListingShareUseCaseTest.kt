@@ -3,9 +3,9 @@ package wizardry.compendium.share
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.EnvelopeMapper
 

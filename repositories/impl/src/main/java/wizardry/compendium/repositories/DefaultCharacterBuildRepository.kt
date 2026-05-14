@@ -11,11 +11,11 @@ import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.EssenceRepository
-import wizardry.compendium.essences.model.AbsorbedEssence
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.Attribute
-import wizardry.compendium.essences.model.CharacterBuild
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.AbsorbedEssence
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.Attribute
+import wizardry.compendium.domain.model.CharacterBuild
+import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.persistence.CharacterBuildCache
 import wizardry.compendium.persistence.Contributions
 import javax.inject.Inject

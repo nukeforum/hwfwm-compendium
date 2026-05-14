@@ -1,7 +1,7 @@
 package wizardry.compendium.statuseffect.search
 
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 
 /**
  * Either an Affliction-bucket filter or a Boon-bucket filter, optionally

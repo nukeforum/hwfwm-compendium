@@ -1,7 +1,7 @@
 package wizardry.compendium.repositories
 
 import kotlinx.coroutines.flow.Flow
-import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.domain.model.AwakeningStone
 
 interface AwakeningStoneRepository {
     val awakeningStones: Flow<List<AwakeningStone>>

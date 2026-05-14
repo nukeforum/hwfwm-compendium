@@ -25,10 +25,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.ui.LinkedEssence
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme

@@ -28,8 +28,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.preferences.ThemeMode
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.ui.ContributionDropdown
 import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.ContributionReportCard

@@ -12,9 +12,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.share.StatusEffectShareUseCase
 import javax.inject.Inject

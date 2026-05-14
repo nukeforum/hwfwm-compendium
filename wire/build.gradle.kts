@@ -23,7 +23,7 @@ kotlin {
 dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(project(":wire-annotations"))
-    implementation(project(":essences"))
+    implementation(project(":domain"))
     implementation(project(":repositories:api"))
 
     // Apply our own KSP processor to this module so any @WireFormat-annotated

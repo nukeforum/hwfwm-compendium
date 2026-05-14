@@ -5,18 +5,18 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AbilityType
-import wizardry.compendium.essences.model.Amount
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.ConfluenceSet as ModelConfluenceSet
-import wizardry.compendium.essences.model.Cost as ModelCost
-import wizardry.compendium.essences.model.Effect as ModelEffect
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.Rarity
-import wizardry.compendium.essences.model.Resource
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AbilityType
+import wizardry.compendium.domain.model.Amount
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.ConfluenceSet as ModelConfluenceSet
+import wizardry.compendium.domain.model.Cost as ModelCost
+import wizardry.compendium.domain.model.Effect as ModelEffect
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.Rarity
+import wizardry.compendium.domain.model.Resource
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 

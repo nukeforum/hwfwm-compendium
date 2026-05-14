@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.Rank
 import wizardry.compendium.share.AbilityListingShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject

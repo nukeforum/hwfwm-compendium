@@ -2,7 +2,7 @@ package wizardry.compendium.ability.preview
 
 import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.staticCompositionLocalOf
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.StatusEffect
 
 /**
  * Status effects available to ability description rendering. Hosts that have

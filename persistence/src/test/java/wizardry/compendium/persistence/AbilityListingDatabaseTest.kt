@@ -3,14 +3,14 @@ package wizardry.compendium.persistence
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AbilityType
-import wizardry.compendium.essences.model.Amount
-import wizardry.compendium.essences.model.Cost
-import wizardry.compendium.essences.model.Effect
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.Resource
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AbilityType
+import wizardry.compendium.domain.model.Amount
+import wizardry.compendium.domain.model.Cost
+import wizardry.compendium.domain.model.Effect
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.Resource
 import kotlin.time.Duration.Companion.seconds
 
 class AbilityListingDatabaseTest {

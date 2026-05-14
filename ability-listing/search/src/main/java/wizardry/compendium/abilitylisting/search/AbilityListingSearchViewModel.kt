@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.AbilityListingRepository
-import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 

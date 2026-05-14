@@ -5,7 +5,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.domain.model.CharacterBuild
 import wizardry.compendium.wire.share.BuildShareDecoder
 
 @OptIn(ExperimentalCoroutinesApi::class)

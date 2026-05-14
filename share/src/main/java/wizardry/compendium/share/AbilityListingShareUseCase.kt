@@ -1,6 +1,6 @@
 package wizardry.compendium.share
 
-import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeMapper
 import wizardry.compendium.wire.repo.WireIoRepository

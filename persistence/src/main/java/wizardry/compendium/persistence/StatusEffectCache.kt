@@ -1,6 +1,6 @@
 package wizardry.compendium.persistence
 
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.StatusEffect
 
 interface StatusEffectCache {
     var contents: List<StatusEffect>

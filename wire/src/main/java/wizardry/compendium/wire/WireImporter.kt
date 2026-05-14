@@ -5,7 +5,7 @@ import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.Essence
 
 /**
  * Applies a decoded `Envelope` to the receiver's contribution stores.

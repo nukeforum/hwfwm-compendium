@@ -16,7 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.ContributionResult
-import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.domain.model.CharacterBuild
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharacterBuildSearchViewModelTest {

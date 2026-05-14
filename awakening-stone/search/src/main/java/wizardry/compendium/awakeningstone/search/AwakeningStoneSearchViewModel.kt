@@ -3,7 +3,7 @@ package wizardry.compendium.awakeningstone.search
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import wizardry.compendium.repositories.AwakeningStoneRepository
-import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.domain.model.AwakeningStone
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow

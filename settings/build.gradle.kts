@@ -31,7 +31,7 @@ dependencies {
     androidTestImplementation(composeBom)
 
     implementation(project(":design"))
-    implementation(project(":essences"))
+    implementation(project(":domain"))
     implementation(project(":repositories:api"))
     implementation(project(":preferences"))
     implementation(project(":wire"))

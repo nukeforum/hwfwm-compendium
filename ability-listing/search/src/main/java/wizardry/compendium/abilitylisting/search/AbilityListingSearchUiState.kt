@@ -1,6 +1,6 @@
 package wizardry.compendium.abilitylisting.search
 
-import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.domain.model.Ability
 
 sealed interface AbilityListingSearchUiState {
     data object Loading : AbilityListingSearchUiState

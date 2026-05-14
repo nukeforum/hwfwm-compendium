@@ -23,13 +23,13 @@ import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.Rarity
-import wizardry.compendium.essences.model.StatusEffect as ModelStatusEffect
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.Rarity
+import wizardry.compendium.domain.model.StatusEffect as ModelStatusEffect
 import wizardry.compendium.preferences.PreferencesRepository
 import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.wire.ContributionDomain

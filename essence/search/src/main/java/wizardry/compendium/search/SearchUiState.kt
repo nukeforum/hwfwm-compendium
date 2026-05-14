@@ -1,6 +1,6 @@
 package wizardry.compendium.search
 
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.Essence
 
 sealed interface SearchUiState {
     data object Loading : SearchUiState

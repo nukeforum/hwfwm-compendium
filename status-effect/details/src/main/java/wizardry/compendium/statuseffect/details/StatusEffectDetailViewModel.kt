@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.StatusEffectRepository
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.share.StatusEffectShareUseCase
 import javax.inject.Inject
 

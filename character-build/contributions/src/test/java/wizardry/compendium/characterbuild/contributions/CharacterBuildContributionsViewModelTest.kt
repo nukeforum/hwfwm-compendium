@@ -22,16 +22,16 @@ import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
-import wizardry.compendium.essences.model.AbsorbedEssence
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AbilityType
-import wizardry.compendium.essences.model.Attribute
-import wizardry.compendium.essences.model.CharacterBuild
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Effect
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.AbsorbedEssence
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AbilityType
+import wizardry.compendium.domain.model.Attribute
+import wizardry.compendium.domain.model.CharacterBuild
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Effect
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.share.CharacterBuildShareUseCase
 import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.wire.repo.WireIoRepository
@@ -1090,27 +1090,27 @@ class CharacterBuildContributionsViewModelTest {
     }
 
     private class NoOpStoneRepoForDecoder : wizardry.compendium.repositories.AwakeningStoneRepository {
-        override val awakeningStones: Flow<List<wizardry.compendium.essences.model.AwakeningStone>> = MutableStateFlow(emptyList())
+        override val awakeningStones: Flow<List<wizardry.compendium.domain.model.AwakeningStone>> = MutableStateFlow(emptyList())
         override val conflicts: Flow<List<wizardry.compendium.repositories.AwakeningStoneConflict>> = MutableStateFlow(emptyList())
-        override suspend fun getAwakeningStones() = emptyList<wizardry.compendium.essences.model.AwakeningStone>()
-        override suspend fun getContributions() = emptyList<wizardry.compendium.essences.model.AwakeningStone>()
+        override suspend fun getAwakeningStones() = emptyList<wizardry.compendium.domain.model.AwakeningStone>()
+        override suspend fun getContributions() = emptyList<wizardry.compendium.domain.model.AwakeningStone>()
         override suspend fun getConflicts() = emptyList<wizardry.compendium.repositories.AwakeningStoneConflict>()
-        override suspend fun saveAwakeningStoneContribution(stone: wizardry.compendium.essences.model.AwakeningStone) = ContributionResult.Success
+        override suspend fun saveAwakeningStoneContribution(stone: wizardry.compendium.domain.model.AwakeningStone) = ContributionResult.Success
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        override suspend fun updateAwakeningStoneContribution(stone: wizardry.compendium.essences.model.AwakeningStone) = ContributionResult.Success
+        override suspend fun updateAwakeningStoneContribution(stone: wizardry.compendium.domain.model.AwakeningStone) = ContributionResult.Success
     }
 
     private class NoOpStatusEffectRepoForDecoder : wizardry.compendium.repositories.StatusEffectRepository {
-        override val statusEffects: Flow<List<wizardry.compendium.essences.model.StatusEffect>> = MutableStateFlow(emptyList())
+        override val statusEffects: Flow<List<wizardry.compendium.domain.model.StatusEffect>> = MutableStateFlow(emptyList())
         override val conflicts: Flow<List<wizardry.compendium.repositories.StatusEffectConflict>> = MutableStateFlow(emptyList())
-        override suspend fun getStatusEffects() = emptyList<wizardry.compendium.essences.model.StatusEffect>()
-        override suspend fun getContributions() = emptyList<wizardry.compendium.essences.model.StatusEffect>()
+        override suspend fun getStatusEffects() = emptyList<wizardry.compendium.domain.model.StatusEffect>()
+        override suspend fun getContributions() = emptyList<wizardry.compendium.domain.model.StatusEffect>()
         override suspend fun getConflicts() = emptyList<wizardry.compendium.repositories.StatusEffectConflict>()
-        override suspend fun saveStatusEffectContribution(effect: wizardry.compendium.essences.model.StatusEffect) = ContributionResult.Success
+        override suspend fun saveStatusEffectContribution(effect: wizardry.compendium.domain.model.StatusEffect) = ContributionResult.Success
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        override suspend fun updateStatusEffectContribution(effect: wizardry.compendium.essences.model.StatusEffect) = ContributionResult.Success
+        override suspend fun updateStatusEffectContribution(effect: wizardry.compendium.domain.model.StatusEffect) = ContributionResult.Success
     }
 
     private class NoOpEssenceRepoForDecoder : EssenceRepository {

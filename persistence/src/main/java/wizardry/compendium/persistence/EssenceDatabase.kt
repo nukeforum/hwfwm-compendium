@@ -1,9 +1,9 @@
 package wizardry.compendium.persistence
 
 import app.cash.sqldelight.db.SqlDriver
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rarity
 import javax.inject.Inject
 
 class EssenceDatabase @Inject constructor(driver: SqlDriver) {

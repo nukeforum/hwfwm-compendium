@@ -1,9 +1,9 @@
 package wizardry.compendium.persistence
 
 import app.cash.sqldelight.db.SqlDriver
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
 import javax.inject.Inject
 import kotlin.reflect.KClass
 

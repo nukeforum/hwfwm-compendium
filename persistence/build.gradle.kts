@@ -18,7 +18,7 @@ sqldelight {
 }
 
 dependencies {
-    implementation(project(":essences"))
+    implementation(project(":domain"))
     implementation(libs.kotlin.reflect)
     implementation(libs.sqldelight.runtime)
     implementation(libs.sqldelight.coroutines)

@@ -1,7 +1,7 @@
 package wizardry.compendium.repositories
 
 import kotlinx.coroutines.flow.Flow
-import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.domain.model.Ability
 
 interface AbilityListingRepository {
     val abilityListings: Flow<List<Ability.Listing>>

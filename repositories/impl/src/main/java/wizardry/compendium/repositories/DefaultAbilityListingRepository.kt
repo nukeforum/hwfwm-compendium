@@ -13,7 +13,7 @@ import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.repositories.detectAbilityListingConflicts
-import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.persistence.AbilityListingCache
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions

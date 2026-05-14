@@ -1,15 +1,15 @@
 package wizardry.compendium.wire
 
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AbsorbedEssence
-import wizardry.compendium.essences.model.Attribute
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.CharacterBuild as ModelCharacterBuild
-import wizardry.compendium.essences.model.Cost as ModelCost
-import wizardry.compendium.essences.model.Effect as ModelEffect
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.ConfluenceSet as ModelConfluenceSet
-import wizardry.compendium.essences.model.StatusEffect as ModelStatusEffect
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AbsorbedEssence
+import wizardry.compendium.domain.model.Attribute
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.CharacterBuild as ModelCharacterBuild
+import wizardry.compendium.domain.model.Cost as ModelCost
+import wizardry.compendium.domain.model.Effect as ModelEffect
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.ConfluenceSet as ModelConfluenceSet
+import wizardry.compendium.domain.model.StatusEffect as ModelStatusEffect
 import wizardry.compendium.wire.EnumIndex.abilityTypeFromIndex
 import wizardry.compendium.wire.EnumIndex.amountFromIndex
 import wizardry.compendium.wire.EnumIndex.propertyFromIndex

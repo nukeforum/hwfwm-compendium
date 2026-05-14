@@ -9,9 +9,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.essences.dataloader.EssenceDataLoader
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.persistence.EssenceCache
 import wizardry.compendium.preferences.EssenceContributionsToggle
 import wizardry.compendium.preferences.EssenceContributionsToggleFlow

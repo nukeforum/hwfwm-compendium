@@ -1,15 +1,15 @@
 package wizardry.compendium.ability.preview
 
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.AbilityType
-import wizardry.compendium.essences.model.AbsorbedEssence
-import wizardry.compendium.essences.model.Amount
-import wizardry.compendium.essences.model.CharacterBuild
-import wizardry.compendium.essences.model.Cost
-import wizardry.compendium.essences.model.Effect
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.Resource
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AbilityType
+import wizardry.compendium.domain.model.AbsorbedEssence
+import wizardry.compendium.domain.model.Amount
+import wizardry.compendium.domain.model.CharacterBuild
+import wizardry.compendium.domain.model.Cost
+import wizardry.compendium.domain.model.Effect
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.Resource
+import wizardry.compendium.domain.model.StatusEffect
 import kotlin.math.roundToInt
 import kotlin.time.Duration
 

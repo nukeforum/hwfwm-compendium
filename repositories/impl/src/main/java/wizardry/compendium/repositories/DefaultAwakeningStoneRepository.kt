@@ -14,10 +14,10 @@ import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.repositories.detectAwakeningStoneConflicts
-import wizardry.compendium.essences.manifestationsNotMatchingStones
-import wizardry.compendium.essences.model.AwakeningStone
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.toAwakeningStone
+import wizardry.compendium.domain.manifestationsNotMatchingStones
+import wizardry.compendium.domain.model.AwakeningStone
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.toAwakeningStone
 import wizardry.compendium.persistence.AwakeningStoneCache
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions

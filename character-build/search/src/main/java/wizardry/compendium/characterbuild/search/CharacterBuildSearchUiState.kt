@@ -1,6 +1,6 @@
 package wizardry.compendium.characterbuild.search
 
-import wizardry.compendium.essences.model.CharacterBuild
+import wizardry.compendium.domain.model.CharacterBuild
 
 sealed interface CharacterBuildSearchUiState {
     data object Loading : CharacterBuildSearchUiState

@@ -3,7 +3,7 @@ package wizardry.compendium.essenceinfo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import wizardry.compendium.repositories.EssenceRepository
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.share.EssenceShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel

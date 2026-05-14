@@ -2,17 +2,17 @@ package wizardry.compendium.ability.preview
 
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import wizardry.compendium.essences.model.AbilityType
-import wizardry.compendium.essences.model.AbsorbedEssence
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.Attribute
-import wizardry.compendium.essences.model.CharacterBuild
-import wizardry.compendium.essences.model.Cost
-import wizardry.compendium.essences.model.Effect
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Property
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.AbilityType
+import wizardry.compendium.domain.model.AbsorbedEssence
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.Attribute
+import wizardry.compendium.domain.model.CharacterBuild
+import wizardry.compendium.domain.model.Cost
+import wizardry.compendium.domain.model.Effect
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Property
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.Rarity
 import kotlin.time.Duration
 
 class AbilityTextRendererTest {
@@ -30,7 +30,7 @@ class AbilityTextRendererTest {
                     rank = Rank.Iron,
                     type = AbilityType.SpecialAttack,
                     properties = listOf(Property.Ice),
-                    cost = listOf(Cost.Upfront(amount = wizardry.compendium.essences.model.Amount.Low, resource = wizardry.compendium.essences.model.Resource.Mana)),
+                    cost = listOf(Cost.Upfront(amount = wizardry.compendium.domain.model.Amount.Low, resource = wizardry.compendium.domain.model.Resource.Mana)),
                     cooldown = Duration.ZERO,
                     description = "A bolt of ice.",
                     replacementKey = null,

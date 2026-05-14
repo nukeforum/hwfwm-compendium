@@ -9,10 +9,10 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import wizardry.compendium.essences.model.Cost
-import wizardry.compendium.essences.model.DescriptionSegment
-import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.parseDescription
+import wizardry.compendium.domain.model.Cost
+import wizardry.compendium.domain.model.DescriptionSegment
+import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.parseDescription
 
 /**
  * Renders a description template into a styled `AnnotatedString`:

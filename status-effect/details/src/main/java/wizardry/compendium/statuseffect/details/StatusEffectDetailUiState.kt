@@ -1,6 +1,6 @@
 package wizardry.compendium.statuseffect.details
 
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.StatusEffect
 
 sealed interface StatusEffectDetailUiState {
     data object Loading : StatusEffectDetailUiState

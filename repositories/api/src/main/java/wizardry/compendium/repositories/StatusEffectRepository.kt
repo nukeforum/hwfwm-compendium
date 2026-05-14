@@ -1,7 +1,7 @@
 package wizardry.compendium.repositories
 
 import kotlinx.coroutines.flow.Flow
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.StatusEffect
 
 interface StatusEffectRepository {
     val statusEffects: Flow<List<StatusEffect>>

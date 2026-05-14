@@ -13,7 +13,7 @@ import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.essences.dataloader.StatusEffectDataLoader
 import wizardry.compendium.repositories.detectStatusEffectConflicts
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.StatusEffectCache

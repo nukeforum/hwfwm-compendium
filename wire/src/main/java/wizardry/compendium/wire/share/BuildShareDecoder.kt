@@ -3,8 +3,8 @@ package wizardry.compendium.wire.share
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.EssenceRepository
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.wire.BuildAbility
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeCodec

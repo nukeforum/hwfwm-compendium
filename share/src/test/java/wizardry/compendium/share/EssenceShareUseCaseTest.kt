@@ -10,9 +10,9 @@ import org.junit.Test
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
-import wizardry.compendium.essences.model.ConfluenceSet
-import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.domain.model.ConfluenceSet
+import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.EnvelopeMapper
@@ -146,7 +146,7 @@ class EssenceShareUseCaseTest {
     fun `rejects envelope containing a stone`() = runTest {
         val useCase = newUseCase()
         val confluenceEnv = exporter().exportSingle(doom)
-        val stone = wizardry.compendium.essences.model.AwakeningStone.of("Volcano", Rarity.Epic)
+        val stone = wizardry.compendium.domain.model.AwakeningStone.of("Volcano", Rarity.Epic)
         val stoneEnv = exporter().exportSingle(stone)
         val combined = confluenceEnv.copy(stones = stoneEnv.stones)
         val text = EnvelopeCodec.encode(combined).text

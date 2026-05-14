@@ -1,8 +1,8 @@
 package wizardry.compendium.abilitylistinginfo
 
-import wizardry.compendium.essences.model.Ability
-import wizardry.compendium.essences.model.Rank
-import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.Rank
+import wizardry.compendium.domain.model.StatusEffect
 
 sealed interface AbilityListingDetailUiState {
     data object Loading : AbilityListingDetailUiState
