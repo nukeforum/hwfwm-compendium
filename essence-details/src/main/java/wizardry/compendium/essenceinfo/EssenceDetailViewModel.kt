@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import wizardry.compendium.essences.EssenceRepository
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.share.EssenceShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -17,11 +21,15 @@ import javax.inject.Inject
 class EssenceDetailViewModel @Inject constructor(
     private val essenceRepository: EssenceRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val shareUseCase: EssenceShareUseCase,
 ) : ViewModel() {
 
     private val history = ArrayDeque<Essence>()
     private val _state = MutableStateFlow<EssenceDetailUiState>(EssenceDetailUiState.Loading)
     val state = _state.asStateFlow()
+
+    private val _shareEvents = MutableSharedFlow<ShareEvent>(extraBufferCapacity = 1)
+    val shareEvents: SharedFlow<ShareEvent> = _shareEvents.asSharedFlow()
 
     init {
         viewModelScope.launch(ioDispatcher) {
@@ -53,6 +61,12 @@ class EssenceDetailViewModel @Inject constructor(
             _state.emit(EssenceDetailUiState.Loading)
 
             buildState(essence)
+        }
+    }
+
+    fun requestShare(essence: Essence) {
+        viewModelScope.launch {
+            _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(essence)))
         }
     }
 
@@ -104,5 +118,9 @@ class EssenceDetailViewModel @Inject constructor(
                 is Essence.Confluence -> buildConfluenceState(essence)
             }
         }
+    }
+
+    sealed interface ShareEvent {
+        data class Encoded(val text: String) : ShareEvent
     }
 }

@@ -1,5 +1,7 @@
 package wizardry.compendium.essenceinfo
 
+import android.content.Context
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
@@ -19,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -37,7 +40,6 @@ fun EssenceDetails(
     essenceName: String,
     onEssenceLoaded: (Essence) -> Unit,
     onEditContribution: (Essence) -> Unit = {},
-    onShareContribution: (Essence) -> Unit = {},
     viewModel: EssenceDetailViewModel = hiltViewModel()
 ) {
     LaunchedEffect(essenceName) {
@@ -45,6 +47,15 @@ fun EssenceDetails(
     }
 
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel) {
+        viewModel.shareEvents.collect { event ->
+            when (event) {
+                is EssenceDetailViewModel.ShareEvent.Encoded -> fireShareIntent(context, event.text)
+            }
+        }
+    }
 
     BackHandler(
         enabled = (state as? EssenceDetailUiState.Success)?.previousEssence != null
@@ -59,10 +70,18 @@ fun EssenceDetails(
                 state = details,
                 onEssenceClick = { viewModel.load(it) },
                 onEdit = { onEditContribution(details.essence) },
-                onShare = { onShareContribution(details.essence) },
+                onShare = { viewModel.requestShare(details.essence) },
             )
         }
     }
+}
+
+private fun fireShareIntent(context: Context, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share contribution"))
 }
 
 @Composable
@@ -192,11 +211,11 @@ private fun Essence.report(): String {
             """
                 Item: [$name Essence]
                 (${rank.toString().lowercase()}, ${rarity.toString().lowercase()})
-                
+
                 $description (${properties.joinToString(", ")}).
-                
+
                 Requirements: Less than 4 absorbed essences.
-                
+
                 ${effects.joinToString { "Effect: ${it.description}" }}
                 """.trimIndent()
         }

@@ -30,11 +30,13 @@ import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.share.ConfluenceImportPreview
+import wizardry.compendium.share.EssenceShareUseCase
 import wizardry.compendium.share.PreviewCombination
 import wizardry.compendium.share.PreviewEssence
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.WireExporter
+import wizardry.compendium.wire.repo.WireIoRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EssenceContributionsViewModelPasteImportTest {
@@ -58,6 +60,7 @@ class EssenceContributionsViewModelPasteImportTest {
             abilityListingRepository = listingRepo,
             statusEffectRepository = fakeStatusEffectRepo(),
             ioDispatcher = dispatcher,
+            shareUseCase = stubShareUseCase(),
         )
     }
 
@@ -173,6 +176,7 @@ class EssenceContributionsViewModelPasteImportTest {
             abilityListingRepository = listingRepo,
             statusEffectRepository = fakeStatusEffectRepo(),
             ioDispatcher = dispatcher,
+            shareUseCase = stubShareUseCase(),
         )
         // Build an envelope that contains a manifestation so the throwing
         // saveManifestationContribution path is actually reached.
@@ -193,6 +197,74 @@ class EssenceContributionsViewModelPasteImportTest {
             failed.reason.startsWith("Import failed:"),
         )
     }
+}
+
+private fun stubShareUseCase(): EssenceShareUseCase {
+    val essenceRepo = StubEssenceRepoForShare
+    val wireIo = WireIoRepository(
+        essenceRepository = essenceRepo,
+        awakeningStoneRepository = StubStoneRepoForShare,
+        abilityListingRepository = StubListingRepoForShare,
+        statusEffectRepository = StubEffectRepoForShare,
+    )
+    return EssenceShareUseCase(wireIo = wireIo, essenceRepository = essenceRepo)
+}
+
+private object StubEssenceRepoForShare : EssenceRepository {
+    override val essences = kotlinx.coroutines.flow.flowOf(emptyList<Essence>())
+    override val conflicts = kotlinx.coroutines.flow.flowOf(emptyList<EssenceConflict>())
+    override suspend fun getEssences(): List<Essence> = emptyList()
+    override suspend fun getContributions(): List<Essence> = emptyList()
+    override suspend fun getConflicts(): List<EssenceConflict> = emptyList()
+    override suspend fun saveManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
+    override suspend fun saveConfluenceContribution(
+        confluence: Essence.Confluence,
+        referencedManifestations: List<Essence.Manifestation>,
+    ) = ContributionResult.Success
+    override suspend fun addCombinationToConfluence(
+        target: Essence.Confluence,
+        combination: ConfluenceSet,
+    ) = ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
+    override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
+}
+
+private object StubStoneRepoForShare : AwakeningStoneRepository {
+    override val awakeningStones = kotlinx.coroutines.flow.flowOf(emptyList<AwakeningStone>())
+    override val conflicts = kotlinx.coroutines.flow.flowOf(emptyList<AwakeningStoneConflict>())
+    override suspend fun getAwakeningStones() = emptyList<AwakeningStone>()
+    override suspend fun getContributions() = emptyList<AwakeningStone>()
+    override suspend fun getConflicts() = emptyList<AwakeningStoneConflict>()
+    override suspend fun saveAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
+}
+
+private object StubListingRepoForShare : AbilityListingRepository {
+    override val abilityListings = kotlinx.coroutines.flow.flowOf(emptyList<Ability.Listing>())
+    override val conflicts = kotlinx.coroutines.flow.flowOf(emptyList<AbilityListingConflict>())
+    override suspend fun getAbilityListings() = emptyList<Ability.Listing>()
+    override suspend fun getContributions() = emptyList<Ability.Listing>()
+    override suspend fun getConflicts() = emptyList<AbilityListingConflict>()
+    override suspend fun saveAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+}
+
+private object StubEffectRepoForShare : StatusEffectRepository {
+    override val statusEffects = kotlinx.coroutines.flow.flowOf(emptyList<StatusEffect>())
+    override val conflicts = kotlinx.coroutines.flow.flowOf(emptyList<StatusEffectConflict>())
+    override suspend fun getStatusEffects() = emptyList<StatusEffect>()
+    override suspend fun getContributions() = emptyList<StatusEffect>()
+    override suspend fun getConflicts() = emptyList<StatusEffectConflict>()
+    override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
 }
 
 private fun fakeStatusEffectRepo() = object : StatusEffectRepository {

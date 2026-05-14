@@ -26,7 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -166,15 +165,11 @@ class MainActivity : ComponentActivity() {
                             val essenceName = requireNotNull(entry.arguments?.getString(Nav.EssenceDetail.ARG_NAME)) {
                                 "${Nav.EssenceDetail.ARG_NAME} required for ${Nav.EssenceDetail.route}"
                             }
-                            val context = LocalContext.current
                             EssenceDetails(
                                 essenceName = essenceName,
                                 onEssenceLoaded = { loadedTitle = it.name },
                                 onEditContribution = { essence ->
                                     navController.navigate(Nav.Contributions.buildEditRoute(essence))
-                                },
-                                onShareContribution = { essence ->
-                                    fireShareIntent(context, shareViewModel.encode(essence))
                                 },
                             )
                         }
@@ -235,18 +230,6 @@ class MainActivity : ComponentActivity() {
                             EssenceContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.EssenceSearch.route, false) },
-                                onPasteImport = { text ->
-                                    when (val result = shareViewModel.decodeSingleManifestation(text)) {
-                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
-                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
-                                    }
-                                },
-                                onPasteImportConfluence = { text ->
-                                    when (val result = shareViewModel.decodeConfluenceBundle(text)) {
-                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
-                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
-                                    }
-                                },
                             )
                         }
                         composable(

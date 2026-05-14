@@ -12,13 +12,18 @@ import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.share.ConfluenceImportPreview
+import wizardry.compendium.share.DecodedSingle
+import wizardry.compendium.share.EssenceShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import wizardry.compendium.wire.ImportSummary
 import wizardry.compendium.wire.WireImporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -31,6 +36,7 @@ class EssenceContributionsViewModel @Inject constructor(
     abilityListingRepository: AbilityListingRepository,
     statusEffectRepository: StatusEffectRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val shareUseCase: EssenceShareUseCase,
 ) : ViewModel() {
 
     private val wireImporter = WireImporter(
@@ -42,6 +48,32 @@ class EssenceContributionsViewModel @Inject constructor(
 
     private val _pasteImportState = MutableStateFlow<PasteImportState>(PasteImportState.Idle)
     val pasteImportState: StateFlow<PasteImportState> = _pasteImportState.asStateFlow()
+
+    private val _importEvents = MutableSharedFlow<ImportEvent>(extraBufferCapacity = 1)
+    val importEvents: SharedFlow<ImportEvent> = _importEvents.asSharedFlow()
+
+    fun requestImportManifestation(text: String) {
+        viewModelScope.launch(ioDispatcher) {
+            when (val r = shareUseCase.decodeSingleManifestation(text)) {
+                is DecodedSingle.Loaded -> _importEvents.emit(ImportEvent.ManifestationLoaded(r.model))
+                is DecodedSingle.Failed -> _importEvents.emit(ImportEvent.Failed(r.reason))
+            }
+        }
+    }
+
+    fun requestImportConfluence(text: String) {
+        viewModelScope.launch(ioDispatcher) {
+            when (val r = shareUseCase.decodeConfluenceBundle(text)) {
+                is DecodedSingle.Loaded -> startPasteImport(r.model)
+                is DecodedSingle.Failed -> _importEvents.emit(ImportEvent.Failed(r.reason))
+            }
+        }
+    }
+
+    sealed interface ImportEvent {
+        data class ManifestationLoaded(val model: Essence.Manifestation) : ImportEvent
+        data class Failed(val reason: String) : ImportEvent
+    }
 
     fun startPasteImport(preview: ConfluenceImportPreview) {
         _pasteImportState.value = PasteImportState.Reviewing(preview)

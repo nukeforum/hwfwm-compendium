@@ -30,24 +30,6 @@ import kotlinx.coroutines.launch
 fun EssenceContributionsScreen(
     onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
-    /**
-     * Decode a paste-buffer into a single manifestation, or surface an
-     * error message. Tab-aware: only fires on the Manifestation tab in
-     * Create mode; Confluence import is deferred (the manifestation
-     * resolution problem is out of scope for the contribute pre-fill).
-     */
-    onPasteImport: (text: String) -> Pair<Essence.Manifestation?, String?> = { null to null },
-    /**
-     * Suspend decoder for confluence paste-bundle. Wired in MainActivity
-     * to ShareViewModel.decodeConfluenceBundle. Returns a preview to drive
-     * the review sheet, or a non-null reason to surface in the error dialog.
-     *
-     * Pair-shaped because :essence-contributions can't see :app's
-     * `ShareViewModel.DecodedSingle`; MainActivity pattern-matches the
-     * sealed result and forwards it as `(preview, null)` or `(null, reason)`.
-     */
-    onPasteImportConfluence: suspend (text: String) -> Pair<wizardry.compendium.share.ConfluenceImportPreview?, String?> =
-        { null to "not wired" },
     viewModel: EssenceContributionsViewModel = hiltViewModel(),
 ) {
     val availableManifestations by viewModel.availableManifestations.collectAsState()
@@ -74,6 +56,25 @@ fun EssenceContributionsScreen(
     var showConfluencePasteDialog by remember { mutableStateOf(false) }
     var confluencePasteText by remember { mutableStateOf("") }
     var confluenceImportError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.importEvents.collect { event ->
+            when (event) {
+                is EssenceContributionsViewModel.ImportEvent.ManifestationLoaded -> {
+                    importedManifestation = event.model
+                    importErrorMessage = null
+                }
+                is EssenceContributionsViewModel.ImportEvent.Failed -> {
+                    // Failed events come from either requestImportManifestation
+                    // or requestImportConfluence (the latter only on decode
+                    // failure — successes route through pasteImportState).
+                    // We surface both through importErrorMessage, the
+                    // single generic "Couldn't import" error dialog.
+                    importErrorMessage = event.reason
+                }
+            }
+        }
+    }
 
     LaunchedEffect(pasteImportState) {
         when (val state = pasteImportState) {
@@ -187,13 +188,9 @@ fun EssenceContributionsScreen(
                     },
                     confirmButton = {
                         Button(onClick = {
-                            val (manifestation, error) = onPasteImport(pasteText)
+                            val text = pasteText
                             showImportDialog = false
-                            if (manifestation != null) {
-                                importedManifestation = manifestation
-                            } else {
-                                importErrorMessage = error
-                            }
+                            viewModel.requestImportManifestation(text)
                         }) { Text("Import") }
                     },
                     dismissButton = {
@@ -230,14 +227,7 @@ fun EssenceContributionsScreen(
                         Button(onClick = {
                             val text = confluencePasteText
                             showConfluencePasteDialog = false
-                            coroutineScope.launch {
-                                val (preview, reason) = onPasteImportConfluence(text)
-                                if (preview != null) {
-                                    viewModel.startPasteImport(preview)
-                                } else {
-                                    confluenceImportError = reason
-                                }
-                            }
+                            viewModel.requestImportConfluence(text)
                         }) { Text("Import") }
                     },
                     dismissButton = {
