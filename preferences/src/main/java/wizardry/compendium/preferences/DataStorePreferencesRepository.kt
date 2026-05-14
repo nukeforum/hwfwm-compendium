@@ -1,6 +1,8 @@
 package wizardry.compendium.preferences
 
 import android.content.Context
+import androidx.datastore.core.DataMigration
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -19,7 +21,28 @@ import wizardry.compendium.preferences.ThemeMode
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private val Context.dataStore by preferencesDataStore(name = "compendium_prefs")
+private val LEGACY_ESSENCE_CONTRIBUTIONS_KEY = booleanPreferencesKey("contributions_enabled")
+private val ESSENCE_CONTRIBUTIONS_KEY = booleanPreferencesKey("essence_contributions_enabled")
+
+private val RenameEssenceContributionsKey = object : DataMigration<Preferences> {
+    override suspend fun shouldMigrate(currentData: Preferences): Boolean =
+        LEGACY_ESSENCE_CONTRIBUTIONS_KEY in currentData
+
+    override suspend fun migrate(currentData: Preferences): Preferences {
+        val legacy = currentData[LEGACY_ESSENCE_CONTRIBUTIONS_KEY] ?: return currentData
+        return currentData.toMutablePreferences().apply {
+            if (ESSENCE_CONTRIBUTIONS_KEY !in this) set(ESSENCE_CONTRIBUTIONS_KEY, legacy)
+            remove(LEGACY_ESSENCE_CONTRIBUTIONS_KEY)
+        }.toPreferences()
+    }
+
+    override suspend fun cleanUp() = Unit
+}
+
+private val Context.dataStore by preferencesDataStore(
+    name = "compendium_prefs",
+    produceMigrations = { listOf(RenameEssenceContributionsKey) },
+)
 
 @Singleton
 class DataStorePreferencesRepository @Inject constructor(
@@ -27,7 +50,7 @@ class DataStorePreferencesRepository @Inject constructor(
 ) : PreferencesRepository {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val essenceContributionsKey = booleanPreferencesKey("contributions_enabled")
+    private val essenceContributionsKey = ESSENCE_CONTRIBUTIONS_KEY
     private val awakeningStoneContributionsKey = booleanPreferencesKey("awakening_stone_contributions_enabled")
     private val abilityListingContributionsKey = booleanPreferencesKey("ability_listing_contributions_enabled")
     private val statusEffectContributionsKey = booleanPreferencesKey("status_effect_contributions_enabled")

@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
                                             navController.navigate(Nav.EssenceRandomizer.route)
                                         }
                                         ContributeButton {
-                                            navController.navigate(Nav.Contributions.newRoute)
+                                            navController.navigate(Nav.EssenceContributions.newRoute)
                                         }
                                     }
                                     Nav.AwakeningStoneSearch.route -> ContributeButton {
@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(Nav.EssenceDetail.buildRoute(essence))
                                 },
                                 onAddClicked = {
-                                    navController.navigate(Nav.Contributions.newRoute)
+                                    navController.navigate(Nav.EssenceContributions.newRoute)
                                 },
                             )
                         }
@@ -165,7 +165,7 @@ class MainActivity : ComponentActivity() {
                                 essenceName = essenceName,
                                 onEssenceLoaded = { loadedTitle = it.name },
                                 onEditContribution = { essence ->
-                                    navController.navigate(Nav.Contributions.buildEditRoute(essence))
+                                    navController.navigate(Nav.EssenceContributions.buildEditRoute(essence))
                                 },
                             )
                         }
@@ -200,7 +200,7 @@ class MainActivity : ComponentActivity() {
                         composable(Nav.Conflicts.route) {
                             ConflictsScreen(
                                 onEditEssenceContribution = { name ->
-                                    navController.navigate(Nav.Contributions.buildEditRouteByName(name))
+                                    navController.navigate(Nav.EssenceContributions.buildEditRouteByName(name))
                                 },
                                 onEditAwakeningStoneContribution = { name ->
                                     navController.navigate(Nav.AwakeningStoneContributions.buildEditRouteByName(name))
@@ -214,9 +214,9 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(
-                            Nav.Contributions.route,
+                            Nav.EssenceContributions.route,
                             arguments = listOf(
-                                navArgument(Nav.Contributions.ARG_NAME) {
+                                navArgument(Nav.EssenceContributions.ARG_NAME) {
                                     type = NavType.StringType
                                     nullable = true
                                     defaultValue = null
@@ -392,8 +392,8 @@ private fun titleForRoute(route: String?, entry: NavBackStackEntry?): String = w
     Nav.AbilityDetail.route -> entry?.arguments?.getString(Nav.AbilityDetail.ARG_NAME).orEmpty()
     Nav.StatusEffectDetail.route -> entry?.arguments?.getString(Nav.StatusEffectDetail.ARG_NAME).orEmpty()
     Nav.CharacterBuildDetail.route -> entry?.arguments?.getString(Nav.CharacterBuildDetail.ARG_NAME).orEmpty()
-    Nav.Contributions.route ->
-        if (entry?.arguments?.getString(Nav.Contributions.ARG_NAME) != null) "Edit Essence" else "Add Essence"
+    Nav.EssenceContributions.route ->
+        if (entry?.arguments?.getString(Nav.EssenceContributions.ARG_NAME) != null) "Edit Essence" else "Add Essence"
     Nav.AwakeningStoneContributions.route ->
         if (entry?.arguments?.getString(Nav.AwakeningStoneContributions.ARG_NAME) != null) "Edit Awakening Stone" else "Add Awakening Stone"
     Nav.AbilityContributions.route ->
