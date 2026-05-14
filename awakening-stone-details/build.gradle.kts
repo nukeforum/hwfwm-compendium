@@ -52,7 +52,7 @@ dependencies {
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlin.coroutines.test)
-    testImplementation("app.cash.turbine:turbine:1.0.0")
+    testImplementation(libs.turbine)
     testImplementation(project(":wire"))
     testImplementation(project(":wire-repo"))
     androidTestImplementation(libs.androidx.junit)

@@ -24,6 +24,7 @@ sqldelight = "2.3.2"
 androidx-datastore = "1.2.1"
 kotlinx-serialization = "1.11.0"
 kotlinpoet = "2.3.0"
+turbine = "1.0.0"
 
 [libraries]
 #kotlin
@@ -64,6 +65,7 @@ kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlin
 #testing
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 kotlin-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlin-coroutines" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "compose-runtime" }
 
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "androidx-datastore" }
