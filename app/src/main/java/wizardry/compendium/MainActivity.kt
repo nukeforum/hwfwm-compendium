@@ -1,6 +1,5 @@
 package wizardry.compendium
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -56,12 +55,10 @@ import wizardry.compendium.essenceinfo.EssenceDetails
 import wizardry.compendium.randomizer.Randomizer
 import wizardry.compendium.search.EssenceSearch
 import wizardry.compendium.settings.SettingsScreen
-import wizardry.compendium.share.ShareViewModel
 import wizardry.compendium.statuseffect.contributions.StatusEffectContributionsScreen
 import wizardry.compendium.statuseffect.details.StatusEffectDetails
 import wizardry.compendium.statuseffect.search.StatusEffectSearch
 import wizardry.compendium.theme.CompendiumThemeFromSettings
-import android.content.Intent as AndroidIntent
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -73,7 +70,6 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val backStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = backStackEntry?.destination?.route
-            val shareViewModel = hiltViewModel<ShareViewModel>()
 
             CompendiumThemeFromSettings {
                 // Async-loaded entity title (set by detail screens via onXLoaded). Re-keyed per route.
@@ -460,17 +456,3 @@ private fun BackButton(navigate: () -> Unit) {
     }
 }
 
-/**
- * Fires an Android `ACTION_SEND` chooser with the given share text.
- *
- * Single-entity shares always go through plain text — they're tiny enough
- * to fit comfortably in the share-size limit (typical encoded size is a
- * few hundred chars, well below the 100 KB cap).
- */
-private fun fireShareIntent(context: Context, text: String) {
-    val intent = AndroidIntent(AndroidIntent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(AndroidIntent.EXTRA_TEXT, text)
-    }
-    context.startActivity(AndroidIntent.createChooser(intent, "Share contribution"))
-}
