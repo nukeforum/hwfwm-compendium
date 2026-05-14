@@ -283,15 +283,11 @@ class MainActivity : ComponentActivity() {
                             val abilityName = requireNotNull(entry.arguments?.getString(Nav.AbilityDetail.ARG_NAME)) {
                                 "${Nav.AbilityDetail.ARG_NAME} required for ${Nav.AbilityDetail.route}"
                             }
-                            val context = LocalContext.current
                             AbilityDetails(
                                 abilityName = abilityName,
                                 onAbilityLoaded = { loadedTitle = it.name },
                                 onEditContribution = { ability ->
                                     navController.navigate(Nav.AbilityContributions.buildEditRoute(ability))
-                                },
-                                onShareContribution = { ability ->
-                                    fireShareIntent(context, shareViewModel.encode(ability))
                                 },
                             )
                         }
@@ -308,12 +304,6 @@ class MainActivity : ComponentActivity() {
                             AbilityContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.AbilitySearch.route, false) },
-                                onPasteImport = { text ->
-                                    when (val result = shareViewModel.decodeSingleAbility(text)) {
-                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
-                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
-                                    }
-                                },
                             )
                         }
                         composable(Nav.StatusEffectSearch.route) {

@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -12,6 +15,7 @@ import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.share.AbilityListingShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
@@ -20,10 +24,14 @@ class AbilityListingDetailViewModel @Inject constructor(
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val shareUseCase: AbilityListingShareUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<AbilityListingDetailUiState>(AbilityListingDetailUiState.Loading)
     val state = _state.asStateFlow()
+
+    private val _shareEvents = MutableSharedFlow<ShareEvent>(extraBufferCapacity = 1)
+    val shareEvents: SharedFlow<ShareEvent> = _shareEvents.asSharedFlow()
 
     init {
         viewModelScope.launch(ioDispatcher) {
@@ -72,6 +80,16 @@ class AbilityListingDetailViewModel @Inject constructor(
         }
     }
 
+    fun requestShare(listing: Ability.Listing) {
+        viewModelScope.launch {
+            _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(listing)))
+        }
+    }
+
     private val currentlyLoadedListing: Ability.Listing?
         get() = (state.value as? AbilityListingDetailUiState.Success)?.listing
+
+    sealed interface ShareEvent {
+        data class Encoded(val text: String) : ShareEvent
+    }
 }

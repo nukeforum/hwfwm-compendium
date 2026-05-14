@@ -5,9 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -22,6 +25,8 @@ import wizardry.compendium.essences.model.Cost
 import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.share.AbilityListingShareUseCase
+import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 import kotlin.time.Duration
@@ -36,6 +41,7 @@ class AbilityListingContributionsViewModel @Inject constructor(
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val shareUseCase: AbilityListingShareUseCase,
 ) : ViewModel() {
 
     private val editName: String? = savedStateHandle.get<String>("name")
@@ -60,6 +66,26 @@ class AbilityListingContributionsViewModel @Inject constructor(
      */
     private val _importedName = MutableStateFlow<String?>(null)
     val importedName = _importedName.asStateFlow()
+
+    private val _importEvents = MutableSharedFlow<ImportEvent>(extraBufferCapacity = 1)
+    val importEvents: SharedFlow<ImportEvent> = _importEvents.asSharedFlow()
+
+    fun requestImport(text: String) {
+        viewModelScope.launch(ioDispatcher) {
+            when (val r = shareUseCase.decodeSingleAbility(text)) {
+                is DecodedSingle.Loaded -> {
+                    prefillFromImport(r.model)
+                    _importEvents.emit(ImportEvent.Loaded(r.model))
+                }
+                is DecodedSingle.Failed -> _importEvents.emit(ImportEvent.Failed(r.reason))
+            }
+        }
+    }
+
+    sealed interface ImportEvent {
+        data class Loaded(val listing: Ability.Listing) : ImportEvent
+        data class Failed(val reason: String) : ImportEvent
+    }
 
     init {
         if (editName != null) {

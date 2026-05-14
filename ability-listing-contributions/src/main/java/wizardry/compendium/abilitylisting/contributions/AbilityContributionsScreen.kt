@@ -88,12 +88,6 @@ import kotlin.time.Duration
 fun AbilityContributionsScreen(
     onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
-    /**
-     * Decode a paste-buffer into a single ability listing or surface an
-     * error. On success, the screen calls `prefillFromImport` on the VM
-     * to populate the effects state and the imported name.
-     */
-    onPasteImport: (text: String) -> Pair<Ability.Listing?, String?> = { null to null },
     viewModel: AbilityListingContributionsViewModel = hiltViewModel(),
 ) {
     val saveState by viewModel.saveState.collectAsState()
@@ -113,6 +107,19 @@ fun AbilityContributionsScreen(
     var showImportDialog by remember { mutableStateOf(false) }
     var importErrorMessage by remember { mutableStateOf<String?>(null) }
     var pasteText by remember { mutableStateOf("") }
+
+    LaunchedEffect(viewModel) {
+        viewModel.importEvents.collect { event ->
+            when (event) {
+                is AbilityListingContributionsViewModel.ImportEvent.Loaded -> {
+                    // VM already called prefillFromImport; nothing to surface here.
+                }
+                is AbilityListingContributionsViewModel.ImportEvent.Failed -> {
+                    importErrorMessage = event.reason
+                }
+            }
+        }
+    }
 
     when (val current = mode) {
         AbilityListingContributionsViewModel.Mode.Edit.Loading -> Box(
@@ -169,13 +176,8 @@ fun AbilityContributionsScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    val (listing, error) = onPasteImport(pasteText)
+                    viewModel.requestImport(pasteText)
                     showImportDialog = false
-                    if (listing != null) {
-                        viewModel.prefillFromImport(listing)
-                    } else {
-                        importErrorMessage = error
-                    }
                 }) { Text("Import") }
             },
             dismissButton = {

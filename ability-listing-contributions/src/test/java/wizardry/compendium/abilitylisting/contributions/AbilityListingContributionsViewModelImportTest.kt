@@ -1,12 +1,11 @@
 package wizardry.compendium.abilitylisting.contributions
 
 import androidx.lifecycle.SavedStateHandle
+import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -14,7 +13,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import kotlinx.coroutines.flow.flowOf
 import wizardry.compendium.essences.AbilityListingConflict
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneConflict
@@ -27,94 +25,71 @@ import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
-import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.StatusEffect
-import wizardry.compendium.essences.model.StatusType
 import wizardry.compendium.share.AbilityListingShareUseCase
+import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.wire.repo.WireIoRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AbilityListingContributionsViewModelStatusEffectsTest {
+class AbilityListingContributionsViewModelImportTest {
 
-    private val dispatcher = UnconfinedTestDispatcher()
+    private val dispatcher = StandardTestDispatcher()
 
-    @Before
-    fun setUp() {
-        Dispatchers.setMain(dispatcher)
-    }
+    @Before fun setUp() { Dispatchers.setMain(dispatcher) }
+    @After fun tearDown() { Dispatchers.resetMain() }
 
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
+    @Test
+    fun `requestImport pre-fills form and emits Loaded`() = runTest(dispatcher) {
+        val fireball = Ability.Listing.of("Fireball")
+        val useCase = object : AbilityListingShareUseCase(wireIo = stubWireIo()) {
+            override fun decodeSingleAbility(text: String) = DecodedSingle.Loaded(fireball)
+        }
+        val vm = newVm(useCase)
+
+        vm.importEvents.test {
+            vm.requestImport("ignored")
+            assertEquals(
+                AbilityListingContributionsViewModel.ImportEvent.Loaded(fireball),
+                awaitItem(),
+            )
+        }
+        assertEquals("Fireball", vm.importedName.value)
     }
 
     @Test
-    fun `statusEffects flow emits the repository's current effects`() = runTest {
-        val repo = FakeStatusEffectRepository(
-            initial = listOf(
-                StatusEffect(
-                    name = "Bleeding",
-                    type = StatusType.Affliction.Wound,
-                    properties = listOf(Property.Blood),
-                    stackable = true,
-                    description = "x",
-                ),
-            ),
-        )
-        val vm = AbilityListingContributionsViewModel(
-            savedStateHandle = SavedStateHandle(),
-            abilityListingRepository = NoopAbilityListingRepository,
-            statusEffectRepository = repo,
-            ioDispatcher = dispatcher,
-            shareUseCase = stubShareUseCase(),
-        )
-        assertEquals(listOf("Bleeding"), vm.statusEffects.first().map { it.name })
+    fun `requestImport emits Failed on rejected decode`() = runTest(dispatcher) {
+        val useCase = object : AbilityListingShareUseCase(wireIo = stubWireIo()) {
+            override fun decodeSingleAbility(text: String) = DecodedSingle.Failed("bad paste")
+        }
+        val vm = newVm(useCase)
+
+        vm.importEvents.test {
+            vm.requestImport("ignored")
+            assertEquals(
+                AbilityListingContributionsViewModel.ImportEvent.Failed("bad paste"),
+                awaitItem(),
+            )
+        }
+        assertEquals(null, vm.importedName.value)
     }
 
-    private class FakeStatusEffectRepository(
-        initial: List<StatusEffect>,
-    ) : StatusEffectRepository {
-        private val flow = MutableStateFlow(initial)
-        override val statusEffects: Flow<List<StatusEffect>> = flow
-        override val conflicts: Flow<List<StatusEffectConflict>> = MutableStateFlow(emptyList())
-        override suspend fun getStatusEffects(): List<StatusEffect> = flow.value
-        override suspend fun getContributions(): List<StatusEffect> = emptyList()
-        override suspend fun getConflicts(): List<StatusEffectConflict> = emptyList()
-        override suspend fun saveStatusEffectContribution(effect: StatusEffect): ContributionResult =
-            ContributionResult.Failure("not used")
-        override suspend fun isContribution(name: String): Boolean = false
-        override suspend fun deleteContribution(name: String): ContributionResult =
-            ContributionResult.Failure("not used")
-        override suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult =
-            ContributionResult.Failure("not used")
-    }
-
-    private object NoopAbilityListingRepository : AbilityListingRepository {
-        override val abilityListings: Flow<List<Ability.Listing>> = MutableStateFlow(emptyList())
-        override val conflicts: Flow<List<AbilityListingConflict>> = MutableStateFlow(emptyList())
-        override suspend fun getAbilityListings(): List<Ability.Listing> = emptyList()
-        override suspend fun getContributions(): List<Ability.Listing> = emptyList()
-        override suspend fun getConflicts(): List<AbilityListingConflict> = emptyList()
-        override suspend fun saveAbilityListingContribution(listing: Ability.Listing): ContributionResult =
-            ContributionResult.Failure("not used")
-        override suspend fun isContribution(name: String): Boolean = false
-        override suspend fun deleteContribution(name: String): ContributionResult =
-            ContributionResult.Failure("not used")
-        override suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult =
-            ContributionResult.Failure("not used")
-    }
+    private fun newVm(useCase: AbilityListingShareUseCase) = AbilityListingContributionsViewModel(
+        savedStateHandle = SavedStateHandle(),
+        abilityListingRepository = FakeListingRepo,
+        statusEffectRepository = FakeEffectRepo,
+        ioDispatcher = dispatcher,
+        shareUseCase = useCase,
+    )
 }
 
-private fun stubShareUseCase(): AbilityListingShareUseCase = AbilityListingShareUseCase(
-    wireIo = WireIoRepository(
-        essenceRepository = VmStubEssenceRepo,
-        awakeningStoneRepository = VmStubStoneRepo,
-        abilityListingRepository = VmStubListingRepo,
-        statusEffectRepository = VmStubEffectRepo,
-    ),
+private fun stubWireIo() = WireIoRepository(
+    essenceRepository = StubEssenceRepo,
+    awakeningStoneRepository = StubStoneRepo,
+    abilityListingRepository = StubListingRepo,
+    statusEffectRepository = StubEffectRepo,
 )
 
-private object VmStubEssenceRepo : EssenceRepository {
+private object StubEssenceRepo : EssenceRepository {
     override val essences = flowOf(emptyList<Essence>())
     override val conflicts = flowOf(emptyList<EssenceConflict>())
     override suspend fun getEssences() = emptyList<Essence>()
@@ -135,7 +110,7 @@ private object VmStubEssenceRepo : EssenceRepository {
     override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
 }
 
-private object VmStubStoneRepo : AwakeningStoneRepository {
+private object StubStoneRepo : AwakeningStoneRepository {
     override val awakeningStones = flowOf(emptyList<AwakeningStone>())
     override val conflicts = flowOf(emptyList<AwakeningStoneConflict>())
     override suspend fun getAwakeningStones() = emptyList<AwakeningStone>()
@@ -147,7 +122,7 @@ private object VmStubStoneRepo : AwakeningStoneRepository {
     override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
 }
 
-private object VmStubListingRepo : AbilityListingRepository {
+private object StubListingRepo : AbilityListingRepository {
     override val abilityListings = flowOf(emptyList<Ability.Listing>())
     override val conflicts = flowOf(emptyList<AbilityListingConflict>())
     override suspend fun getAbilityListings() = emptyList<Ability.Listing>()
@@ -159,7 +134,7 @@ private object VmStubListingRepo : AbilityListingRepository {
     override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
 }
 
-private object VmStubEffectRepo : StatusEffectRepository {
+private object StubEffectRepo : StatusEffectRepository {
     override val statusEffects = flowOf(emptyList<StatusEffect>())
     override val conflicts = flowOf(emptyList<StatusEffectConflict>())
     override suspend fun getStatusEffects() = emptyList<StatusEffect>()
@@ -170,3 +145,6 @@ private object VmStubEffectRepo : StatusEffectRepository {
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
     override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
 }
+
+private object FakeListingRepo : AbilityListingRepository by StubListingRepo
+private object FakeEffectRepo : StatusEffectRepository by StubEffectRepo

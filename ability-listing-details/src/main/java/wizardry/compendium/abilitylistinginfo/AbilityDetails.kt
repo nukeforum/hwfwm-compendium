@@ -1,5 +1,7 @@
 package wizardry.compendium.abilitylistinginfo
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +27,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -49,11 +52,19 @@ fun AbilityDetails(
     abilityName: String,
     onAbilityLoaded: (Ability.Listing) -> Unit,
     onEditContribution: (Ability.Listing) -> Unit = {},
-    onShareContribution: (Ability.Listing) -> Unit = {},
     viewModel: AbilityListingDetailViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(abilityName) {
         viewModel.load(abilityName)
+    }
+
+    val context = LocalContext.current
+    LaunchedEffect(viewModel) {
+        viewModel.shareEvents.collect { event ->
+            when (event) {
+                is AbilityListingDetailViewModel.ShareEvent.Encoded -> fireShareIntent(context, event.text)
+            }
+        }
     }
 
     val state by viewModel.state.collectAsState()
@@ -66,11 +77,19 @@ fun AbilityDetails(
             Details(
                 state = details,
                 onEdit = { onEditContribution(details.listing) },
-                onShare = { onShareContribution(details.listing) },
+                onShare = { viewModel.requestShare(details.listing) },
                 onSelectRank = viewModel::selectRank,
             )
         }
     }
+}
+
+private fun fireShareIntent(context: Context, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, null))
 }
 
 @Composable
