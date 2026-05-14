@@ -1,5 +1,7 @@
 package wizardry.compendium.awakeningstoneinfo
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -38,11 +41,19 @@ fun AwakeningStoneDetails(
     stoneName: String,
     onStoneLoaded: (AwakeningStone) -> Unit,
     onEditContribution: (AwakeningStone) -> Unit = {},
-    onShareContribution: (AwakeningStone) -> Unit = {},
     viewModel: AwakeningStoneDetailViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(stoneName) {
         viewModel.load(stoneName)
+    }
+
+    val context = LocalContext.current
+    LaunchedEffect(viewModel) {
+        viewModel.shareEvents.collect { event ->
+            when (event) {
+                is AwakeningStoneDetailViewModel.ShareEvent.Encoded -> fireShareIntent(context, event.text)
+            }
+        }
     }
 
     val state by viewModel.state.collectAsState()
@@ -55,7 +66,7 @@ fun AwakeningStoneDetails(
             Details(
                 state = details,
                 onEdit = { onEditContribution(details.stone) },
-                onShare = { onShareContribution(details.stone) },
+                onShare = { viewModel.requestShare(details.stone) },
             )
         }
     }
@@ -133,6 +144,14 @@ private fun AwakeningStone.report(): String {
 
         ${effects.joinToString { "Effect: ${it.description}" }}
     """.trimIndent()
+}
+
+private fun fireShareIntent(context: Context, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, null))
 }
 
 @PreviewLightDark

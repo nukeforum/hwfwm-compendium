@@ -4,12 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.share.AwakeningStoneShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
@@ -17,10 +21,14 @@ import javax.inject.Inject
 class AwakeningStoneDetailViewModel @Inject constructor(
     private val awakeningStoneRepository: AwakeningStoneRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val shareUseCase: AwakeningStoneShareUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<AwakeningStoneDetailUiState>(AwakeningStoneDetailUiState.Loading)
     val state = _state.asStateFlow()
+
+    private val _shareEvents = MutableSharedFlow<ShareEvent>(extraBufferCapacity = 1)
+    val shareEvents: SharedFlow<ShareEvent> = _shareEvents.asSharedFlow()
 
     init {
         viewModelScope.launch(ioDispatcher) {
@@ -46,6 +54,12 @@ class AwakeningStoneDetailViewModel @Inject constructor(
         }
     }
 
+    fun requestShare(stone: AwakeningStone) {
+        viewModelScope.launch {
+            _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(stone)))
+        }
+    }
+
     private suspend fun AwakeningStone.toSuccess(): AwakeningStoneDetailUiState.Success =
         AwakeningStoneDetailUiState.Success(
             stone = this,
@@ -54,4 +68,8 @@ class AwakeningStoneDetailViewModel @Inject constructor(
 
     private val currentlyLoadedStone: AwakeningStone?
         get() = (state.value as? AwakeningStoneDetailUiState.Success)?.stone
+
+    sealed interface ShareEvent {
+        data class Encoded(val text: String) : ShareEvent
+    }
 }

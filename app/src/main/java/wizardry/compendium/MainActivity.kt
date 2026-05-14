@@ -187,15 +187,11 @@ class MainActivity : ComponentActivity() {
                             val stoneName = requireNotNull(entry.arguments?.getString(Nav.AwakeningStoneDetail.ARG_NAME)) {
                                 "${Nav.AwakeningStoneDetail.ARG_NAME} required for ${Nav.AwakeningStoneDetail.route}"
                             }
-                            val context = LocalContext.current
                             AwakeningStoneDetails(
                                 stoneName = stoneName,
                                 onStoneLoaded = { loadedTitle = it.name },
                                 onEditContribution = { stone ->
                                     navController.navigate(Nav.AwakeningStoneContributions.buildEditRoute(stone))
-                                },
-                                onShareContribution = { stone ->
-                                    fireShareIntent(context, shareViewModel.encode(stone))
                                 },
                             )
                         }
@@ -266,12 +262,6 @@ class MainActivity : ComponentActivity() {
                             AwakeningStoneContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.AwakeningStoneSearch.route, false) },
-                                onPasteImport = { text ->
-                                    when (val result = shareViewModel.decodeSingleStone(text)) {
-                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
-                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
-                                    }
-                                },
                             )
                         }
                         composable(Nav.AbilitySearch.route) {

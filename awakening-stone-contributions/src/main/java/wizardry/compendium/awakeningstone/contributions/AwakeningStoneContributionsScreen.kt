@@ -40,13 +40,6 @@ import wizardry.compendium.ui.EditPreviewToggle
 fun AwakeningStoneContributionsScreen(
     onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
-    /**
-     * Hook for the Import action shown in Create mode. Returns a tuple of
-     * (stone, errorMessage) where exactly one is non-null. The screen
-     * uses the stone to pre-fill the form; errorMessage drives a dialog.
-     * App-side wires this to ShareViewModel.decodeSingleStone.
-     */
-    onPasteImport: (text: String) -> Pair<AwakeningStone?, String?> = { null to null },
     viewModel: AwakeningStoneContributionsViewModel = hiltViewModel(),
 ) {
     val saveState by viewModel.saveState.collectAsState()
@@ -64,6 +57,20 @@ fun AwakeningStoneContributionsScreen(
     var showImportDialog by remember { mutableStateOf(false) }
     var importErrorMessage by remember { mutableStateOf<String?>(null) }
     var pasteText by remember { mutableStateOf("") }
+
+    LaunchedEffect(viewModel) {
+        viewModel.importEvents.collect { event ->
+            when (event) {
+                is AwakeningStoneContributionsViewModel.ImportEvent.Loaded -> {
+                    importedInitial = event.stone
+                    importErrorMessage = null
+                }
+                is AwakeningStoneContributionsViewModel.ImportEvent.Failed -> {
+                    importErrorMessage = event.reason
+                }
+            }
+        }
+    }
 
     when (val current = mode) {
         AwakeningStoneContributionsViewModel.Mode.Create -> {
@@ -110,13 +117,8 @@ fun AwakeningStoneContributionsScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    val (stone, error) = onPasteImport(pasteText)
+                    viewModel.requestImport(pasteText)
                     showImportDialog = false
-                    if (stone != null) {
-                        importedInitial = stone
-                    } else {
-                        importErrorMessage = error
-                    }
                 }) { Text("Import") }
             },
             dismissButton = {

@@ -32,6 +32,7 @@ dependencies {
 
     implementation(project(":design"))
     implementation(project(":essences"))
+    implementation(project(":share"))
 
     implementation(libs.androidx.core.ktx)
 
@@ -47,6 +48,10 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
 
     testImplementation(libs.junit4)
+    testImplementation(libs.kotlin.coroutines.test)
+    testImplementation("app.cash.turbine:turbine:1.0.0")
+    testImplementation(project(":wire"))
+    testImplementation(project(":wire-repo"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.androidx.compose.ui.tooling)
