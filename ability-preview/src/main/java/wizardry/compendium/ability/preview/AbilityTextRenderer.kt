@@ -27,13 +27,11 @@ import kotlin.time.Duration
  *
  * # Why this lives in `:ability-preview`
  *
- * Both `:app` (for `ShareViewModel`) and `:character-build-details` (for the
- * detail VM's `shareText()`) need to call this renderer. Putting it in `:app`
- * would force `:character-build-details` to depend on `:app`, which would
- * create a cycle (`:app` already depends on `:character-build-details`).
- * `:ability-preview` is the natural shared home: both consumers already
- * depend on it, and it's the parallel Compose-renderer module to this
- * text renderer.
+ * `CharacterBuildShareUseCase` (in `:share`) calls this renderer to build the
+ * plaintext share variant. `:share` is an Android library that already
+ * depends on `:ability-preview`, so this is the natural shared home — and
+ * it sits next to the parallel Compose-based renderer that drives the
+ * detail screen.
  */
 object AbilityTextRenderer {
 

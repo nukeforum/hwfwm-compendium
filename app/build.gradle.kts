@@ -79,7 +79,6 @@ dependencies {
     implementation(project(":preferences"))
     implementation(project(":randomizer"))
     implementation(project(":settings"))
-    implementation(project(":share"))
     implementation(project(":status-effect-contributions"))
     implementation(project(":status-effect-details"))
     implementation(project(":status-effect-search"))

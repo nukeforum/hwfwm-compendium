@@ -493,8 +493,10 @@ When you add a new contribution domain (call it `X`):
      `Envelope.filteredTo` and `WireExporter.exportFiltered` to map it
      to the new envelope list field; `SettingsViewModel.buildExportRows`
      and `buildImportRows` need a label and count source.
-   - Detail screen: add a `Share` button that calls
-     `ShareViewModel.encode(modelX)` and fires `fireShareIntent`.
+   - Detail screen: add a `Share` button that calls the detail VM's
+     `requestShare(modelX)`; the VM emits a `ShareEvent.Encoded` that the
+     screen's `LaunchedEffect` translates into `fireShareIntent`. Each
+     entity owns its own `*ShareUseCase` in `:share`.
    - Contribute screen: optionally add a paste-import dialog (see
      `AwakeningStoneContributionsScreen` for the pattern).
 8. **Schema lock**: run `./gradlew :wire:updateWireSchemaLock` and commit

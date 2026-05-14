@@ -17,9 +17,9 @@ import wizardry.compendium.wire.WireVersionUnsupported
  * referenced name against the receiver's repos and surfacing both missing
  * references and build-name collisions for the preview sheet.
  *
- * Lives in `:wire` (not `:app`) so both `ShareViewModel` (in `:app`) and
+ * Lives in `:wire` so both `CharacterBuildShareUseCase` (in `:share`) and
  * `CharacterBuildContributionsViewModel` (in `:character-build-contributions`)
- * can depend on it without a VM-to-VM dependency or cyclic module graph.
+ * can depend on it without a cyclic module graph.
  *
  * `open` for test substitution: VM tests provide a fake subclass that
  * returns a canned `Result` without going through the full wire decode.
