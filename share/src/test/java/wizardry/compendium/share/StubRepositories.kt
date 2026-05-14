@@ -5,6 +5,7 @@ import wizardry.compendium.essences.AbilityListingConflict
 import wizardry.compendium.essences.AbilityListingRepository
 import wizardry.compendium.essences.AwakeningStoneConflict
 import wizardry.compendium.essences.AwakeningStoneRepository
+import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceRepository
@@ -12,6 +13,7 @@ import wizardry.compendium.essences.StatusEffectConflict
 import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
+import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
@@ -79,6 +81,14 @@ internal object StubListingRepo : AbilityListingRepository {
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
     override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+}
+
+internal object StubBuildRepo : CharacterBuildRepository {
+    override val builds = flowOf(emptyList<CharacterBuild>())
+    override suspend fun getBuilds() = emptyList<CharacterBuild>()
+    override suspend fun getBuild(name: String): CharacterBuild? = null
+    override suspend fun saveBuildContribution(build: CharacterBuild) = ContributionResult.Success
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
 }
 
 internal object StubEffectRepo : StatusEffectRepository {

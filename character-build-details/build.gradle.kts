@@ -35,6 +35,7 @@ dependencies {
     implementation(project(":essences"))
     implementation(project(":ability-preview"))
     implementation(project(":wire-repo"))
+    implementation(project(":share"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlin.coroutines)
@@ -55,6 +56,9 @@ dependencies {
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlin.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(project(":wire"))
+    testImplementation(project(":wire-repo"))
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

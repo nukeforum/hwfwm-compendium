@@ -1,5 +1,6 @@
 package wizardry.compendium.characterbuilddetails
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -30,6 +31,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -67,6 +71,24 @@ fun CharacterBuildDetails(
     LaunchedEffect(buildName) { viewModel.load(buildName) }
 
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
+    var pendingExportUri by remember { mutableStateOf<Uri?>(null) }
+
+    LaunchedEffect(viewModel) {
+        viewModel.shareEvents.collect { event ->
+            when (event) {
+                is CharacterBuildDetailViewModel.ShareEvent.EncodedAsText ->
+                    fireShareIntent(context, event.text)
+                is CharacterBuildDetailViewModel.ShareEvent.Encoded -> {
+                    val uri = pendingExportUri
+                    if (uri != null) {
+                        pendingExportUri = null
+                        writeToUri(context, uri, event.text)
+                    }
+                }
+            }
+        }
+    }
 
     when (val details = state) {
         is CharacterBuildDetailUiState.Error -> ErrorMessage(details.exception.message ?: "Unable to load build")
@@ -76,10 +98,31 @@ fun CharacterBuildDetails(
             Details(
                 state = details,
                 onEdit = { onEditContribution(details.build) },
-                shareText = viewModel::shareText,
-                encodeFile = viewModel::encodeFile,
+                onShareText = { viewModel.requestShareAsText() },
+                onExportFile = { uri ->
+                    pendingExportUri = uri
+                    viewModel.requestShareAsFile()
+                },
             )
         }
+    }
+}
+
+private fun fireShareIntent(context: Context, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, "Share build"))
+}
+
+private fun writeToUri(context: Context, uri: Uri, text: String) {
+    try {
+        context.contentResolver.openOutputStream(uri)?.use { out ->
+            out.write(text.toByteArray(Charsets.UTF_8))
+        }
+    } catch (_: Exception) {
+        // Silent failure for v1; matches Settings export behavior.
     }
 }
 
@@ -97,24 +140,15 @@ private fun Loading() {
 private fun Details(
     state: CharacterBuildDetailUiState.Success,
     onEdit: () -> Unit,
-    shareText: () -> String,
-    encodeFile: () -> String,
+    onShareText: () -> Unit,
+    onExportFile: (Uri) -> Unit,
 ) {
-    val context = LocalContext.current
     val sanitized = state.build.name.replace(Regex("[^A-Za-z0-9_.-]"), "_")
 
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("text/plain"),
     ) { uri: Uri? ->
-        if (uri != null) {
-            try {
-                context.contentResolver.openOutputStream(uri)?.use { out ->
-                    out.write(encodeFile().toByteArray(Charsets.UTF_8))
-                }
-            } catch (_: Exception) {
-                // Silent failure for v1; matches Settings export behavior.
-            }
-        }
+        if (uri != null) onExportFile(uri)
     }
 
     CompositionLocalProvider(LocalStatusEffects provides state.statusEffects) {
@@ -130,13 +164,7 @@ private fun Details(
                     .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
-                OutlinedButton(onClick = {
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, shareText())
-                    }
-                    context.startActivity(Intent.createChooser(intent, "Share build"))
-                }) {
+                OutlinedButton(onClick = onShareText) {
                     Icon(Icons.Filled.Share, contentDescription = null)
                     Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
                 }
@@ -310,8 +338,8 @@ private fun DetailsPreview() {
                 statusEffects = emptyList(),
             ),
             onEdit = {},
-            shareText = { "" },
-            encodeFile = { "" },
+            onShareText = {},
+            onExportFile = {},
         )
     }
 }

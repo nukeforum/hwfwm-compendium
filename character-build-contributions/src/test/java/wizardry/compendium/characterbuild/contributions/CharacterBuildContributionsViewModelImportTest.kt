@@ -15,21 +15,31 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.flow.flowOf
 import wizardry.compendium.essences.AbilityListingConflict
 import wizardry.compendium.essences.AbilityListingRepository
+import wizardry.compendium.essences.AwakeningStoneConflict
+import wizardry.compendium.essences.AwakeningStoneRepository
 import wizardry.compendium.essences.CharacterBuildRepository
 import wizardry.compendium.essences.ContributionResult
 import wizardry.compendium.essences.EssenceConflict
 import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.essences.StatusEffectConflict
+import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
+import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.share.CharacterBuildShareUseCase
+import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.wire.BuildAbility
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeCodec
+import wizardry.compendium.wire.repo.WireIoRepository
 import wizardry.compendium.wire.share.AttributePreview
 import wizardry.compendium.wire.share.BuildImportPreview
 import wizardry.compendium.wire.share.BuildShareDecoder
@@ -47,8 +57,8 @@ class CharacterBuildContributionsViewModelImportTest {
     @Test
     fun `failed decoder result transitions PasteImportState to Failed`() = runTest {
         val buildRepo = FakeBuildRepo()
-        val decoder = FakeDecoder(BuildShareDecoder.Result.Failed("Paste is empty."))
-        val vm = create(buildRepo = buildRepo, decoder = decoder)
+        val useCase = fakeUseCase(DecodedSingle.Failed("Paste is empty."))
+        val vm = create(buildRepo = buildRepo, useCase = useCase)
         advanceUntilIdle()
 
         vm.startImportFromText("bad")
@@ -91,8 +101,8 @@ class CharacterBuildContributionsViewModelImportTest {
         )
 
         val buildRepo = FakeBuildRepo()
-        val decoder = FakeDecoder(BuildShareDecoder.Result.Loaded(preview))
-        val vm = create(buildRepo = buildRepo, decoder = decoder)
+        val useCase = fakeUseCase(DecodedSingle.Loaded(preview))
+        val vm = create(buildRepo = buildRepo, useCase = useCase)
         advanceUntilIdle()
 
         vm.startImportFromText("ok")
@@ -136,8 +146,8 @@ class CharacterBuildContributionsViewModelImportTest {
         // Existing build that would collide with the original name.
         val existing = CharacterBuild(name = "Frosty", race = "Human", racialAbilities = emptyList())
         val buildRepo = FakeBuildRepo(listOf(existing))
-        val decoder = FakeDecoder(BuildShareDecoder.Result.Loaded(preview))
-        val vm = create(buildRepo = buildRepo, decoder = decoder)
+        val useCase = fakeUseCase(DecodedSingle.Loaded(preview))
+        val vm = create(buildRepo = buildRepo, useCase = useCase)
         advanceUntilIdle()
 
         vm.startImportFromText("ok")
@@ -171,8 +181,8 @@ class CharacterBuildContributionsViewModelImportTest {
             ),
         )
         val buildRepo = FakeBuildRepo()
-        val decoder = FakeDecoder(BuildShareDecoder.Result.Loaded(preview))
-        val vm = create(buildRepo = buildRepo, decoder = decoder)
+        val useCase = fakeUseCase(DecodedSingle.Loaded(preview))
+        val vm = create(buildRepo = buildRepo, useCase = useCase)
         advanceUntilIdle()
 
         vm.startImportFromText("ok")
@@ -204,8 +214,8 @@ class CharacterBuildContributionsViewModelImportTest {
                 AttributePreview("Recovery", SlotResolution.Empty),
             ),
         )
-        val decoder = FakeDecoder(BuildShareDecoder.Result.Loaded(preview))
-        val vm = create(decoder = decoder)
+        val useCase = fakeUseCase(DecodedSingle.Loaded(preview))
+        val vm = create(useCase = useCase)
         advanceUntilIdle()
 
         vm.startImportFromText("ok")
@@ -222,13 +232,13 @@ class CharacterBuildContributionsViewModelImportTest {
 
     private fun create(
         buildRepo: FakeBuildRepo = FakeBuildRepo(),
-        decoder: BuildShareDecoder = FakeDecoder(BuildShareDecoder.Result.Failed("unused")),
+        useCase: CharacterBuildShareUseCase = fakeUseCase(DecodedSingle.Failed("unused")),
     ): CharacterBuildContributionsViewModel = CharacterBuildContributionsViewModel(
         savedStateHandle = SavedStateHandle(),
         buildRepository = buildRepo,
         essenceRepository = FakeEssenceRepo(),
         abilityListingRepository = FakeAbilityListingRepo(),
-        buildShareDecoder = decoder,
+        shareUseCase = useCase,
     )
 
     private fun manifestation(name: String) = Essence.Manifestation(
@@ -236,14 +246,26 @@ class CharacterBuildContributionsViewModelImportTest {
         properties = emptyList(), description = "", isRestricted = false,
     )
 
-    // The decoder is `open` for test substitution; we never invoke the real
-    // wire decode in these tests, so the super-class repos are stubs.
-    private class FakeDecoder(private val result: BuildShareDecoder.Result) : BuildShareDecoder(
-        essenceRepository = FakeEssenceRepo(),
-        abilityListingRepository = FakeAbilityListingRepo(),
-        buildRepository = FakeBuildRepo(),
-    ) {
-        override suspend fun decode(text: String) = result
+    // The use case is `open` for test substitution; we never invoke the real
+    // wire decode in these tests, so the super-class deps are stubs.
+    private fun fakeUseCase(result: DecodedSingle<BuildImportPreview>): CharacterBuildShareUseCase {
+        val essenceRepo = FakeEssenceRepo()
+        val listingRepo = FakeAbilityListingRepo()
+        val buildRepo = FakeBuildRepo()
+        val decoder = BuildShareDecoder(
+            essenceRepository = essenceRepo,
+            abilityListingRepository = listingRepo,
+            buildRepository = buildRepo,
+        )
+        val wireIo = WireIoRepository(
+            essenceRepository = essenceRepo,
+            awakeningStoneRepository = StubAwakeningStoneRepo,
+            abilityListingRepository = listingRepo,
+            statusEffectRepository = StubStatusEffectRepo,
+        )
+        return object : CharacterBuildShareUseCase(wireIo = wireIo, buildShareDecoder = decoder) {
+            override suspend fun decodeBuildBundle(text: String): DecodedSingle<BuildImportPreview> = result
+        }
     }
 
     private class FakeBuildRepo(initial: List<CharacterBuild> = emptyList()) : CharacterBuildRepository {
@@ -289,4 +311,28 @@ class CharacterBuildContributionsViewModelImportTest {
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
         override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
     }
+}
+
+private object StubAwakeningStoneRepo : AwakeningStoneRepository {
+    override val awakeningStones = flowOf(emptyList<AwakeningStone>())
+    override val conflicts = flowOf(emptyList<AwakeningStoneConflict>())
+    override suspend fun getAwakeningStones() = emptyList<AwakeningStone>()
+    override suspend fun getContributions() = emptyList<AwakeningStone>()
+    override suspend fun getConflicts() = emptyList<AwakeningStoneConflict>()
+    override suspend fun saveAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
+}
+
+private object StubStatusEffectRepo : StatusEffectRepository {
+    override val statusEffects = flowOf(emptyList<StatusEffect>())
+    override val conflicts = flowOf(emptyList<StatusEffectConflict>())
+    override suspend fun getStatusEffects() = emptyList<StatusEffect>()
+    override suspend fun getContributions() = emptyList<StatusEffect>()
+    override suspend fun getConflicts() = emptyList<StatusEffectConflict>()
+    override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
 }

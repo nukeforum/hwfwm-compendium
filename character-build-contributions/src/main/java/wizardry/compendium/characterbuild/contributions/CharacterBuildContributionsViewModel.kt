@@ -24,8 +24,9 @@ import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rank
+import wizardry.compendium.share.CharacterBuildShareUseCase
+import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.wire.share.BuildImportPreview
-import wizardry.compendium.wire.share.BuildShareDecoder
 import wizardry.compendium.wire.share.RefResolution
 import wizardry.compendium.wire.share.SlotResolution
 import javax.inject.Inject
@@ -36,7 +37,7 @@ class CharacterBuildContributionsViewModel @Inject constructor(
     private val buildRepository: CharacterBuildRepository,
     private val essenceRepository: EssenceRepository,
     private val abilityListingRepository: AbilityListingRepository,
-    private val buildShareDecoder: BuildShareDecoder,
+    private val shareUseCase: CharacterBuildShareUseCase,
 ) : ViewModel() {
 
     enum class Slot { Power, Speed, Spirit, Recovery }
@@ -378,10 +379,10 @@ class CharacterBuildContributionsViewModel @Inject constructor(
     fun startImportFromText(text: String) {
         viewModelScope.launch {
             _pasteImportState.value = PasteImportState.Decoding
-            _pasteImportState.value = when (val r = buildShareDecoder.decode(text)) {
-                is BuildShareDecoder.Result.Loaded ->
-                    PasteImportState.Reviewing(r.preview, r.preview.originalName)
-                is BuildShareDecoder.Result.Failed -> PasteImportState.Failed(r.reason)
+            _pasteImportState.value = when (val r = shareUseCase.decodeBuildBundle(text)) {
+                is DecodedSingle.Loaded ->
+                    PasteImportState.Reviewing(r.model, r.model.originalName)
+                is DecodedSingle.Failed -> PasteImportState.Failed(r.reason)
             }
         }
     }

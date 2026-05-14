@@ -32,6 +32,9 @@ import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
+import wizardry.compendium.share.CharacterBuildShareUseCase
+import wizardry.compendium.share.DecodedSingle
+import wizardry.compendium.wire.repo.WireIoRepository
 import wizardry.compendium.wire.share.BuildShareDecoder
 import kotlin.time.Duration
 
@@ -1065,17 +1068,49 @@ class CharacterBuildContributionsViewModelTest {
             buildRepository = repo,
             essenceRepository = essenceRepo,
             abilityListingRepository = FakeAbilityListingRepo(listings),
-            buildShareDecoder = NoOpBuildShareDecoder(),
+            shareUseCase = NoOpBuildShareUseCase(),
         )
     }
 
-    private class NoOpBuildShareDecoder : BuildShareDecoder(
-        essenceRepository = NoOpEssenceRepoForDecoder(),
-        abilityListingRepository = NoOpListingRepoForDecoder(),
-        buildRepository = NoOpBuildRepoForDecoder(),
+    private class NoOpBuildShareUseCase : CharacterBuildShareUseCase(
+        wireIo = WireIoRepository(
+            essenceRepository = NoOpEssenceRepoForDecoder(),
+            awakeningStoneRepository = NoOpStoneRepoForDecoder(),
+            abilityListingRepository = NoOpListingRepoForDecoder(),
+            statusEffectRepository = NoOpStatusEffectRepoForDecoder(),
+        ),
+        buildShareDecoder = BuildShareDecoder(
+            essenceRepository = NoOpEssenceRepoForDecoder(),
+            abilityListingRepository = NoOpListingRepoForDecoder(),
+            buildRepository = NoOpBuildRepoForDecoder(),
+        ),
     ) {
-        override suspend fun decode(text: String): Result =
-            Result.Failed("import not exercised in this test")
+        override suspend fun decodeBuildBundle(text: String): DecodedSingle<wizardry.compendium.wire.share.BuildImportPreview> =
+            DecodedSingle.Failed("import not exercised in this test")
+    }
+
+    private class NoOpStoneRepoForDecoder : wizardry.compendium.essences.AwakeningStoneRepository {
+        override val awakeningStones: Flow<List<wizardry.compendium.essences.model.AwakeningStone>> = MutableStateFlow(emptyList())
+        override val conflicts: Flow<List<wizardry.compendium.essences.AwakeningStoneConflict>> = MutableStateFlow(emptyList())
+        override suspend fun getAwakeningStones() = emptyList<wizardry.compendium.essences.model.AwakeningStone>()
+        override suspend fun getContributions() = emptyList<wizardry.compendium.essences.model.AwakeningStone>()
+        override suspend fun getConflicts() = emptyList<wizardry.compendium.essences.AwakeningStoneConflict>()
+        override suspend fun saveAwakeningStoneContribution(stone: wizardry.compendium.essences.model.AwakeningStone) = ContributionResult.Success
+        override suspend fun isContribution(name: String) = false
+        override suspend fun deleteContribution(name: String) = ContributionResult.Success
+        override suspend fun updateAwakeningStoneContribution(stone: wizardry.compendium.essences.model.AwakeningStone) = ContributionResult.Success
+    }
+
+    private class NoOpStatusEffectRepoForDecoder : wizardry.compendium.essences.StatusEffectRepository {
+        override val statusEffects: Flow<List<wizardry.compendium.essences.model.StatusEffect>> = MutableStateFlow(emptyList())
+        override val conflicts: Flow<List<wizardry.compendium.essences.StatusEffectConflict>> = MutableStateFlow(emptyList())
+        override suspend fun getStatusEffects() = emptyList<wizardry.compendium.essences.model.StatusEffect>()
+        override suspend fun getContributions() = emptyList<wizardry.compendium.essences.model.StatusEffect>()
+        override suspend fun getConflicts() = emptyList<wizardry.compendium.essences.StatusEffectConflict>()
+        override suspend fun saveStatusEffectContribution(effect: wizardry.compendium.essences.model.StatusEffect) = ContributionResult.Success
+        override suspend fun isContribution(name: String) = false
+        override suspend fun deleteContribution(name: String) = ContributionResult.Success
+        override suspend fun updateStatusEffectContribution(effect: wizardry.compendium.essences.model.StatusEffect) = ContributionResult.Success
     }
 
     private class NoOpEssenceRepoForDecoder : EssenceRepository {

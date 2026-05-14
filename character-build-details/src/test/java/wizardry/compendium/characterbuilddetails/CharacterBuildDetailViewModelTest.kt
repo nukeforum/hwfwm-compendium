@@ -31,7 +31,9 @@ import wizardry.compendium.essences.model.CharacterBuild
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.StatusEffect
+import wizardry.compendium.share.CharacterBuildShareUseCase
 import wizardry.compendium.wire.repo.WireIoRepository
+import wizardry.compendium.wire.share.BuildShareDecoder
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CharacterBuildDetailViewModelTest {
@@ -44,7 +46,7 @@ class CharacterBuildDetailViewModelTest {
     @Test
     fun `load by name emits Success`() = runTest {
         val repo = FakeRepo(listOf(build("Jason"), build("Humphrey")))
-        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), wireIo(), dispatcher)
+        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), shareUseCase(), dispatcher)
 
         vm.load("Humphrey")
         advanceUntilIdle()
@@ -55,7 +57,7 @@ class CharacterBuildDetailViewModelTest {
 
     @Test
     fun `load by unknown name emits Error`() = runTest {
-        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList()), FakeStatusEffectRepo(), wireIo(), dispatcher)
+        val vm = CharacterBuildDetailViewModel(FakeRepo(emptyList()), FakeStatusEffectRepo(), shareUseCase(), dispatcher)
 
         vm.load("ghost")
         advanceUntilIdle()
@@ -67,7 +69,7 @@ class CharacterBuildDetailViewModelTest {
     @Test
     fun `flow update refreshes the loaded build`() = runTest {
         val repo = FakeRepo(listOf(build("Jason", race = "Outworlder")))
-        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), wireIo(), dispatcher)
+        val vm = CharacterBuildDetailViewModel(repo, FakeStatusEffectRepo(), shareUseCase(), dispatcher)
 
         vm.load("Jason")
         advanceUntilIdle()
@@ -82,12 +84,23 @@ class CharacterBuildDetailViewModelTest {
     private fun build(name: String, race: String = "Race"): CharacterBuild =
         CharacterBuild(name = name, race = race, racialAbilities = emptyList())
 
-    private fun wireIo(): WireIoRepository = WireIoRepository(
-        essenceRepository = StubEssenceRepo(),
-        awakeningStoneRepository = StubAwakeningStoneRepo(),
-        abilityListingRepository = StubAbilityListingRepo(),
-        statusEffectRepository = FakeStatusEffectRepo(),
-    )
+    private fun shareUseCase(): CharacterBuildShareUseCase {
+        val essenceRepo = StubEssenceRepo()
+        val listingRepo = StubAbilityListingRepo()
+        return CharacterBuildShareUseCase(
+            wireIo = WireIoRepository(
+                essenceRepository = essenceRepo,
+                awakeningStoneRepository = StubAwakeningStoneRepo(),
+                abilityListingRepository = listingRepo,
+                statusEffectRepository = FakeStatusEffectRepo(),
+            ),
+            buildShareDecoder = BuildShareDecoder(
+                essenceRepository = essenceRepo,
+                abilityListingRepository = listingRepo,
+                buildRepository = FakeRepo(emptyList()),
+            ),
+        )
+    }
 
     private class StubEssenceRepo : EssenceRepository {
         override val essences: Flow<List<Essence>> = MutableStateFlow(emptyList())

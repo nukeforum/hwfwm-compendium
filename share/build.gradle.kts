@@ -1,15 +1,18 @@
 plugins {
-    id("compendium.jvm")
+    id("compendium.android")
+}
+
+android {
+    namespace = "wizardry.compendium.share"
 }
 
 dependencies {
     implementation(project(":essences"))
     implementation(project(":wire"))
     implementation(project(":wire-repo"))
+    implementation(project(":ability-preview"))
 
-    implementation(libs.kotlin.coroutines)
     implementation("javax.inject:javax.inject:1")
 
-    testImplementation(libs.junit4)
     testImplementation(libs.kotlin.coroutines.test)
 }
