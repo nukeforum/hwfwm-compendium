@@ -7,9 +7,9 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import wizardry.compendium.essences.ContributionResult
-import wizardry.compendium.essences.EssenceConflict
-import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.EssenceConflict
+import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity

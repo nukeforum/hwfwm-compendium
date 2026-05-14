@@ -26,11 +26,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import wizardry.compendium.essences.AbilityListingConflict
-import wizardry.compendium.essences.AwakeningStoneConflict
-import wizardry.compendium.essences.Conflict
-import wizardry.compendium.essences.EssenceConflict
-import wizardry.compendium.essences.StatusEffectConflict
+import wizardry.compendium.repositories.AbilityListingConflict
+import wizardry.compendium.repositories.AwakeningStoneConflict
+import wizardry.compendium.repositories.Conflict
+import wizardry.compendium.repositories.EssenceConflict
+import wizardry.compendium.repositories.StatusEffectConflict
 
 @Composable
 fun ConflictsScreen(

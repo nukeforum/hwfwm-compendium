@@ -1,16 +1,16 @@
 package wizardry.compendium.share
 
 import kotlinx.coroutines.flow.flowOf
-import wizardry.compendium.essences.AbilityListingConflict
-import wizardry.compendium.essences.AbilityListingRepository
-import wizardry.compendium.essences.AwakeningStoneConflict
-import wizardry.compendium.essences.AwakeningStoneRepository
-import wizardry.compendium.essences.CharacterBuildRepository
-import wizardry.compendium.essences.ContributionResult
-import wizardry.compendium.essences.EssenceConflict
-import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.essences.StatusEffectConflict
-import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.repositories.AbilityListingConflict
+import wizardry.compendium.repositories.AbilityListingRepository
+import wizardry.compendium.repositories.AwakeningStoneConflict
+import wizardry.compendium.repositories.AwakeningStoneRepository
+import wizardry.compendium.repositories.CharacterBuildRepository
+import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.EssenceConflict
+import wizardry.compendium.repositories.EssenceRepository
+import wizardry.compendium.repositories.StatusEffectConflict
+import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.CharacterBuild

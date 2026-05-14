@@ -8,6 +8,7 @@ android {
 
 dependencies {
     implementation(project(":essences"))
+    implementation(project(":repositories:api"))
     implementation(project(":wire"))
     implementation(project(":wire-repo"))
     implementation(project(":ability-preview"))

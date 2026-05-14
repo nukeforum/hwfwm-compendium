@@ -24,6 +24,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(project(":wire-annotations"))
     implementation(project(":essences"))
+    implementation(project(":repositories:api"))
 
     // Apply our own KSP processor to this module so any @WireFormat-annotated
     // classes here produce a snapshot.

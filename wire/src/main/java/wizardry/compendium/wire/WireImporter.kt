@@ -1,10 +1,10 @@
 package wizardry.compendium.wire
 
-import wizardry.compendium.essences.AbilityListingRepository
-import wizardry.compendium.essences.AwakeningStoneRepository
-import wizardry.compendium.essences.ContributionResult
-import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.repositories.AbilityListingRepository
+import wizardry.compendium.repositories.AwakeningStoneRepository
+import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.EssenceRepository
+import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.essences.model.Essence
 
 /**

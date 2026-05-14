@@ -2,7 +2,7 @@ package wizardry.compendium.randomizer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import dagger.hilt.android.lifecycle.HiltViewModel

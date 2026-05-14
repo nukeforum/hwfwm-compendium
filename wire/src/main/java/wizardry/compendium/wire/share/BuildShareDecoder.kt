@@ -1,8 +1,8 @@
 package wizardry.compendium.wire.share
 
-import wizardry.compendium.essences.AbilityListingRepository
-import wizardry.compendium.essences.CharacterBuildRepository
-import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.repositories.AbilityListingRepository
+import wizardry.compendium.repositories.CharacterBuildRepository
+import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.wire.BuildAbility

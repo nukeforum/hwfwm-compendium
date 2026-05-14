@@ -1,9 +1,9 @@
 package wizardry.compendium.wire.repo
 
-import wizardry.compendium.essences.AbilityListingRepository
-import wizardry.compendium.essences.AwakeningStoneRepository
-import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.repositories.AbilityListingRepository
+import wizardry.compendium.repositories.AwakeningStoneRepository
+import wizardry.compendium.repositories.EssenceRepository
+import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.CharacterBuild

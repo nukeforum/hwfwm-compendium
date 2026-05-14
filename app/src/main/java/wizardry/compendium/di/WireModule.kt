@@ -4,9 +4,9 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import wizardry.compendium.essences.AbilityListingRepository
-import wizardry.compendium.essences.CharacterBuildRepository
-import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.repositories.AbilityListingRepository
+import wizardry.compendium.repositories.CharacterBuildRepository
+import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.wire.share.BuildShareDecoder
 import javax.inject.Singleton
 

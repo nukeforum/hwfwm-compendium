@@ -1,6 +1,6 @@
 package wizardry.compendium.share
 
-import wizardry.compendium.essences.EssenceRepository
+import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeMapper

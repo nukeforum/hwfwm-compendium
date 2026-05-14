@@ -32,6 +32,7 @@ dependencies {
 
     implementation(project(":design"))
     implementation(project(":essences"))
+    implementation(project(":repositories:api"))
     implementation(project(":preferences"))
     implementation(project(":wire"))
     implementation(project(":wire-repo"))

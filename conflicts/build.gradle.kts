@@ -32,6 +32,7 @@ dependencies {
 
     implementation(project(":design"))
     implementation(project(":essences"))
+    implementation(project(":repositories:api"))
 
     implementation(libs.androidx.core.ktx)
 

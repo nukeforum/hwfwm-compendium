@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import wizardry.compendium.essences.AbilityListingRepository
-import wizardry.compendium.essences.AwakeningStoneRepository
-import wizardry.compendium.essences.EssenceRepository
-import wizardry.compendium.essences.StatusEffectRepository
+import wizardry.compendium.repositories.AbilityListingRepository
+import wizardry.compendium.repositories.AwakeningStoneRepository
+import wizardry.compendium.repositories.EssenceRepository
+import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.preferences.PreferencesRepository
 import wizardry.compendium.ui.DomainPickerRow
 import wizardry.compendium.ui.coroutines.IoDispatcher
