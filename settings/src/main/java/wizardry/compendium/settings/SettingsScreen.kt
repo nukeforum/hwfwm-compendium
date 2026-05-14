@@ -42,7 +42,7 @@ import wizardry.compendium.ui.ContributionDomainPicker
 import wizardry.compendium.ui.DomainPickerRow
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.ImportSummary
 

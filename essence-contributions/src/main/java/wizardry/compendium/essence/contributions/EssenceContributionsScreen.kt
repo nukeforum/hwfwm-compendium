@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.essences.model.ConfluenceSet
 import wizardry.compendium.essences.model.Essence
 import wizardry.compendium.essences.model.Rarity

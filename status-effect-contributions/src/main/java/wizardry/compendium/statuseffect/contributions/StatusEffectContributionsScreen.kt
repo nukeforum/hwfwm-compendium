@@ -40,7 +40,7 @@ import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.DeleteContributionButton
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 
 // ──────────────────────────────────────────────────────────────────────────────
 // File-scope constants

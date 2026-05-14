@@ -1,7 +1,7 @@
 package wizardry.compendium.preferences
 
 import kotlinx.coroutines.flow.Flow
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 
 /**
  * Aggregate-style settings facade. Exposes every toggle the app surfaces in

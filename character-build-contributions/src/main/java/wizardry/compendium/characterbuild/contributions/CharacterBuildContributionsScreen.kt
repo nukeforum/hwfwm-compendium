@@ -71,7 +71,7 @@ import wizardry.compendium.ui.EditPreviewToggle
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.SearchableSelectionSheet
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.wire.share.RefResolution
 import wizardry.compendium.wire.share.SlotResolution
 

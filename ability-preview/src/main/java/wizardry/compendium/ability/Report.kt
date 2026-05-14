@@ -18,7 +18,7 @@ import wizardry.compendium.ability.preview.LocalStatusEffects
 import wizardry.compendium.ability.preview.annotatedDescription
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AbilityType
 import wizardry.compendium.essences.model.Amount

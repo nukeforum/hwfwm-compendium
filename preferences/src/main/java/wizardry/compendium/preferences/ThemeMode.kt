@@ -1,4 +1,4 @@
-package wizardry.compendium.ui.theme
+package wizardry.compendium.preferences
 
 enum class ThemeMode {
     System,

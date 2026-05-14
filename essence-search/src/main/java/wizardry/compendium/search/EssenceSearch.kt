@@ -26,7 +26,7 @@ import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.SearchEmptyState
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable

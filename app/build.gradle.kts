@@ -76,6 +76,7 @@ dependencies {
     implementation(project(":essences"))
     implementation(project(":model-core"))
     implementation(project(":persistence"))
+    implementation(project(":preferences"))
     implementation(project(":randomizer"))
     implementation(project(":settings"))
     implementation(project(":status-effect-contributions"))

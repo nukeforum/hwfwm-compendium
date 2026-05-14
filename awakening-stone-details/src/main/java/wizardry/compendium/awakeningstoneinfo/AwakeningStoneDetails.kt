@@ -31,7 +31,7 @@ import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 
 @Composable
 fun AwakeningStoneDetails(

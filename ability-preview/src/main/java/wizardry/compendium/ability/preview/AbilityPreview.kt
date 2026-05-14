@@ -16,7 +16,7 @@ import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Resource
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import kotlin.time.Duration
 
 @Composable

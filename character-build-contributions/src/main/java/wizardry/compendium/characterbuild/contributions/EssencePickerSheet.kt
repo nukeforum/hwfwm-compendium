@@ -38,7 +38,7 @@ import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 
 /**
  * Essence picker. Shows Manifestations always; switches to Confluence list when the

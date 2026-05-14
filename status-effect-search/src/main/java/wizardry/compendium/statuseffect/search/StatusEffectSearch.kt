@@ -39,7 +39,7 @@ import wizardry.compendium.essences.model.StatusType
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.SearchEmptyState
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 
 private val AfflictionSubtypes: List<StatusType.Affliction> = listOf(
     StatusType.Affliction.Curse, StatusType.Affliction.Disease, StatusType.Affliction.Elemental,

@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.share.ConfluenceImportPreview
 import wizardry.compendium.share.PreviewCombination
 import wizardry.compendium.share.PreviewEssence

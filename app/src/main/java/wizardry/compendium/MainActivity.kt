@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -21,7 +20,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,13 +27,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
@@ -66,9 +61,7 @@ import wizardry.compendium.share.ShareViewModel
 import wizardry.compendium.statuseffect.contributions.StatusEffectContributionsScreen
 import wizardry.compendium.statuseffect.details.StatusEffectDetails
 import wizardry.compendium.statuseffect.search.StatusEffectSearch
-import wizardry.compendium.theme.ThemeSettingsViewModel
-import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.theme.CompendiumThemeFromSettings
 import android.content.Intent as AndroidIntent
 
 @AndroidEntryPoint
@@ -82,27 +75,8 @@ class MainActivity : ComponentActivity() {
             val backStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = backStackEntry?.destination?.route
             val shareViewModel = hiltViewModel<ShareViewModel>()
-            val themeSettingsViewModel = hiltViewModel<ThemeSettingsViewModel>()
-            val themeMode by themeSettingsViewModel.themeMode.collectAsState()
-            val dynamicColor by themeSettingsViewModel.dynamicColorEnabled.collectAsState()
-            CompendiumTheme(themeMode = themeMode, dynamicColor = dynamicColor) {
-                val useDark = when (themeMode) {
-                    ThemeMode.System -> isSystemInDarkTheme()
-                    ThemeMode.Light -> false
-                    ThemeMode.Dark -> true
-                }
-                val view = LocalView.current
-                if (!view.isInEditMode) {
-                    DisposableEffect(useDark) {
-                        WindowCompat.setDecorFitsSystemWindows(window, false)
-                        WindowInsetsControllerCompat(window, view).apply {
-                            isAppearanceLightStatusBars = !useDark
-                            isAppearanceLightNavigationBars = !useDark
-                        }
-                        onDispose { }
-                    }
-                }
 
+            CompendiumThemeFromSettings {
                 // Async-loaded entity title (set by detail screens via onXLoaded). Re-keyed per route.
                 var loadedTitle by remember(currentRoute) { mutableStateOf<String?>(null) }
                 val defaultTitle = titleForRoute(currentRoute, backStackEntry)

@@ -1,4 +1,4 @@
-package wizardry.compendium.ui.theme
+package wizardry.compendium.preferences
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

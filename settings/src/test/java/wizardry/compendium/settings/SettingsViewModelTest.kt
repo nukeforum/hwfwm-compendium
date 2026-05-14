@@ -31,7 +31,7 @@ import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.essences.model.StatusEffect as ModelStatusEffect
 import wizardry.compendium.preferences.PreferencesRepository
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.EnvelopeCodec
 import wizardry.compendium.wire.repo.WireIoRepository

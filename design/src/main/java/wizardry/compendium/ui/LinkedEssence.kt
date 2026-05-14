@@ -14,7 +14,7 @@ import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.ui.theme.essenceHighlight
 
 @Composable

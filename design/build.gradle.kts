@@ -32,6 +32,7 @@ dependencies {
 
     implementation(project(":model-core"))
     implementation(project(":essences"))
+    api(project(":preferences"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlin.coroutines)

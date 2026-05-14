@@ -18,7 +18,7 @@ import wizardry.compendium.essences.model.Effect
 import wizardry.compendium.essences.model.Rank
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 
 /**
  * Horizontally-scrolling row of FilterChips, one per rank that the listing has at

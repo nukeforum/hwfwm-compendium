@@ -32,11 +32,11 @@ dependencies {
 
     implementation(project(":design"))
     implementation(project(":essences"))
+    implementation(project(":preferences"))
     implementation(project(":wire"))
     implementation(project(":wire-repo"))
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)

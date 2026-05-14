@@ -35,7 +35,7 @@ import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 
 @Composable
 fun StatusEffectDetails(

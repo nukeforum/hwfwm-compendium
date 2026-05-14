@@ -19,7 +19,7 @@ import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.preferences.PreferencesRepository
 import wizardry.compendium.ui.DomainPickerRow
 import wizardry.compendium.ui.coroutines.IoDispatcher
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.wire.ContributionDomain
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.ImportSummary

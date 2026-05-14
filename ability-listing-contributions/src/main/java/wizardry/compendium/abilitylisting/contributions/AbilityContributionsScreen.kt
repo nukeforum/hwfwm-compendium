@@ -65,7 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
-import wizardry.compendium.ui.theme.ThemeMode
+import wizardry.compendium.preferences.ThemeMode
 import kotlinx.coroutines.launch
 import wizardry.compendium.ability.preview.AbilityPreview
 import wizardry.compendium.ability.preview.LocalStatusEffects
