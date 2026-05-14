@@ -1,14 +1,8 @@
-package wizardry.compendium.statuseffect.details
+package wizardry.compendium.share
 
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import wizardry.compendium.essences.AbilityListingConflict
 import wizardry.compendium.essences.AbilityListingRepository
@@ -22,68 +16,67 @@ import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.Property
+import wizardry.compendium.essences.model.Rarity
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
-import wizardry.compendium.share.StatusEffectShareUseCase
+import wizardry.compendium.wire.EnvelopeCodec
+import wizardry.compendium.wire.EnvelopeMapper
 import wizardry.compendium.wire.repo.WireIoRepository
 
-class StatusEffectDetailViewModelTest {
+class StatusEffectShareUseCaseTest {
 
-    private val dispatcher = UnconfinedTestDispatcher()
-
-    @Before fun setup() = kotlinx.coroutines.Dispatchers.setMain(dispatcher)
-    @After fun teardown() = kotlinx.coroutines.Dispatchers.resetMain()
-
-    private fun effect(name: String) = StatusEffect(
-        name = name, type = StatusType.Affliction.Curse,
-        properties = emptyList(), stackable = false, description = "",
+    private val burn = StatusEffect(
+        name = "Burn",
+        type = StatusType.Affliction.Elemental,
+        properties = listOf(Property.DamageOverTime, Property.Fire),
+        stackable = true,
+        description = "Deals fire damage over time.",
     )
 
-    private class FakeRepo(
-        private val items: List<StatusEffect>,
-        private val contributions: Set<String> = emptySet(),
-    ) : StatusEffectRepository {
-        override val statusEffects = flowOf(items)
-        override val conflicts = flowOf(emptyList<StatusEffectConflict>())
-        override suspend fun getStatusEffects() = items
-        override suspend fun getContributions() = items.filter { it.name in contributions }
-        override suspend fun getConflicts() = emptyList<StatusEffectConflict>()
-        override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
-        override suspend fun isContribution(name: String) = name in contributions
-        override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    private fun newUseCase(): StatusEffectShareUseCase = StatusEffectShareUseCase(
+        wireIo = WireIoRepository(
+            essenceRepository = FakeEssenceRepoForStatusEffect(),
+            awakeningStoneRepository = FakeStoneRepoForStatusEffect(),
+            abilityListingRepository = FakeListingRepoForStatusEffect(),
+            statusEffectRepository = FakeEffectRepoForStatusEffect(),
+        ),
+    )
+
+    @Test
+    fun `encode round-trips through decode for a single status effect`() {
+        val useCase = newUseCase()
+        val text = useCase.encode(burn)
+        val result = useCase.decodeSingleStatusEffect(text)
+        assertTrue(result is DecodedSingle.Loaded)
+        assertEquals(burn, (result as DecodedSingle.Loaded).model)
     }
 
     @Test
-    fun `load found effect emits Success with isContribution flag`() = runTest {
-        val burn = effect("Burn")
-        val vm = StatusEffectDetailViewModel(FakeRepo(listOf(burn), contributions = setOf("Burn")), stubShareUseCase())
-        vm.load("Burn")
-        val state = vm.state.value
-        assertTrue(state is StatusEffectDetailUiState.Success)
-        state as StatusEffectDetailUiState.Success
-        assertEquals(burn, state.effect)
-        assertTrue(state.isContribution)
+    fun `decode rejects envelope containing a status effect plus an unrelated entry`() {
+        val useCase = newUseCase()
+        val stone = AwakeningStone.of("Volcano", Rarity.Epic)
+        val envelope = wizardry.compendium.wire.Envelope(
+            version = EnvelopeCodec.CurrentVersion,
+            statusEffects = listOf(EnvelopeMapper.toWire(burn)),
+            stones = listOf(EnvelopeMapper.toWire(stone)),
+        )
+        val text = EnvelopeCodec.encode(envelope).text
+        val result = useCase.decodeSingleStatusEffect(text)
+        assertEquals(
+            "This share doesn't contain exactly one status effect. Use Settings → Import for multi-entry shares.",
+            (result as DecodedSingle.Failed).reason,
+        )
     }
 
     @Test
-    fun `load missing effect emits Error`() = runTest {
-        val vm = StatusEffectDetailViewModel(FakeRepo(emptyList()), stubShareUseCase())
-        vm.load("Nope")
-        assertTrue(vm.state.value is StatusEffectDetailUiState.Error)
+    fun `decode rejects empty paste`() {
+        val result = newUseCase().decodeSingleStatusEffect("")
+        assertEquals("Paste is empty.", (result as DecodedSingle.Failed).reason)
     }
 }
 
-private fun stubShareUseCase(): StatusEffectShareUseCase = StatusEffectShareUseCase(
-    wireIo = WireIoRepository(
-        essenceRepository = StubVmEssenceRepo,
-        awakeningStoneRepository = StubVmStoneRepo,
-        abilityListingRepository = StubVmListingRepo,
-        statusEffectRepository = StubVmEffectRepo,
-    ),
-)
-
-private object StubVmEssenceRepo : EssenceRepository {
+private class FakeEssenceRepoForStatusEffect : EssenceRepository {
     override val essences = flowOf(emptyList<Essence>())
     override val conflicts = flowOf(emptyList<EssenceConflict>())
     override suspend fun getEssences() = emptyList<Essence>()
@@ -104,7 +97,7 @@ private object StubVmEssenceRepo : EssenceRepository {
     override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
 }
 
-private object StubVmStoneRepo : AwakeningStoneRepository {
+private class FakeStoneRepoForStatusEffect : AwakeningStoneRepository {
     override val awakeningStones = flowOf(emptyList<AwakeningStone>())
     override val conflicts = flowOf(emptyList<AwakeningStoneConflict>())
     override suspend fun getAwakeningStones() = emptyList<AwakeningStone>()
@@ -116,7 +109,7 @@ private object StubVmStoneRepo : AwakeningStoneRepository {
     override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
 }
 
-private object StubVmListingRepo : AbilityListingRepository {
+private class FakeListingRepoForStatusEffect : AbilityListingRepository {
     override val abilityListings = flowOf(emptyList<Ability.Listing>())
     override val conflicts = flowOf(emptyList<AbilityListingConflict>())
     override suspend fun getAbilityListings() = emptyList<Ability.Listing>()
@@ -128,7 +121,7 @@ private object StubVmListingRepo : AbilityListingRepository {
     override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
 }
 
-private object StubVmEffectRepo : StatusEffectRepository {
+private class FakeEffectRepoForStatusEffect : StatusEffectRepository {
     override val statusEffects = flowOf(emptyList<StatusEffect>())
     override val conflicts = flowOf(emptyList<StatusEffectConflict>())
     override suspend fun getStatusEffects() = emptyList<StatusEffect>()

@@ -4,7 +4,10 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import wizardry.compendium.essences.ContributionResult
@@ -12,12 +15,15 @@ import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.share.DecodedSingle
+import wizardry.compendium.share.StatusEffectShareUseCase
 import javax.inject.Inject
 
 @HiltViewModel
 class StatusEffectContributionsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: StatusEffectRepository,
+    private val shareUseCase: StatusEffectShareUseCase,
 ) : ViewModel() {
 
     private val editName: String? = savedStateHandle.get<String>("name")
@@ -27,6 +33,9 @@ class StatusEffectContributionsViewModel @Inject constructor(
 
     private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
     val mode = _mode.asStateFlow()
+
+    private val _importEvents = MutableSharedFlow<ImportEvent>(extraBufferCapacity = 1)
+    val importEvents: SharedFlow<ImportEvent> = _importEvents.asSharedFlow()
 
     init {
         if (editName != null) {
@@ -88,6 +97,15 @@ class StatusEffectContributionsViewModel @Inject constructor(
         viewModelScope.launch { _saveState.emit(SaveState.Idle) }
     }
 
+    fun requestImport(text: String) {
+        viewModelScope.launch {
+            when (val r = shareUseCase.decodeSingleStatusEffect(text)) {
+                is DecodedSingle.Loaded -> _importEvents.emit(ImportEvent.Loaded(r.model))
+                is DecodedSingle.Failed -> _importEvents.emit(ImportEvent.Failed(r.reason))
+            }
+        }
+    }
+
     sealed interface Mode {
         data object Create : Mode
         sealed interface Edit : Mode {
@@ -103,5 +121,10 @@ class StatusEffectContributionsViewModel @Inject constructor(
         data object Success : SaveState
         data object Deleted : SaveState
         data class Error(val message: String) : SaveState
+    }
+
+    sealed interface ImportEvent {
+        data class Loaded(val effect: StatusEffect) : ImportEvent
+        data class Failed(val reason: String) : ImportEvent
     }
 }

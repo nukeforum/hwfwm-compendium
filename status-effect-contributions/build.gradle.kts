@@ -32,6 +32,7 @@ dependencies {
 
     implementation(project(":design"))
     implementation(project(":essences"))
+    implementation(project(":share"))
 
     implementation(libs.kotlin.reflect)
 
@@ -50,6 +51,9 @@ dependencies {
 
     testImplementation(libs.junit4)
     testImplementation(libs.kotlin.coroutines.test)
+    testImplementation(libs.turbine)
+    testImplementation(project(":wire"))
+    testImplementation(project(":wire-repo"))
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)

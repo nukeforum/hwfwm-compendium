@@ -1,13 +1,16 @@
-package wizardry.compendium.statuseffect.details
+package wizardry.compendium.statuseffect.contributions
 
+import androidx.lifecycle.SavedStateHandle
+import app.cash.turbine.test
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import wizardry.compendium.essences.AbilityListingConflict
@@ -22,68 +25,87 @@ import wizardry.compendium.essences.StatusEffectRepository
 import wizardry.compendium.essences.model.Ability
 import wizardry.compendium.essences.model.AwakeningStone
 import wizardry.compendium.essences.model.Essence
+import wizardry.compendium.essences.model.Property
 import wizardry.compendium.essences.model.StatusEffect
 import wizardry.compendium.essences.model.StatusType
+import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.share.StatusEffectShareUseCase
 import wizardry.compendium.wire.repo.WireIoRepository
 
-class StatusEffectDetailViewModelTest {
+@OptIn(ExperimentalCoroutinesApi::class)
+class StatusEffectContributionsViewModelImportTest {
 
-    private val dispatcher = UnconfinedTestDispatcher()
+    private val dispatcher = StandardTestDispatcher()
 
-    @Before fun setup() = kotlinx.coroutines.Dispatchers.setMain(dispatcher)
-    @After fun teardown() = kotlinx.coroutines.Dispatchers.resetMain()
+    @Before fun setUp() { Dispatchers.setMain(dispatcher) }
+    @After fun tearDown() { Dispatchers.resetMain() }
 
-    private fun effect(name: String) = StatusEffect(
-        name = name, type = StatusType.Affliction.Curse,
-        properties = emptyList(), stackable = false, description = "",
+    private val burn = StatusEffect(
+        name = "Burn",
+        type = StatusType.Affliction.Elemental,
+        properties = listOf(Property.Fire),
+        stackable = true,
+        description = "fire dot",
     )
 
-    private class FakeRepo(
-        private val items: List<StatusEffect>,
-        private val contributions: Set<String> = emptySet(),
-    ) : StatusEffectRepository {
-        override val statusEffects = flowOf(items)
-        override val conflicts = flowOf(emptyList<StatusEffectConflict>())
-        override suspend fun getStatusEffects() = items
-        override suspend fun getContributions() = items.filter { it.name in contributions }
-        override suspend fun getConflicts() = emptyList<StatusEffectConflict>()
-        override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
-        override suspend fun isContribution(name: String) = name in contributions
-        override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    @Test
+    fun `requestImport emits Loaded on successful decode`() = runTest(dispatcher) {
+        val vm = newVm(decodeResult = DecodedSingle.Loaded(burn))
+
+        vm.importEvents.test {
+            vm.requestImport("ignored")
+            assertEquals(
+                StatusEffectContributionsViewModel.ImportEvent.Loaded(burn),
+                awaitItem(),
+            )
+        }
     }
 
     @Test
-    fun `load found effect emits Success with isContribution flag`() = runTest {
-        val burn = effect("Burn")
-        val vm = StatusEffectDetailViewModel(FakeRepo(listOf(burn), contributions = setOf("Burn")), stubShareUseCase())
-        vm.load("Burn")
-        val state = vm.state.value
-        assertTrue(state is StatusEffectDetailUiState.Success)
-        state as StatusEffectDetailUiState.Success
-        assertEquals(burn, state.effect)
-        assertTrue(state.isContribution)
+    fun `requestImport emits Failed on rejected decode`() = runTest(dispatcher) {
+        val vm = newVm(decodeResult = DecodedSingle.Failed("bad paste"))
+
+        vm.importEvents.test {
+            vm.requestImport("ignored")
+            assertEquals(
+                StatusEffectContributionsViewModel.ImportEvent.Failed("bad paste"),
+                awaitItem(),
+            )
+        }
     }
 
-    @Test
-    fun `load missing effect emits Error`() = runTest {
-        val vm = StatusEffectDetailViewModel(FakeRepo(emptyList()), stubShareUseCase())
-        vm.load("Nope")
-        assertTrue(vm.state.value is StatusEffectDetailUiState.Error)
+    private fun newVm(decodeResult: DecodedSingle<StatusEffect>): StatusEffectContributionsViewModel {
+        val useCase = object : StatusEffectShareUseCase(wireIo = stubWireIo()) {
+            override fun decodeSingleStatusEffect(text: String) = decodeResult
+        }
+        return StatusEffectContributionsViewModel(
+            savedStateHandle = SavedStateHandle(),
+            repository = ImportFakeRepo(),
+            shareUseCase = useCase,
+        )
     }
 }
 
-private fun stubShareUseCase(): StatusEffectShareUseCase = StatusEffectShareUseCase(
-    wireIo = WireIoRepository(
-        essenceRepository = StubVmEssenceRepo,
-        awakeningStoneRepository = StubVmStoneRepo,
-        abilityListingRepository = StubVmListingRepo,
-        statusEffectRepository = StubVmEffectRepo,
-    ),
+private class ImportFakeRepo : StatusEffectRepository {
+    override val statusEffects = flowOf(emptyList<StatusEffect>())
+    override val conflicts = flowOf(emptyList<StatusEffectConflict>())
+    override suspend fun getStatusEffects() = emptyList<StatusEffect>()
+    override suspend fun getContributions() = emptyList<StatusEffect>()
+    override suspend fun getConflicts() = emptyList<StatusEffectConflict>()
+    override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun isContribution(name: String) = false
+    override suspend fun deleteContribution(name: String) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+}
+
+private fun stubWireIo(): WireIoRepository = WireIoRepository(
+    essenceRepository = ImportStubEssenceRepo,
+    awakeningStoneRepository = ImportStubStoneRepo,
+    abilityListingRepository = ImportStubListingRepo,
+    statusEffectRepository = ImportFakeRepo(),
 )
 
-private object StubVmEssenceRepo : EssenceRepository {
+private object ImportStubEssenceRepo : EssenceRepository {
     override val essences = flowOf(emptyList<Essence>())
     override val conflicts = flowOf(emptyList<EssenceConflict>())
     override suspend fun getEssences() = emptyList<Essence>()
@@ -104,7 +126,7 @@ private object StubVmEssenceRepo : EssenceRepository {
     override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
 }
 
-private object StubVmStoneRepo : AwakeningStoneRepository {
+private object ImportStubStoneRepo : AwakeningStoneRepository {
     override val awakeningStones = flowOf(emptyList<AwakeningStone>())
     override val conflicts = flowOf(emptyList<AwakeningStoneConflict>())
     override suspend fun getAwakeningStones() = emptyList<AwakeningStone>()
@@ -116,7 +138,7 @@ private object StubVmStoneRepo : AwakeningStoneRepository {
     override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
 }
 
-private object StubVmListingRepo : AbilityListingRepository {
+private object ImportStubListingRepo : AbilityListingRepository {
     override val abilityListings = flowOf(emptyList<Ability.Listing>())
     override val conflicts = flowOf(emptyList<AbilityListingConflict>())
     override suspend fun getAbilityListings() = emptyList<Ability.Listing>()
@@ -126,16 +148,4 @@ private object StubVmListingRepo : AbilityListingRepository {
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
     override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
-}
-
-private object StubVmEffectRepo : StatusEffectRepository {
-    override val statusEffects = flowOf(emptyList<StatusEffect>())
-    override val conflicts = flowOf(emptyList<StatusEffectConflict>())
-    override suspend fun getStatusEffects() = emptyList<StatusEffect>()
-    override suspend fun getContributions() = emptyList<StatusEffect>()
-    override suspend fun getConflicts() = emptyList<StatusEffectConflict>()
-    override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
-    override suspend fun isContribution(name: String) = false
-    override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
 }

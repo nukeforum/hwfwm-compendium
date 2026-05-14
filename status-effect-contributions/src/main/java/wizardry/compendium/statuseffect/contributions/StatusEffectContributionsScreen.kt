@@ -92,7 +92,6 @@ private enum class TopLevel { Affliction, Boon }
 fun StatusEffectContributionsScreen(
     onContributionSaved: () -> Unit = {},
     onContributionDeleted: () -> Unit = {},
-    onPasteImport: (text: String) -> Pair<StatusEffect?, String?> = { null to null },
     viewModel: StatusEffectContributionsViewModel = hiltViewModel(),
 ) {
     val saveState by viewModel.saveState.collectAsState()
@@ -110,6 +109,20 @@ fun StatusEffectContributionsScreen(
     var showImportDialog by remember { mutableStateOf(false) }
     var importErrorMessage by remember { mutableStateOf<String?>(null) }
     var pasteText by remember { mutableStateOf("") }
+
+    LaunchedEffect(viewModel) {
+        viewModel.importEvents.collect { event ->
+            when (event) {
+                is StatusEffectContributionsViewModel.ImportEvent.Loaded -> {
+                    importedInitial = event.effect
+                    importErrorMessage = null
+                }
+                is StatusEffectContributionsViewModel.ImportEvent.Failed -> {
+                    importErrorMessage = event.reason
+                }
+            }
+        }
+    }
 
     when (val current = mode) {
         StatusEffectContributionsViewModel.Mode.Create -> {
@@ -158,13 +171,8 @@ fun StatusEffectContributionsScreen(
             },
             confirmButton = {
                 Button(onClick = {
-                    val (effect, error) = onPasteImport(pasteText)
+                    viewModel.requestImport(pasteText)
                     showImportDialog = false
-                    if (effect != null) {
-                        importedInitial = effect
-                    } else {
-                        importErrorMessage = error
-                    }
                 }) { Text("Import") }
             },
             dismissButton = {

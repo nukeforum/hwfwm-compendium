@@ -335,15 +335,11 @@ class MainActivity : ComponentActivity() {
                             val effectName = requireNotNull(entry.arguments?.getString(Nav.StatusEffectDetail.ARG_NAME)) {
                                 "${Nav.StatusEffectDetail.ARG_NAME} required for ${Nav.StatusEffectDetail.route}"
                             }
-                            val context = LocalContext.current
                             StatusEffectDetails(
                                 effectName = effectName,
                                 onEffectLoaded = { loadedTitle = it.name },
                                 onEditContribution = { effect ->
                                     navController.navigate(Nav.StatusEffectContributions.buildEditRoute(effect))
-                                },
-                                onShareContribution = { effect ->
-                                    fireShareIntent(context, shareViewModel.encode(effect))
                                 },
                             )
                         }
@@ -360,12 +356,6 @@ class MainActivity : ComponentActivity() {
                             StatusEffectContributionsScreen(
                                 onContributionSaved = { navController.popBackStack() },
                                 onContributionDeleted = { navController.popBackStack(Nav.StatusEffectSearch.route, false) },
-                                onPasteImport = { text ->
-                                    when (val result = shareViewModel.decodeSingleStatusEffect(text)) {
-                                        is ShareViewModel.DecodedSingle.Loaded -> result.model to null
-                                        is ShareViewModel.DecodedSingle.Failed -> null to result.reason
-                                    }
-                                },
                             )
                         }
                         composable(Nav.CharacterBuildSearch.route) {

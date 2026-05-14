@@ -1,5 +1,7 @@
 package wizardry.compendium.statuseffect.details
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +30,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.essences.model.Property
@@ -42,10 +45,18 @@ fun StatusEffectDetails(
     effectName: String,
     onEffectLoaded: (StatusEffect) -> Unit = {},
     onEditContribution: (StatusEffect) -> Unit = {},
-    onShareContribution: (StatusEffect) -> Unit = {},
     viewModel: StatusEffectDetailViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(effectName) { viewModel.load(effectName) }
+
+    val context = LocalContext.current
+    LaunchedEffect(viewModel) {
+        viewModel.shareEvents.collect { event ->
+            when (event) {
+                is StatusEffectDetailViewModel.ShareEvent.Encoded -> fireShareIntent(context, event.text)
+            }
+        }
+    }
 
     val state by viewModel.state.collectAsState()
 
@@ -56,11 +67,19 @@ fun StatusEffectDetails(
             LaunchedEffect(s.effect.name) { onEffectLoaded(s.effect) }
             Details(
                 state = s,
-                onShare = { onShareContribution(s.effect) },
+                onShare = { viewModel.requestShare(s.effect) },
                 onEdit = { onEditContribution(s.effect) },
             )
         }
     }
+}
+
+private fun fireShareIntent(context: Context, text: String) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
+    context.startActivity(Intent.createChooser(intent, null))
 }
 
 @Composable
