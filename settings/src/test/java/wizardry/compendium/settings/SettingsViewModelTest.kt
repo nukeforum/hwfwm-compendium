@@ -14,6 +14,14 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import wizardry.compendium.drive.backup.AuthAccount
+import wizardry.compendium.drive.backup.BackupCoordinatorApi
+import wizardry.compendium.drive.backup.BackupNowResult
+import wizardry.compendium.drive.backup.BackupStatus
+import wizardry.compendium.drive.backup.BackupStatusStoreApi
+import wizardry.compendium.drive.backup.DriveAuth
+import wizardry.compendium.drive.backup.EnableResult
+import wizardry.compendium.drive.backup.RestoreResult
 import wizardry.compendium.repositories.AbilityListingConflict
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneConflict
@@ -64,6 +72,9 @@ class SettingsViewModelTest {
     private lateinit var effectRepo: StubStatusEffectRepository
     private lateinit var prefs: StubPreferencesRepository
     private lateinit var wireIo: WireIoRepository
+    private lateinit var fakeBackup: FakeSettingsBackupCoordinator
+    private lateinit var fakeBackupStatus: FakeSettingsBackupStatusStore
+    private lateinit var fakeDriveAuth: FakeSettingsDriveAuth
     private lateinit var viewModel: SettingsViewModel
 
     @Before
@@ -80,6 +91,9 @@ class SettingsViewModelTest {
             abilityListingRepository = listingRepo,
             statusEffectRepository = effectRepo,
         )
+        fakeBackup = FakeSettingsBackupCoordinator()
+        fakeBackupStatus = FakeSettingsBackupStatusStore()
+        fakeDriveAuth = FakeSettingsDriveAuth()
         viewModel = SettingsViewModel(
             preferencesRepository = prefs,
             essenceRepository = essenceRepo,
@@ -88,6 +102,9 @@ class SettingsViewModelTest {
             statusEffectRepository = effectRepo,
             wireIo = wireIo,
             ioDispatcher = dispatcher,
+            backup = fakeBackup,
+            backupStatus = fakeBackupStatus,
+            driveAuth = fakeDriveAuth,
         )
     }
 
@@ -182,6 +199,13 @@ class SettingsViewModelTest {
 
         val state = viewModel.ioState.value
         assertTrue(state is SettingsViewModel.IoState.ImportFailed)
+    }
+
+    @Test
+    fun `setDriveBackupEnabled true triggers coordinator enable`() = runTest(dispatcher) {
+        viewModel.setDriveBackupEnabled(true, org.mockito.kotlin.mock())
+        advanceUntilIdle()
+        assertEquals(1, fakeBackup.enableCalls)
     }
 
     @Test
@@ -303,6 +327,46 @@ private class StubStatusEffectRepository(
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
     override suspend fun updateStatusEffectContribution(effect: ModelStatusEffect): ContributionResult =
         ContributionResult.Success
+}
+
+private class FakeSettingsBackupCoordinator : BackupCoordinatorApi {
+    var nextEnableResult: EnableResult = EnableResult.Success(restored = false)
+    var nextBackupResult: BackupNowResult = BackupNowResult.Success
+    var nextRestoreResult: RestoreResult = RestoreResult.Success
+    var enableCalls = 0
+    var disableCalls = 0
+    var backupCalls = 0
+    var restoreCalls = 0
+    override suspend fun enable(activityContext: android.content.Context): EnableResult {
+        enableCalls++
+        return nextEnableResult
+    }
+    override suspend fun disable() { disableCalls++ }
+    override suspend fun backupNow(): BackupNowResult {
+        backupCalls++
+        return nextBackupResult
+    }
+    override suspend fun restoreNow(): RestoreResult {
+        restoreCalls++
+        return nextRestoreResult
+    }
+}
+
+private class FakeSettingsBackupStatusStore : BackupStatusStoreApi {
+    private val state = MutableStateFlow(BackupStatus())
+    override fun statusFlow() = state
+    override suspend fun recordSuccess(at: java.time.Instant) { state.value = state.value.copy(lastSuccessAt = at) }
+    override suspend fun recordError(message: String, at: java.time.Instant) { state.value = state.value.copy(lastError = message, lastErrorAt = at) }
+    override suspend fun recordRestore(at: java.time.Instant) { state.value = state.value.copy(lastRestoreAt = at) }
+    override suspend fun clear() { state.value = BackupStatus() }
+}
+
+private class FakeSettingsDriveAuth : DriveAuth {
+    private val account = MutableStateFlow<AuthAccount?>(null)
+    override val currentAccount = account
+    override suspend fun signIn(activityContext: android.content.Context) = DriveAuth.SignInResult.Success(AuthAccount("test@example.com"))
+    override suspend fun signOut() { account.value = null }
+    override suspend fun getValidAccessToken() = DriveAuth.TokenResult.Success("t")
 }
 
 private class StubPreferencesRepository : PreferencesRepository {

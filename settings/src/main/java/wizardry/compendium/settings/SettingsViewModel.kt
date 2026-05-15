@@ -1,5 +1,6 @@
 package wizardry.compendium.settings
 
+import android.content.Context
 import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,6 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import wizardry.compendium.drive.backup.BackupCoordinatorApi
+import wizardry.compendium.drive.backup.BackupNowResult
+import wizardry.compendium.drive.backup.BackupStatus
+import wizardry.compendium.drive.backup.BackupStatusStoreApi
+import wizardry.compendium.drive.backup.DriveAuth
+import wizardry.compendium.drive.backup.EnableResult
+import wizardry.compendium.drive.backup.RestoreResult
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.EssenceRepository
@@ -35,6 +43,9 @@ class SettingsViewModel @Inject constructor(
     private val statusEffectRepository: StatusEffectRepository,
     private val wireIo: WireIoRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val backup: BackupCoordinatorApi,
+    private val backupStatus: BackupStatusStoreApi,
+    private val driveAuth: DriveAuth,
 ) : ViewModel() {
 
     val essenceContributionsEnabled = preferencesRepository.essenceContributionsEnabled
@@ -101,6 +112,62 @@ class SettingsViewModel @Inject constructor(
 
     private val _ioState = MutableStateFlow<IoState>(IoState.Idle)
     val ioState: StateFlow<IoState> = _ioState.asStateFlow()
+
+    val driveBackupEnabled: StateFlow<Boolean> = preferencesRepository.driveBackupEnabled.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5_000), preferencesRepository.isDriveBackupEnabled
+    )
+    val driveBackupAccountEmail: StateFlow<String?> = preferencesRepository.driveBackupAccountEmail.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5_000), preferencesRepository.currentDriveBackupAccountEmail
+    )
+    val backupStatusFlow: StateFlow<BackupStatus> = backupStatus.statusFlow().stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5_000), BackupStatus()
+    )
+
+    private val _ephemeralBackupMessage = MutableStateFlow<String?>(null)
+    val ephemeralBackupMessage: StateFlow<String?> = _ephemeralBackupMessage
+
+    fun setDriveBackupEnabled(enabled: Boolean, activityContext: Context) {
+        if (enabled) {
+            viewModelScope.launch {
+                when (val r = backup.enable(activityContext)) {
+                    is EnableResult.Canceled -> _ephemeralBackupMessage.value = "Sign-in canceled"
+                    is EnableResult.Failed -> _ephemeralBackupMessage.value = r.message
+                    is EnableResult.Success -> {
+                        if (r.restored) _ephemeralBackupMessage.value = "Restored from Drive backup"
+                    }
+                }
+            }
+        } else {
+            viewModelScope.launch { backup.disable() }
+        }
+    }
+
+    fun backupNow() {
+        viewModelScope.launch {
+            when (val r = backup.backupNow()) {
+                BackupNowResult.Success -> _ephemeralBackupMessage.value = "Backup uploaded"
+                is BackupNowResult.TransientFailure ->
+                    _ephemeralBackupMessage.value = "Backup deferred: ${r.message}"
+                is BackupNowResult.FatalFailure ->
+                    _ephemeralBackupMessage.value = "Backup failed: ${r.message}"
+            }
+        }
+    }
+
+    fun restoreNow() {
+        viewModelScope.launch {
+            when (val r = backup.restoreNow()) {
+                RestoreResult.Success -> _ephemeralBackupMessage.value = "Restore complete"
+                RestoreResult.Nothing -> _ephemeralBackupMessage.value = "No backup found"
+                is RestoreResult.UnsupportedVersion ->
+                    _ephemeralBackupMessage.value = "Backup made by a newer app version — update to restore"
+                is RestoreResult.TransientFailure -> _ephemeralBackupMessage.value = r.message
+                is RestoreResult.FatalFailure -> _ephemeralBackupMessage.value = r.message
+            }
+        }
+    }
+
+    fun dismissBackupMessage() { _ephemeralBackupMessage.value = null }
 
     fun setEssenceContributionsEnabled(enabled: Boolean) =
         preferencesRepository.setEssenceContributionsEnabled(enabled)
