@@ -19,6 +19,12 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -51,4 +57,6 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.turbine)
     testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 }
