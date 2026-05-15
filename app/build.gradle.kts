@@ -7,24 +7,24 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-// Release signing inputs come from (in order): environment variables, then
-// local.properties (gitignored). If none of the four required keys are
-// present, release builds fall back to debug signing so a local
-// `assembleRelease` still produces an installable APK for R8 smoke-testing.
-// See RELEASE.md for keystore generation + key configuration.
+// Release signing inputs are resolved in this order, per key:
+//   1. Environment variable `<KEY>` (CI-friendly).
+//   2. `local.properties` entry `<KEY>` (gitignored, per-checkout).
+//   3. Gradle property `COMPENDIUM_<KEY>` (typically in ~/.gradle/gradle.properties,
+//      shared across checkouts).
+// If any of the four keys is unresolved, the release build falls back to
+// debug signing so `assembleRelease` still produces an installable APK for
+// R8 smoke-testing. See RELEASE.md for keystore generation + key configuration.
 val releaseSigning: Map<String, String>? = run {
     val keys = listOf("KEYSTORE_FILE", "KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD")
-    val fromEnv = keys.associateWith { System.getenv(it).orEmpty() }
-    val resolved = if (fromEnv.values.all { it.isNotEmpty() }) {
-        fromEnv
-    } else {
-        val localProps = rootProject.file("local.properties").takeIf { it.exists() }?.let {
-            Properties().apply { it.inputStream().use(::load) }
-        }
-        keys.associateWith { key ->
-            fromEnv[key]?.takeIf { it.isNotEmpty() }
-                ?: localProps?.getProperty(key).orEmpty()
-        }
+    val localProps = rootProject.file("local.properties").takeIf { it.exists() }?.let {
+        Properties().apply { it.inputStream().use(::load) }
+    }
+    val resolved = keys.associateWith { key ->
+        System.getenv(key)?.takeIf { it.isNotEmpty() }
+            ?: localProps?.getProperty(key)?.takeIf { it.isNotEmpty() }
+            ?: (findProperty("COMPENDIUM_$key") as String?)?.takeIf { it.isNotEmpty() }
+            ?: ""
     }
     resolved.takeIf { it.values.all { v -> v.isNotEmpty() } }
 }
