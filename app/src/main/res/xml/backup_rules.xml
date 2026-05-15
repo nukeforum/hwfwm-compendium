@@ -1,13 +1,14 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older that API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Legacy Auto Backup rules (Android API 23..30). Replaced by
+  data_extraction_rules.xml on API 31+.
+
+  Goal: preserve user-authored contributions across uninstall/reinstall
+  on the same signing cert (release keystore). The canonical book
+  database is excluded because it is regenerable from bundled assets;
+  letting it count against the 25 MB Drive quota is pure waste.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <include domain="database" path="contributions.db" />
+    <include domain="file" path="datastore/compendium_prefs.preferences_pb" />
 </full-backup-content>
