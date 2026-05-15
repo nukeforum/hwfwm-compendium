@@ -63,7 +63,20 @@ fun SettingsScreen(
     val themeMode by viewModel.themeMode.collectAsState()
     val dynamicColorEnabled by viewModel.dynamicColorEnabled.collectAsState()
     val ioState by viewModel.ioState.collectAsState()
+    val driveBackupEnabled by viewModel.driveBackupEnabled.collectAsState()
+    val driveBackupAccountEmail by viewModel.driveBackupAccountEmail.collectAsState()
+    val backupStatus by viewModel.backupStatusFlow.collectAsState()
+    val ephemeralBackupMessage by viewModel.ephemeralBackupMessage.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(ephemeralBackupMessage) {
+        val message = ephemeralBackupMessage
+        if (message != null) {
+            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_SHORT).show()
+            viewModel.dismissBackupMessage()
+        }
+    }
+
     var showPasteDialog by remember { mutableStateOf(false) }
     var pasteText by remember { mutableStateOf("") }
 
@@ -135,6 +148,16 @@ fun SettingsScreen(
         onImportClick = viewModel::openImportSource,
         onAboutClick = onAboutClick,
         ioState = ioState,
+        driveBackupEnabled = driveBackupEnabled,
+        driveBackupAccountEmail = driveBackupAccountEmail,
+        backupStatus = backupStatus,
+        onDriveBackupToggled = { enabled ->
+            // Find the host Activity for the sign-in flow.
+            val activity = context as? android.app.Activity ?: return@SettingsContent
+            viewModel.setDriveBackupEnabled(enabled, activity)
+        },
+        onBackupNowClick = viewModel::backupNow,
+        onRestoreNowClick = viewModel::restoreNow,
     )
 
     // Routing effect: when encoding finishes with a fittable payload, route
@@ -307,6 +330,12 @@ fun SettingsContent(
     onExportClick: () -> Unit,
     onImportClick: () -> Unit,
     onAboutClick: () -> Unit,
+    driveBackupEnabled: Boolean,
+    driveBackupAccountEmail: String?,
+    backupStatus: wizardry.compendium.drive.backup.BackupStatus,
+    onDriveBackupToggled: (Boolean) -> Unit,
+    onBackupNowClick: () -> Unit,
+    onRestoreNowClick: () -> Unit,
     ioState: SettingsViewModel.IoState,
 ) {
     Column(
@@ -403,6 +432,53 @@ fun SettingsContent(
                 modifier = Modifier.weight(1f),
             ) {
                 Text("Import…")
+            }
+        }
+
+        HorizontalDivider()
+
+        Text("Cloud Backup", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Back up your contributions and settings to your Google Drive's hidden " +
+                "App Folder. Survives uninstall and new-phone migration.",
+            style = MaterialTheme.typography.bodySmall,
+        )
+        ToggleRow(
+            title = "Use Drive backup",
+            subtitle = driveBackupAccountEmail?.let { "Signed in as $it" }
+                ?: "Sign in with Google to enable",
+            checked = driveBackupEnabled,
+            conflictCount = 0,
+            onCheckedChange = onDriveBackupToggled,
+        )
+        if (driveBackupEnabled) {
+            val lastSuccess = backupStatus.lastSuccessAt
+            val lastError = backupStatus.lastError
+            if (lastSuccess != null) {
+                Text(
+                    "Last backed up: ${formatRelativeTime(lastSuccess)}",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            if (lastError != null) {
+                Text(
+                    "Last attempt failed: $lastError",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Button(
+                    onClick = onBackupNowClick,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Back up now") }
+                OutlinedButton(
+                    onClick = onRestoreNowClick,
+                    modifier = Modifier.weight(1f),
+                ) { Text("Restore from Drive") }
             }
         }
 
@@ -659,6 +735,16 @@ private fun ImportPreviewSheet(
     }
 }
 
+private fun formatRelativeTime(at: java.time.Instant): String {
+    val seconds = (System.currentTimeMillis() / 1000) - at.epochSecond
+    return when {
+        seconds < 60 -> "just now"
+        seconds < 3600 -> "${seconds / 60} min ago"
+        seconds < 86400 -> "${seconds / 3600} h ago"
+        else -> "${seconds / 86400} d ago"
+    }
+}
+
 @PreviewLightDark
 @Composable
 private fun SettingsContentOffPreview() {
@@ -686,6 +772,12 @@ private fun SettingsContentOffPreview() {
             onExportClick = {},
             onImportClick = {},
             onAboutClick = {},
+            driveBackupEnabled = false,
+            driveBackupAccountEmail = null,
+            backupStatus = wizardry.compendium.drive.backup.BackupStatus(),
+            onDriveBackupToggled = {},
+            onBackupNowClick = {},
+            onRestoreNowClick = {},
             ioState = SettingsViewModel.IoState.Idle,
         )
     }
@@ -718,6 +810,12 @@ private fun SettingsContentEncodingPreview() {
             onExportClick = {},
             onImportClick = {},
             onAboutClick = {},
+            driveBackupEnabled = false,
+            driveBackupAccountEmail = null,
+            backupStatus = wizardry.compendium.drive.backup.BackupStatus(),
+            onDriveBackupToggled = {},
+            onBackupNowClick = {},
+            onRestoreNowClick = {},
             ioState = SettingsViewModel.IoState.Encoding,
         )
     }
@@ -750,6 +848,12 @@ private fun SettingsContentConflictPreview() {
             onExportClick = {},
             onImportClick = {},
             onAboutClick = {},
+            driveBackupEnabled = false,
+            driveBackupAccountEmail = null,
+            backupStatus = wizardry.compendium.drive.backup.BackupStatus(),
+            onDriveBackupToggled = {},
+            onBackupNowClick = {},
+            onRestoreNowClick = {},
             ioState = SettingsViewModel.IoState.Idle,
         )
     }
