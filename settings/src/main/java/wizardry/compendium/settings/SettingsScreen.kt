@@ -44,6 +44,7 @@ import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.wire.ContributionDomain
+import wizardry.compendium.drive.backup.findActivity
 import wizardry.compendium.wire.ImportSummary
 
 @Composable
@@ -152,8 +153,7 @@ fun SettingsScreen(
         driveBackupAccountEmail = driveBackupAccountEmail,
         backupStatus = backupStatus,
         onDriveBackupToggled = { enabled ->
-            // Find the host Activity for the sign-in flow.
-            val activity = context as? android.app.Activity ?: return@SettingsContent
+            val activity = context.findActivity() ?: return@SettingsContent
             viewModel.setDriveBackupEnabled(enabled, activity)
         },
         onBackupNowClick = viewModel::backupNow,

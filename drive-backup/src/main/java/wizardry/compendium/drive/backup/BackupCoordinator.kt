@@ -40,7 +40,9 @@ class BackupCoordinator @Inject constructor(
 
                 val restored = maybeAutoRestore()
                 scheduler.schedulePeriodic()
-                ioScope.launch { backupNow() }
+                if (!restored) {
+                    ioScope.launch { backupNow() }
+                }
                 EnableResult.Success(restored = restored)
             }
         }
@@ -139,8 +141,8 @@ class BackupCoordinator @Inject constructor(
 
         try {
             snapshotCodec.apply(bundle.preferences)
-        } catch (_: Exception) {
-            // Best-effort. Contributions matter most.
+        } catch (e: Exception) {
+            android.util.Log.w("DriveBackup", "Preferences restore failed (continuing)", e)
         }
 
         statusStore.recordRestore(Instant.now(clock))
@@ -149,16 +151,10 @@ class BackupCoordinator @Inject constructor(
 
     private suspend fun maybeAutoRestore(): Boolean {
         if (wireCodec.hasLocalContributions()) return false
-        val token = when (val t = auth.getValidAccessToken()) {
-            is DriveAuth.TokenResult.Success -> t.accessToken
-            else -> return false
+        return when (restoreNow()) {
+            RestoreResult.Success -> true
+            else -> false
         }
-        @Suppress("UNUSED_VARIABLE")
-        val meta = when (val m = drive.getMetadata(token)) {
-            is DriveResult.Success -> m.value ?: return false
-            else -> return false
-        }
-        return restoreNow() is RestoreResult.Success
     }
 
     private suspend fun retryAfterRefresh(bundle: BackupBundle): BackupNowResult {

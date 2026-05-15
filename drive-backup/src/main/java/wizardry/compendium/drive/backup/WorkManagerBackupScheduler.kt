@@ -8,6 +8,7 @@ import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+@javax.inject.Singleton
 class WorkManagerBackupScheduler @Inject constructor(
     private val workManager: WorkManager,
 ) : BackupScheduler {

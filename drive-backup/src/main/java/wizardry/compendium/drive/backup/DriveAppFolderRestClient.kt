@@ -116,7 +116,7 @@ class DriveAppFolderRestClient @Inject constructor(
                     response.code == 401 -> DriveResult.AuthRequired("Token expired (401)")
                     response.code == 403 && body.contains("storageQuotaExceeded") ->
                         DriveResult.QuotaExceeded("Drive storage full")
-                    response.code == 403 -> DriveResult.AuthRequired("Forbidden (403)")
+                    response.code == 403 -> DriveResult.Fatal("Forbidden (403). Scope may have been revoked.")
                     response.code in 500..599 -> DriveResult.Transient("Drive ${response.code}")
                     else -> DriveResult.Fatal("Drive ${response.code}: ${body.take(200)}")
                 }

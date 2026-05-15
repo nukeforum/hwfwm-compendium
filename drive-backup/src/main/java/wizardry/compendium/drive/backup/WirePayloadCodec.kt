@@ -11,6 +11,7 @@ interface WirePayloadCodecApi {
     suspend fun decodeAndImport(text: String): WireImportOutcome
 }
 
+@javax.inject.Singleton
 class WirePayloadCodec @Inject constructor(
     private val wireIo: WireIoRepository,
 ) : WirePayloadCodecApi {

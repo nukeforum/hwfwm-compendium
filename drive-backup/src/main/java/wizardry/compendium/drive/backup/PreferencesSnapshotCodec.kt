@@ -19,15 +19,36 @@ class PreferencesSnapshotCodec @Inject constructor(
         dynamicColorEnabled = prefs.dynamicColorEnabled.first(),
     )
 
-    fun apply(snapshot: PreferencesSnapshot) {
-        snapshot.essenceContributionsEnabled?.let(prefs::setEssenceContributionsEnabled)
-        snapshot.awakeningStoneContributionsEnabled?.let(prefs::setAwakeningStoneContributionsEnabled)
-        snapshot.abilityListingContributionsEnabled?.let(prefs::setAbilityListingContributionsEnabled)
-        snapshot.statusEffectContributionsEnabled?.let(prefs::setStatusEffectContributionsEnabled)
-        snapshot.essencesAsAwakeningStonesEnabled?.let(prefs::setEssencesAsAwakeningStonesEnabled)
-        snapshot.themeMode?.let { name ->
-            ThemeMode.entries.firstOrNull { it.name == name }?.let(prefs::setThemeMode)
+    suspend fun apply(snapshot: PreferencesSnapshot) {
+        snapshot.essenceContributionsEnabled?.let { value ->
+            prefs.setEssenceContributionsEnabled(value)
+            prefs.essenceContributionsEnabled.first { it == value }
         }
-        snapshot.dynamicColorEnabled?.let(prefs::setDynamicColorEnabled)
+        snapshot.awakeningStoneContributionsEnabled?.let { value ->
+            prefs.setAwakeningStoneContributionsEnabled(value)
+            prefs.awakeningStoneContributionsEnabled.first { it == value }
+        }
+        snapshot.abilityListingContributionsEnabled?.let { value ->
+            prefs.setAbilityListingContributionsEnabled(value)
+            prefs.abilityListingContributionsEnabled.first { it == value }
+        }
+        snapshot.statusEffectContributionsEnabled?.let { value ->
+            prefs.setStatusEffectContributionsEnabled(value)
+            prefs.statusEffectContributionsEnabled.first { it == value }
+        }
+        snapshot.essencesAsAwakeningStonesEnabled?.let { value ->
+            prefs.setEssencesAsAwakeningStonesEnabled(value)
+            prefs.essencesAsAwakeningStonesEnabled.first { it == value }
+        }
+        snapshot.themeMode?.let { name ->
+            ThemeMode.entries.firstOrNull { it.name == name }?.let { mode ->
+                prefs.setThemeMode(mode)
+                prefs.themeMode.first { it == mode }
+            }
+        }
+        snapshot.dynamicColorEnabled?.let { value ->
+            prefs.setDynamicColorEnabled(value)
+            prefs.dynamicColorEnabled.first { it == value }
+        }
     }
 }

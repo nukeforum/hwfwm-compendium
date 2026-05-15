@@ -1,6 +1,5 @@
 package wizardry.compendium.drive.backup
 
-import android.app.Activity
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -33,7 +32,7 @@ class DriveAuthGmsImpl @Inject constructor(
     override val currentAccount: Flow<AuthAccount?> = _accountState
 
     override suspend fun signIn(activityContext: Context): DriveAuth.SignInResult {
-        val activity = activityContext as? Activity
+        val activity = activityContext.findActivity()
             ?: return DriveAuth.SignInResult.Failed("Activity context required")
 
         // Step 1: account picker via Credential Manager.
@@ -66,10 +65,15 @@ class DriveAuthGmsImpl @Inject constructor(
             return DriveAuth.SignInResult.Failed(e.message ?: "Authorization failed")
         }
         if (authResult.hasResolution()) {
-            // Resolution PendingIntent needs to be launched by the caller; until they
-            // do so we don't have an access token. Treat this as Canceled for now —
-            // the UI layer is responsible for surfacing the resolution flow.
-            return DriveAuth.SignInResult.Canceled
+            // TODO: Plumb an ActivityResultLauncher<IntentSenderRequest> through
+            //  DriveAuth.signIn so the UI can launch this PendingIntent and
+            //  await the result. Until then, first-time sign-in cannot
+            //  complete the scope grant. See:
+            //  https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationResult#getPendingIntent()
+            return DriveAuth.SignInResult.Failed(
+                "Google needs your permission to access app data. " +
+                    "Open Settings on your device and grant the permission, then try again."
+            )
         }
 
         val accessToken = authResult.accessToken

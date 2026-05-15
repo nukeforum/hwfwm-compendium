@@ -26,6 +26,10 @@ annotation class BackupStatusDataStore
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
+annotation class DriveTokenDataStore
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
 annotation class DriveBackupIoScope
 
 @Module
@@ -78,7 +82,12 @@ abstract class DriveBackupModule {
         @Provides
         @Singleton
         fun provideOkHttp(): OkHttpClient =
-            OkHttpClient.Builder().build()
+            OkHttpClient.Builder()
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .callTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+                .build()
 
         @Provides
         @Singleton

@@ -44,6 +44,3 @@ class TokenCache @Inject constructor(
     }
 }
 
-@javax.inject.Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class DriveTokenDataStore

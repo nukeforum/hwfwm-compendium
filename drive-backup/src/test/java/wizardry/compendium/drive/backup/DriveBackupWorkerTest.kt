@@ -49,6 +49,14 @@ class DriveBackupWorkerTest {
         assertEquals(ListenableWorker.Result.failure(), result)
     }
 
+    @Test
+    fun `doWork returns Success without invoking coordinator when backup disabled`() = runTest {
+        val worker = buildWorkerWithDisabledPrefs()
+        val result = worker.doWork()
+        assertEquals(ListenableWorker.Result.success(), result)
+        assertEquals(0, coordinator.backupCalls)
+    }
+
     private fun buildWorker(): DriveBackupWorker =
         TestListenableWorkerBuilder<DriveBackupWorker>(context)
             .setWorkerFactory(object : androidx.work.WorkerFactory() {
@@ -56,7 +64,24 @@ class DriveBackupWorkerTest {
                     appContext: Context,
                     workerClassName: String,
                     workerParameters: androidx.work.WorkerParameters,
-                ) = DriveBackupWorker(appContext, workerParameters, coordinator)
+                ) = DriveBackupWorker(
+                    appContext, workerParameters, coordinator,
+                    FakePreferencesRepository().apply { setDriveBackupEnabled(true) },
+                )
+            })
+            .build()
+
+    private fun buildWorkerWithDisabledPrefs(): DriveBackupWorker =
+        TestListenableWorkerBuilder<DriveBackupWorker>(context)
+            .setWorkerFactory(object : androidx.work.WorkerFactory() {
+                override fun createWorker(
+                    appContext: Context,
+                    workerClassName: String,
+                    workerParameters: androidx.work.WorkerParameters,
+                ) = DriveBackupWorker(
+                    appContext, workerParameters, coordinator,
+                    FakePreferencesRepository(),  // setDriveBackupEnabled defaults to false
+                )
             })
             .build()
 }

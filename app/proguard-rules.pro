@@ -46,5 +46,4 @@
 
 # Drive backup module
 -keep class wizardry.compendium.drive.backup.** { *; }
--keep class androidx.work.impl.WorkManagerImpl { *; }
 
