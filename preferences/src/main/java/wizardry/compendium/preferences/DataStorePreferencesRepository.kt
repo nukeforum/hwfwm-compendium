@@ -57,6 +57,8 @@ class DataStorePreferencesRepository @Inject constructor(
     private val essencesAsAwakeningStonesKey = booleanPreferencesKey("essences_as_awakening_stones_enabled")
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val dynamicColorEnabledKey = booleanPreferencesKey("dynamic_color_enabled")
+    private val driveBackupEnabledKey = booleanPreferencesKey("drive_backup_enabled")
+    private val driveBackupAccountEmailKey = stringPreferencesKey("drive_backup_account_email")
 
     private val essenceContributionsState: StateFlow<Boolean> = context.dataStore.data
         .map { prefs -> prefs[essenceContributionsKey] ?: false }
@@ -113,6 +115,14 @@ class DataStorePreferencesRepository @Inject constructor(
             started = SharingStarted.Eagerly,
             initialValue = true,
         )
+
+    private val driveBackupEnabledState: StateFlow<Boolean> = context.dataStore.data
+        .map { prefs -> prefs[driveBackupEnabledKey] ?: false }
+        .stateIn(scope = scope, started = SharingStarted.Eagerly, initialValue = false)
+
+    private val driveBackupAccountEmailState: StateFlow<String?> = context.dataStore.data
+        .map { prefs -> prefs[driveBackupAccountEmailKey] }
+        .stateIn(scope = scope, started = SharingStarted.Eagerly, initialValue = null)
 
     override val isEssenceContributionsEnabled: Boolean
         get() = essenceContributionsState.value
@@ -208,6 +218,23 @@ class DataStorePreferencesRepository @Inject constructor(
         scope.launch {
             context.dataStore.edit { prefs ->
                 prefs[dynamicColorEnabledKey] = enabled
+            }
+        }
+    }
+
+    override val driveBackupEnabled: Flow<Boolean> get() = driveBackupEnabledState
+    override val isDriveBackupEnabled: Boolean get() = driveBackupEnabledState.value
+    override fun setDriveBackupEnabled(enabled: Boolean) {
+        scope.launch { context.dataStore.edit { prefs -> prefs[driveBackupEnabledKey] = enabled } }
+    }
+
+    override val driveBackupAccountEmail: Flow<String?> get() = driveBackupAccountEmailState
+    override val currentDriveBackupAccountEmail: String? get() = driveBackupAccountEmailState.value
+    override fun setDriveBackupAccountEmail(email: String?) {
+        scope.launch {
+            context.dataStore.edit { prefs ->
+                if (email == null) prefs.remove(driveBackupAccountEmailKey)
+                else prefs[driveBackupAccountEmailKey] = email
             }
         }
     }

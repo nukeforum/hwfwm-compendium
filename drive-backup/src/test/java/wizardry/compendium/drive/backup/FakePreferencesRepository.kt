@@ -49,4 +49,15 @@ class FakePreferencesRepository : PreferencesRepository {
     override val dynamicColorEnabled: Flow<Boolean> = _dynamic
     override val isDynamicColorEnabled get() = _dynamic.value
     override fun setDynamicColorEnabled(enabled: Boolean) { _dynamic.value = enabled }
+
+    private val _driveEnabled = MutableStateFlow(false)
+    private val _driveAccount = MutableStateFlow<String?>(null)
+
+    override val driveBackupEnabled: Flow<Boolean> = _driveEnabled
+    override val isDriveBackupEnabled get() = _driveEnabled.value
+    override fun setDriveBackupEnabled(enabled: Boolean) { _driveEnabled.value = enabled }
+
+    override val driveBackupAccountEmail: Flow<String?> = _driveAccount
+    override val currentDriveBackupAccountEmail get() = _driveAccount.value
+    override fun setDriveBackupAccountEmail(email: String?) { _driveAccount.value = email }
 }

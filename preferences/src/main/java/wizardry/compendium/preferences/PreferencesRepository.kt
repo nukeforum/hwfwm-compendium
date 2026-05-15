@@ -23,7 +23,8 @@ interface PreferencesRepository :
     StatusEffectContributionsToggle,
     StatusEffectContributionsToggleFlow,
     EssencesAsAwakeningStonesToggle,
-    EssencesAsAwakeningStonesToggleFlow {
+    EssencesAsAwakeningStonesToggleFlow,
+    DriveBackupPreferences {
 
     val themeMode: Flow<ThemeMode>
     val isCurrentThemeMode: ThemeMode
