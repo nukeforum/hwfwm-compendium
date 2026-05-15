@@ -11,6 +11,11 @@ import dagger.assisted.AssistedInject
 class DriveBackupWorker @AssistedInject constructor(
     @Assisted appContext: Context,
     @Assisted params: WorkerParameters,
+    private val coordinator: BackupCoordinatorApi,
 ) : CoroutineWorker(appContext, params) {
-    override suspend fun doWork(): Result = Result.success()
+    override suspend fun doWork(): Result = when (coordinator.backupNow()) {
+        BackupNowResult.Success -> Result.success()
+        is BackupNowResult.TransientFailure -> Result.retry()
+        is BackupNowResult.FatalFailure -> Result.failure()
+    }
 }
