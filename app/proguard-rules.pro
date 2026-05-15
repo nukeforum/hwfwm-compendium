@@ -44,3 +44,7 @@
 # package's class + member names preserves both round-trips.
 -keepnames class wizardry.compendium.domain.model.** { *; }
 
+# Drive backup module
+-keep class wizardry.compendium.drive.backup.** { *; }
+-keep class androidx.work.impl.WorkManagerImpl { *; }
+
