@@ -1,9 +1,32 @@
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+}
+
+// Release signing inputs come from (in order): environment variables, then
+// local.properties (gitignored). If none of the four required keys are
+// present, release builds fall back to debug signing so a local
+// `assembleRelease` still produces an installable APK for R8 smoke-testing.
+// See RELEASE.md for keystore generation + key configuration.
+val releaseSigning: Map<String, String>? = run {
+    val keys = listOf("KEYSTORE_FILE", "KEYSTORE_PASSWORD", "KEY_ALIAS", "KEY_PASSWORD")
+    val fromEnv = keys.associateWith { System.getenv(it).orEmpty() }
+    val resolved = if (fromEnv.values.all { it.isNotEmpty() }) {
+        fromEnv
+    } else {
+        val localProps = rootProject.file("local.properties").takeIf { it.exists() }?.let {
+            Properties().apply { it.inputStream().use(::load) }
+        }
+        keys.associateWith { key ->
+            fromEnv[key]?.takeIf { it.isNotEmpty() }
+                ?: localProps?.getProperty(key).orEmpty()
+        }
+    }
+    resolved.takeIf { it.values.all { v -> v.isNotEmpty() } }
 }
 
 android {
@@ -23,10 +46,23 @@ android {
         }
     }
 
+    signingConfigs {
+        if (releaseSigning != null) {
+            create("release") {
+                storeFile = file(releaseSigning["KEYSTORE_FILE"]!!)
+                storePassword = releaseSigning["KEYSTORE_PASSWORD"]
+                keyAlias = releaseSigning["KEY_ALIAS"]
+                keyPassword = releaseSigning["KEY_PASSWORD"]
+            }
+        }
+    }
+
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
 
