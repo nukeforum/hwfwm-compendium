@@ -21,7 +21,7 @@ interface BackupStatusStoreApi {
 
 @Singleton
 class BackupStatusStore @Inject constructor(
-    private val dataStore: DataStore<Preferences>,
+    @BackupStatusDataStore private val dataStore: DataStore<Preferences>,
 ) : BackupStatusStoreApi {
     private val lastSuccessKey = longPreferencesKey("last_success_epoch_seconds")
     private val lastErrorKey = stringPreferencesKey("last_error")

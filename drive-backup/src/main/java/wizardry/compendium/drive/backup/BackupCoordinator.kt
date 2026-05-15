@@ -25,8 +25,8 @@ class BackupCoordinator @Inject constructor(
     private val statusStore: BackupStatusStoreApi,
     private val prefs: PreferencesRepository,
     private val scheduler: BackupScheduler,
-    private val clock: Clock = Clock.systemUTC(),
-    private val ioScope: CoroutineScope,
+    private val clock: Clock,
+    @DriveBackupIoScope private val ioScope: CoroutineScope,
 ) : BackupCoordinatorApi {
 
     override suspend fun enable(activityContext: Context): EnableResult {
