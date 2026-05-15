@@ -11,16 +11,24 @@ import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
+interface BackupStatusStoreApi {
+    fun statusFlow(): Flow<BackupStatus>
+    suspend fun recordSuccess(at: Instant)
+    suspend fun recordError(message: String, at: Instant)
+    suspend fun recordRestore(at: Instant)
+    suspend fun clear()
+}
+
 @Singleton
 class BackupStatusStore @Inject constructor(
     private val dataStore: DataStore<Preferences>,
-) {
+) : BackupStatusStoreApi {
     private val lastSuccessKey = longPreferencesKey("last_success_epoch_seconds")
     private val lastErrorKey = stringPreferencesKey("last_error")
     private val lastErrorAtKey = longPreferencesKey("last_error_at_epoch_seconds")
     private val lastRestoreKey = longPreferencesKey("last_restore_epoch_seconds")
 
-    fun statusFlow(): Flow<BackupStatus> = dataStore.data.map { prefs ->
+    override fun statusFlow(): Flow<BackupStatus> = dataStore.data.map { prefs ->
         BackupStatus(
             lastSuccessAt = prefs[lastSuccessKey]?.let(Instant::ofEpochSecond),
             lastError = prefs[lastErrorKey],
@@ -29,7 +37,7 @@ class BackupStatusStore @Inject constructor(
         )
     }
 
-    suspend fun recordSuccess(at: Instant) {
+    override suspend fun recordSuccess(at: Instant) {
         dataStore.edit { prefs ->
             prefs[lastSuccessKey] = at.epochSecond
             prefs.remove(lastErrorKey)
@@ -37,20 +45,20 @@ class BackupStatusStore @Inject constructor(
         }
     }
 
-    suspend fun recordError(message: String, at: Instant) {
+    override suspend fun recordError(message: String, at: Instant) {
         dataStore.edit { prefs ->
             prefs[lastErrorKey] = message
             prefs[lastErrorAtKey] = at.epochSecond
         }
     }
 
-    suspend fun recordRestore(at: Instant) {
+    override suspend fun recordRestore(at: Instant) {
         dataStore.edit { prefs ->
             prefs[lastRestoreKey] = at.epochSecond
         }
     }
 
-    suspend fun clear() {
+    override suspend fun clear() {
         dataStore.edit { it.clear() }
     }
 }

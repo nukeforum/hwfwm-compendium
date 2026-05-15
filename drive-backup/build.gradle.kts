@@ -50,4 +50,5 @@ dependencies {
     testImplementation(libs.androidx.work.testing)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.turbine)
+    testImplementation(libs.mockito.kotlin)
 }
