@@ -10,7 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 interface BackupCoordinatorApi {
-    suspend fun enable(activityContext: Context): EnableResult
+    suspend fun enable(activityContext: Context, resolver: ResolutionResolver): EnableResult
     suspend fun disable()
     suspend fun backupNow(): BackupNowResult
     suspend fun restoreNow(): RestoreResult
@@ -29,8 +29,8 @@ class BackupCoordinator @Inject constructor(
     @DriveBackupIoScope private val ioScope: CoroutineScope,
 ) : BackupCoordinatorApi {
 
-    override suspend fun enable(activityContext: Context): EnableResult {
-        val signIn = auth.signIn(activityContext)
+    override suspend fun enable(activityContext: Context, resolver: ResolutionResolver): EnableResult {
+        val signIn = auth.signIn(activityContext, resolver)
         return when (signIn) {
             is DriveAuth.SignInResult.Canceled -> EnableResult.Canceled
             is DriveAuth.SignInResult.Failed -> EnableResult.Failed(signIn.message)

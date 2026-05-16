@@ -203,7 +203,7 @@ class SettingsViewModelTest {
 
     @Test
     fun `setDriveBackupEnabled true triggers coordinator enable`() = runTest(dispatcher) {
-        viewModel.setDriveBackupEnabled(true, org.mockito.kotlin.mock())
+        viewModel.setDriveBackupEnabled(true, org.mockito.kotlin.mock(), wizardry.compendium.drive.backup.NoUiResolutionResolver)
         advanceUntilIdle()
         assertEquals(1, fakeBackup.enableCalls)
     }
@@ -337,7 +337,10 @@ private class FakeSettingsBackupCoordinator : BackupCoordinatorApi {
     var disableCalls = 0
     var backupCalls = 0
     var restoreCalls = 0
-    override suspend fun enable(activityContext: android.content.Context): EnableResult {
+    override suspend fun enable(
+        activityContext: android.content.Context,
+        resolver: wizardry.compendium.drive.backup.ResolutionResolver,
+    ): EnableResult {
         enableCalls++
         return nextEnableResult
     }
@@ -364,7 +367,7 @@ private class FakeSettingsBackupStatusStore : BackupStatusStoreApi {
 private class FakeSettingsDriveAuth : DriveAuth {
     private val account = MutableStateFlow<AuthAccount?>(null)
     override val currentAccount = account
-    override suspend fun signIn(activityContext: android.content.Context) = DriveAuth.SignInResult.Success(AuthAccount("test@example.com"))
+    override suspend fun signIn(activityContext: android.content.Context, resolver: wizardry.compendium.drive.backup.ResolutionResolver) = DriveAuth.SignInResult.Success(AuthAccount("test@example.com"))
     override suspend fun signOut() { account.value = null }
     override suspend fun getValidAccessToken() = DriveAuth.TokenResult.Success("t")
 }

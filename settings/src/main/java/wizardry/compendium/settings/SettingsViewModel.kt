@@ -19,6 +19,7 @@ import wizardry.compendium.drive.backup.BackupStatus
 import wizardry.compendium.drive.backup.BackupStatusStoreApi
 import wizardry.compendium.drive.backup.DriveAuth
 import wizardry.compendium.drive.backup.EnableResult
+import wizardry.compendium.drive.backup.ResolutionResolver
 import wizardry.compendium.drive.backup.RestoreResult
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneRepository
@@ -126,10 +127,14 @@ class SettingsViewModel @Inject constructor(
     private val _ephemeralBackupMessage = MutableStateFlow<String?>(null)
     val ephemeralBackupMessage: StateFlow<String?> = _ephemeralBackupMessage
 
-    fun setDriveBackupEnabled(enabled: Boolean, activityContext: Context) {
+    fun setDriveBackupEnabled(
+        enabled: Boolean,
+        activityContext: Context,
+        resolver: ResolutionResolver,
+    ) {
         if (enabled) {
             viewModelScope.launch {
-                when (val r = backup.enable(activityContext)) {
+                when (val r = backup.enable(activityContext, resolver)) {
                     is EnableResult.Canceled -> _ephemeralBackupMessage.value = "Sign-in canceled"
                     is EnableResult.Failed -> _ephemeralBackupMessage.value = r.message
                     is EnableResult.Success -> {

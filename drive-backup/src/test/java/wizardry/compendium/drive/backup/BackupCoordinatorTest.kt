@@ -44,7 +44,7 @@ class BackupCoordinatorTest {
         drive = FakeDriveAppFolderClient(initialRemote = sampleBundle())
         coordinator = newCoordinator()
 
-        val result = coordinator.enable(activityContext)
+        val result = coordinator.enable(activityContext, NoUiResolutionResolver)
 
         assertTrue(result is EnableResult.Success && result.restored)
         assertEquals(1, wire.importCalls)
@@ -57,7 +57,7 @@ class BackupCoordinatorTest {
         drive = FakeDriveAppFolderClient(initialRemote = sampleBundle())
         coordinator = newCoordinator()
 
-        val result = coordinator.enable(activityContext)
+        val result = coordinator.enable(activityContext, NoUiResolutionResolver)
 
         assertTrue(result is EnableResult.Success && !(result as EnableResult.Success).restored)
         assertEquals(0, wire.importCalls)
@@ -68,7 +68,7 @@ class BackupCoordinatorTest {
     fun `enable when no remote schedules periodic and fires baseline backup`() = runTest {
         wire.hasLocal = true
 
-        coordinator.enable(activityContext)
+        coordinator.enable(activityContext, NoUiResolutionResolver)
 
         assertTrue(scheduler.scheduled)
         // Baseline backup runs fire-and-forget in ioScope; UnconfinedTestDispatcher runs it inline.
@@ -79,7 +79,7 @@ class BackupCoordinatorTest {
     fun `enable canceled by user leaves flag false and does not schedule`() = runTest {
         auth.signInResult = DriveAuth.SignInResult.Canceled
 
-        val result = coordinator.enable(activityContext)
+        val result = coordinator.enable(activityContext, NoUiResolutionResolver)
 
         assertEquals(EnableResult.Canceled, result)
         assertEquals(false, prefs.isDriveBackupEnabled)
@@ -139,7 +139,7 @@ class BackupCoordinatorTest {
         var firstTokenCall = true
         val authStub = object : DriveAuth {
             override val currentAccount = kotlinx.coroutines.flow.MutableStateFlow<AuthAccount?>(AuthAccount("e"))
-            override suspend fun signIn(activityContext: Context) = DriveAuth.SignInResult.Success(AuthAccount("e"))
+            override suspend fun signIn(activityContext: Context, resolver: ResolutionResolver) = DriveAuth.SignInResult.Success(AuthAccount("e"))
             override suspend fun signOut() {}
             override suspend fun getValidAccessToken(): DriveAuth.TokenResult {
                 if (firstTokenCall) { firstTokenCall = false; return DriveAuth.TokenResult.Success("t") }

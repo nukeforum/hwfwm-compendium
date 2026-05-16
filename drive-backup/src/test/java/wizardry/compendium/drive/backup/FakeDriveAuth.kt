@@ -19,7 +19,10 @@ class FakeDriveAuth(
     var signOutCalls = 0
     var tokenCalls = 0
 
-    override suspend fun signIn(activityContext: Context): DriveAuth.SignInResult {
+    override suspend fun signIn(
+        activityContext: Context,
+        resolver: ResolutionResolver,
+    ): DriveAuth.SignInResult {
         signInCalls++
         val r = signInResult
         if (r is DriveAuth.SignInResult.Success) _current.value = r.account

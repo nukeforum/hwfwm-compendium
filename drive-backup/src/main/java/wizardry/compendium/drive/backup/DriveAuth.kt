@@ -6,7 +6,10 @@ import kotlinx.coroutines.flow.Flow
 interface DriveAuth {
     val currentAccount: Flow<AuthAccount?>
 
-    suspend fun signIn(activityContext: Context): SignInResult
+    suspend fun signIn(
+        activityContext: Context,
+        resolver: ResolutionResolver,
+    ): SignInResult
 
     suspend fun signOut()
 

@@ -31,7 +31,10 @@ class DriveAuthGmsImpl @Inject constructor(
     )
     override val currentAccount: Flow<AuthAccount?> = _accountState
 
-    override suspend fun signIn(activityContext: Context): DriveAuth.SignInResult {
+    override suspend fun signIn(
+        activityContext: Context,
+        resolver: ResolutionResolver,
+    ): DriveAuth.SignInResult {
         val activity = activityContext.findActivity()
             ?: return DriveAuth.SignInResult.Failed("Activity context required")
 
@@ -65,15 +68,27 @@ class DriveAuthGmsImpl @Inject constructor(
             return DriveAuth.SignInResult.Failed(e.message ?: "Authorization failed")
         }
         if (authResult.hasResolution()) {
-            // TODO: Plumb an ActivityResultLauncher<IntentSenderRequest> through
-            //  DriveAuth.signIn so the UI can launch this PendingIntent and
-            //  await the result. Until then, first-time sign-in cannot
-            //  complete the scope grant. See:
-            //  https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationResult#getPendingIntent()
-            return DriveAuth.SignInResult.Failed(
-                "Google needs your permission to access app data. " +
-                    "Open Settings on your device and grant the permission, then try again."
-            )
+            val pendingIntent = authResult.pendingIntent
+                ?: return DriveAuth.SignInResult.Failed("Authorization needs resolution but no PendingIntent provided")
+            val activityResult = try {
+                resolver.resolve(pendingIntent.intentSender)
+            } catch (e: Exception) {
+                return DriveAuth.SignInResult.Failed("Resolution failed: ${e.message}")
+            }
+            if (activityResult.resultCode != android.app.Activity.RESULT_OK) {
+                return DriveAuth.SignInResult.Canceled
+            }
+            val resolved = try {
+                authClient.getAuthorizationResultFromIntent(activityResult.data)
+            } catch (e: Exception) {
+                return DriveAuth.SignInResult.Failed("Could not parse authorization result: ${e.message}")
+            }
+            val token = resolved.accessToken
+                ?: return DriveAuth.SignInResult.Failed("Authorization succeeded but no access token returned")
+            tokenCache.write(token, Instant.now().plusSeconds(TOKEN_TTL_SECONDS - 60))
+            val newAccount = AuthAccount(email)
+            _accountState.value = newAccount
+            return DriveAuth.SignInResult.Success(newAccount)
         }
 
         val accessToken = authResult.accessToken

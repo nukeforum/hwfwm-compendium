@@ -93,7 +93,7 @@ class FakeBackupCoordinator : BackupCoordinatorApi {
     var disableCalls = 0
     var restoreCalls = 0
 
-    override suspend fun enable(activityContext: Context) =
+    override suspend fun enable(activityContext: Context, resolver: ResolutionResolver) =
         EnableResult.Success(restored = false).also { enableCalls++ }
     override suspend fun disable() { disableCalls++ }
     override suspend fun backupNow(): BackupNowResult {

@@ -3,7 +3,11 @@ package wizardry.compendium.settings
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.ActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import kotlinx.coroutines.CompletableDeferred
+import wizardry.compendium.drive.backup.ResolutionResolver
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,6 +73,22 @@ fun SettingsScreen(
     val backupStatus by viewModel.backupStatusFlow.collectAsState()
     val ephemeralBackupMessage by viewModel.ephemeralBackupMessage.collectAsState()
     val context = LocalContext.current
+
+    val pendingResolution = remember { mutableStateOf<CompletableDeferred<ActivityResult>?>(null) }
+    val resolutionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        pendingResolution.value?.complete(result)
+        pendingResolution.value = null
+    }
+    val resolutionResolver = remember(resolutionLauncher) {
+        ResolutionResolver { intentSender ->
+            val deferred = CompletableDeferred<ActivityResult>()
+            pendingResolution.value = deferred
+            resolutionLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
+            deferred.await()
+        }
+    }
 
     LaunchedEffect(ephemeralBackupMessage) {
         val message = ephemeralBackupMessage
@@ -154,7 +174,7 @@ fun SettingsScreen(
         backupStatus = backupStatus,
         onDriveBackupToggled = { enabled ->
             val activity = context.findActivity() ?: return@SettingsContent
-            viewModel.setDriveBackupEnabled(enabled, activity)
+            viewModel.setDriveBackupEnabled(enabled, activity, resolutionResolver)
         },
         onBackupNowClick = viewModel::backupNow,
         onRestoreNowClick = viewModel::restoreNow,
