@@ -1,30 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    android:viewportWidth="500"
+    android:viewportHeight="500">
+
+    <!-- Outer panel frame -->
     <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
+        android:strokeColor="#1D6298"
+        android:strokeWidth="1.5"
+        android:pathData="M100,50 h300 a50,50 0 0,1 50,50 v300 a50,50 0 0,1 -50,50 h-300 a50,50 0 0,1 -50,-50 v-300 a50,50 0 0,1 50,-50 Z" />
+
+    <!-- Inner panel frame -->
+    <path
+        android:strokeColor="#103858"
         android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:pathData="M112,72 h276 a40,40 0 0,1 40,40 v276 a40,40 0 0,1 -40,40 h-276 a40,40 0 0,1 -40,-40 v-276 a40,40 0 0,1 40,-40 Z" />
+
+    <!-- Corner HUD brackets -->
+    <path
+        android:strokeColor="#52B8E0"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M118,50 L50,50 L50,118 M382,50 L450,50 L450,118 M450,382 L450,450 L382,450 M50,382 L50,450 L118,450" />
+
+    <!-- Corner anchor dots -->
+    <path
+        android:fillColor="#52B8E0"
+        android:pathData="M44.5,50 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z M444.5,50 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z M444.5,450 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z M44.5,450 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
+
+    <!-- Bracket arm mid-ticks -->
+    <path
+        android:strokeColor="#52B8E0"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:strokeAlpha="0.5"
+        android:pathData="M84,43 L84,57 M43,84 L57,84 M416,43 L416,57 M443,84 L457,84 M416,443 L416,457 M443,416 L457,416 M84,443 L84,457 M43,416 L57,416" />
+
+    <!-- Edge midpoint targeting diamonds -->
+    <path
+        android:fillColor="#52B8E0"
+        android:fillAlpha="0.8"
+        android:pathData="M250,36 L257,50 L250,55 L243,50 Z M250,464 L257,450 L250,445 L243,450 Z M36,250 L50,257 L55,250 L50,243 Z M464,250 L450,243 L445,250 L450,257 Z" />
+
+    <!-- Interior corner accents (NW dots) -->
+    <path
+        android:fillColor="#1D6298"
+        android:pathData="M87.5,92 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0 Z M101.5,92 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0 Z M115.5,92 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0 Z" />
+
+    <!-- Interior corner accents (SE bars) -->
+    <path
+        android:fillColor="#1D6298"
+        android:pathData="M373,406 h6 a2,2 0 0,1 2,2 v8 a2,2 0 0,1 -2,2 h-6 a2,2 0 0,1 -2,-2 v-8 a2,2 0 0,1 2,-2 Z M387,394 h6 a2,2 0 0,1 2,2 v20 a2,2 0 0,1 -2,2 h-6 a2,2 0 0,1 -2,-2 v-20 a2,2 0 0,1 2,-2 Z M401,378 h6 a2,2 0 0,1 2,2 v36 a2,2 0 0,1 -2,2 h-6 a2,2 0 0,1 -2,-2 v-36 a2,2 0 0,1 2,-2 Z" />
+
+    <!-- Orbit ring (solid; dashes don't resolve at icon scale) -->
+    <path
+        android:strokeColor="#1A5A8A"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.7"
+        android:pathData="M110,250 a140,140 0 1,0 280,0 a140,140 0 1,0 -280,0 Z" />
+
+    <!-- Orbit markers (diagonals) -->
+    <path
+        android:fillColor="#52B8E0"
+        android:pathData="M344,151 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z M344,349 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z M146,349 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z M146,151 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0 Z" />
+
+    <!-- North sphere (arcane purple) -->
+    <path android:fillColor="#3D1466" android:pathData="M224,155 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z" />
+    <path android:fillColor="#A855F7" android:pathData="M235,155 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 Z" />
+    <path android:fillColor="#E8C8FF" android:fillAlpha="0.85" android:pathData="M237,148 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 Z" />
+
+    <!-- East sphere (nature green) -->
+    <path android:fillColor="#0F3D20" android:pathData="M319,250 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z" />
+    <path android:fillColor="#34C164" android:pathData="M330,250 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 Z" />
+    <path android:fillColor="#B8F5CC" android:fillAlpha="0.85" android:pathData="M332,243 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 Z" />
+
+    <!-- South sphere (fire red) -->
+    <path android:fillColor="#5C1010" android:pathData="M224,345 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z" />
+    <path android:fillColor="#E03030" android:pathData="M235,345 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 Z" />
+    <path android:fillColor="#FFB8B8" android:fillAlpha="0.85" android:pathData="M237,338 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 Z" />
+
+    <!-- West sphere (earth brown) -->
+    <path android:fillColor="#2E1505" android:pathData="M129,250 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z" />
+    <path android:fillColor="#A0521A" android:pathData="M140,250 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0 Z" />
+    <path android:fillColor="#F0C98A" android:fillAlpha="0.85" android:pathData="M142,243 a6,6 0 1,0 12,0 a6,6 0 1,0 -12,0 Z" />
+
+    <!-- Isometric cube — left face (shadow) -->
+    <path android:fillColor="#6B3D08" android:pathData="M198,224 L250,250 L250,302 L198,276 Z" />
+
+    <!-- Isometric cube — right face (midtone) -->
+    <path android:fillColor="#B06A12" android:pathData="M302,224 L302,276 L250,302 L250,250 Z" />
+
+    <!-- Isometric cube — top face (highlight) -->
+    <path android:fillColor="#EF9F27" android:pathData="M250,198 L302,224 L250,250 L198,224 Z" />
+
+    <!-- Cube top edge highlights -->
+    <path
+        android:strokeColor="#FAC775"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.8"
+        android:pathData="M250,198 L302,224 M250,198 L198,224" />
+
+    <!-- Cube vertical front edge -->
+    <path
+        android:strokeColor="#FAC775"
+        android:strokeWidth="1"
+        android:strokeAlpha="0.3"
+        android:pathData="M250,250 L250,302" />
+
+    <!-- Top apex sparkle -->
+    <path
+        android:fillColor="#FAEABA"
+        android:pathData="M245.5,198 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0 Z" />
+
 </vector>

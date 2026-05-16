@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="500"
+    android:viewportHeight="500">
+
+    <!-- Corner HUD brackets -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M118,50 L50,50 L50,118 M382,50 L450,50 L450,118 M450,382 L450,450 L382,450 M50,382 L50,450 L118,450" />
+
+    <!-- Corner anchor dots -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M44.5,50 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z M444.5,50 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z M444.5,450 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z M44.5,450 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0 Z" />
+
+    <!-- Orbit ring -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.55"
+        android:pathData="M110,250 a140,140 0 1,0 280,0 a140,140 0 1,0 -280,0 Z" />
+
+    <!-- Four orbital spheres -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M224,155 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z M319,250 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z M224,345 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z M129,250 a26,26 0 1,0 52,0 a26,26 0 1,0 -52,0 Z" />
+
+    <!-- Cube left face (deepest shadow alpha) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.4"
+        android:pathData="M198,224 L250,250 L250,302 L198,276 Z" />
+
+    <!-- Cube right face (midtone alpha) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.7"
+        android:pathData="M302,224 L302,276 L250,302 L250,250 Z" />
+
+    <!-- Cube top face (full intensity) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M250,198 L302,224 L250,250 L198,224 Z" />
+
+</vector>
