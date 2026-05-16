@@ -139,8 +139,11 @@ class DriveAuthGmsImpl @Inject constructor(
     companion object {
         private const val DRIVE_APPDATA_SCOPE = "https://www.googleapis.com/auth/drive.appdata"
         private const val TOKEN_TTL_SECONDS = 3600L
-        // Replace with the OAuth web client ID created in Google Cloud Console.
-        // See RELEASE.md.
-        const val SERVER_CLIENT_ID = "REPLACE_WITH_OAUTH_CLIENT_ID"
+        // The Web OAuth client ID for this app. Identifies the app to Google
+        // when the Credential Manager / Authorization API requests credentials.
+        // See RELEASE.md for the one-time Google Cloud Console setup that
+        // produced this value.
+        const val SERVER_CLIENT_ID =
+            "683277993306-emoc3318qivdk1rbgrvu8jtoei6dvnov.apps.googleusercontent.com"
     }
 }
