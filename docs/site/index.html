@@ -82,6 +82,27 @@
     background: var(--bg-elev); padding: 1px 6px; border-radius: 4px;
     font-size: 0.9em;
   }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 18px;
+    margin: 16px 0 8px;
+  }
+  .gallery figure { margin: 0; }
+  .gallery img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev);
+  }
+  .gallery figcaption {
+    margin-top: 6px;
+    color: var(--fg-muted);
+    font-size: 0.85rem;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -106,10 +127,33 @@
   <ul>
     <li><strong>Search & detail screens</strong> for essences, abilities, awakening stones, and status effects.</li>
     <li><strong>Character build helper</strong> — assemble essence/confluence sets and see the combined ability roster.</li>
-    <li><strong>Randomizer</strong> — roll randomized essence and confluence combinations.</li>
     <li><strong>Contributions layer</strong> — add or correct user-supplied entries. Stored separately from canonical data, so canonical updates can never overwrite your work.</li>
     <li><strong>Backup & restore</strong> — export contributions as a JSON bundle or back them up to your own Google Drive.</li>
   </ul>
+
+  <h2>Screenshots</h2>
+  <div class="gallery">
+    <figure>
+      <img src="Screenshot_20260518_134441.png" alt="App home screen showing Essences, Awakening Stones, Abilities, Status Effects, and Character Builds tiles">
+      <figcaption>Home</figcaption>
+    </figure>
+    <figure>
+      <img src="Screenshot_20260518_134455.png" alt="Essence search list with alphabetical entries and a rarity filter">
+      <figcaption>Essence search</figcaption>
+    </figure>
+    <figure>
+      <img src="Screenshot_20260518_134506.png" alt="Arsenal essence detail showing known confluence combinations">
+      <figcaption>Essence detail</figcaption>
+    </figure>
+    <figure>
+      <img src="Screenshot_20260518_134541.png" alt="Add Ability form for contributing a new ability with rank, type, properties, costs, and description fields">
+      <figcaption>Contribute an ability</figcaption>
+    </figure>
+    <figure>
+      <img src="Screenshot_20260518_134708.png" alt="Add Build form showing Jason Asano with Outworlder race and Blood, Dark, Spirit, Recovery essence slots">
+      <figcaption>Character build helper</figcaption>
+    </figure>
+  </div>
 
   <h2>Privacy at a glance</h2>
   <p>No analytics. No telemetry. No advertising. No account required. Everything lives on your device unless you explicitly opt into Google Drive backup, which writes only to <em>your</em> Drive.</p>
