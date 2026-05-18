@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy — HWFWM Compendium</title>
+<meta name="description" content="Privacy policy for the HWFWM Compendium Android app. The app collects no analytics, no telemetry, and no personal data.">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 500'><rect width='500' height='500' fill='%23031B37'/><circle cx='250' cy='250' r='140' fill='none' stroke='%2352B8E0' stroke-width='6' opacity='0.55'/><circle cx='250' cy='155' r='26' fill='%23A855F7'/><circle cx='345' cy='250' r='26' fill='%2334C164'/><circle cx='250' cy='345' r='26' fill='%23E03030'/><circle cx='155' cy='250' r='26' fill='%23A0521A'/></svg>">
+<style>
+  :root {
+    --bg: #0A1828;
+    --bg-elev: #131F32;
+    --fg: #E8E2D4;
+    --fg-muted: #B4C0D0;
+    --accent: #52B8E0;
+    --border: #2A3A52;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(180deg, #0A1828 0%, #1A2942 100%);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
+  .breadcrumb { color: var(--fg-muted); font-size: 0.9rem; margin-bottom: 16px; }
+  .breadcrumb a { color: var(--accent); text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 2.2rem;
+    margin: 0 0 6px;
+  }
+  .last-updated { color: var(--fg-muted); font-style: italic; margin: 0 0 32px; }
+  h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.3rem;
+    margin: 36px 0 12px;
+    color: var(--accent);
+  }
+  p { color: var(--fg); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  .tldr {
+    background: var(--bg-elev);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 4px;
+    margin: 24px 0 32px;
+  }
+  .tldr strong { color: var(--accent); }
+  code {
+    background: var(--bg-elev); padding: 1px 6px; border-radius: 4px;
+    font-size: 0.9em;
+  }
+  footer {
+    margin-top: 56px; padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted); font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+<main>
+  <p class="breadcrumb"><a href="index.html">← HWFWM Compendium</a></p>
+  <h1>Privacy Policy</h1>
+  <p class="last-updated">Last updated: 2026-05-15</p>
+
+  <p>This privacy policy applies to the <strong>HWFWM Compendium</strong> Android app (package name <code>wizardry.compendium</code>), an unofficial fan reference for the <em>He Who Fights With Monsters</em> magical system.</p>
+
+  <div class="tldr">
+    <strong>TL;DR.</strong> The app collects nothing. There are no analytics, no telemetry, no advertising, and no user accounts. Your data stays on your device unless you choose to back it up to your own Google Drive.
+  </div>
+
+  <h2>Information the app does NOT collect</h2>
+  <p>The app does not collect, process, transmit, store on remote servers, or share with third parties any of the following:</p>
+  <ul>
+    <li>Personal identifiers (name, email, phone, address).</li>
+    <li>Device identifiers (advertising ID, Android ID, IMEI, MAC address).</li>
+    <li>Location data of any kind.</li>
+    <li>Network identifiers, browsing data, or app activity.</li>
+    <li>Crash logs, diagnostic data, or analytics events.</li>
+    <li>Contacts, calendar, photos, or microphone audio.</li>
+  </ul>
+  <p>The app contains no advertising SDKs, no analytics SDKs, no crash reporting SDKs, and no third-party trackers.</p>
+
+  <h2>Information you create locally</h2>
+  <p>The app stores the following data <strong>on your device only</strong>:</p>
+  <ul>
+    <li>The canonical reference dataset that ships with the app (essences, abilities, awakening stones, etc.) — read-only, identical for every user.</li>
+    <li>Your contributions: additions or corrections you type into the app to supplement the canonical dataset.</li>
+    <li>App preferences (e.g. which data source is active, UI toggles).</li>
+  </ul>
+  <p>This data is held in app-private SQLite databases and Android's DataStore. It is included in standard Android app backups if you have those enabled at the OS level; otherwise it is removed when you uninstall the app.</p>
+
+  <h2>Optional: Google Drive backup</h2>
+  <p>The app offers an <strong>opt-in</strong> feature to back up your contributions to your own Google Drive account.</p>
+  <ul>
+    <li><strong>Activation:</strong> you must explicitly enable this and grant Drive permission via Google's standard consent screen.</li>
+    <li><strong>Scope:</strong> the app requests the minimum Drive scope needed to write into a dedicated folder it creates in your Drive.</li>
+    <li><strong>Destination:</strong> the backup file lives in <em>your</em> Drive. It is not transmitted to any server operated by the developer.</li>
+    <li><strong>Contents:</strong> only the user-contributed entries you authored in the app. The canonical dataset is not included (it ships with the app already).</li>
+    <li><strong>Revocation:</strong> revoke the app's Drive access at any time at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>, and delete the backup file directly from Drive.</li>
+  </ul>
+
+  <h2>Optional: export / import</h2>
+  <p>The app's "Export contributions" feature creates a JSON file that you can share via Android's share sheet (email, messaging, file storage, etc.). This is initiated by you, the file goes wherever you send it, and the developer never receives a copy.</p>
+
+  <h2>Children's privacy</h2>
+  <p>This app is intended for adult fans of the book series and is not directed at children under 13. The app collects no personal information from any user, child or otherwise.</p>
+
+  <h2>Permissions the app declares</h2>
+  <ul>
+    <li><code>INTERNET</code> — required only by the optional Google Drive backup flow. When Drive backup is disabled, the app does not make network requests.</li>
+  </ul>
+
+  <h2>Changes to this policy</h2>
+  <p>If this policy changes materially, the updated version will be posted at the same URL with a new "Last updated" date. Continued use of the app after such a change constitutes acceptance.</p>
+
+  <h2>Contact</h2>
+  <p>Questions or concerns: <a href="mailto:codemunkie@gmail.com">codemunkie@gmail.com</a></p>
+  <p>Source code: <a href="https://github.com/codemunkie/hwfwm-compendium">github.com/codemunkie/hwfwm-compendium</a></p>
+
+  <footer>
+    <p><a href="index.html">← Back to HWFWM Compendium</a></p>
+  </footer>
+</main>
+</body>
+</html>

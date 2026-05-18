@@ -16,8 +16,9 @@
 .cxx
 local.properties
 .claude/
-docs/
+docs/*
+!docs/site/
 .superpowers/
 .worktrees/
 .smoke-screenshots/
-RELEASE.md
+/play-listing/

@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HWFWM Compendium — Unofficial fan reference</title>
+<meta name="description" content="An unofficial Android fan reference for the He Who Fights With Monsters magical system. Browse essences, abilities, awakening stones, and status effects offline.">
+<link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 500'><rect width='500' height='500' fill='%23031B37'/><circle cx='250' cy='250' r='140' fill='none' stroke='%2352B8E0' stroke-width='6' opacity='0.55'/><circle cx='250' cy='155' r='26' fill='%23A855F7'/><circle cx='345' cy='250' r='26' fill='%2334C164'/><circle cx='250' cy='345' r='26' fill='%23E03030'/><circle cx='155' cy='250' r='26' fill='%23A0521A'/></svg>">
+<style>
+  :root {
+    --bg: #0A1828;
+    --bg-elev: #131F32;
+    --fg: #E8E2D4;
+    --fg-muted: #B4C0D0;
+    --accent: #52B8E0;
+    --accent-deep: #1D6298;
+    --border: #2A3A52;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(180deg, #0A1828 0%, #1A2942 100%);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 56px 24px 96px; }
+  header { display: flex; align-items: center; gap: 24px; margin-bottom: 36px; }
+  header img {
+    width: 96px; height: 96px; border-radius: 22px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    background: var(--bg-elev);
+  }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 2.4rem;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  h1 .accent { color: var(--accent); }
+  .tagline { color: var(--fg-muted); margin: 0; font-size: 1.05rem; }
+  h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.4rem;
+    margin: 36px 0 12px;
+    color: var(--accent);
+  }
+  p { color: var(--fg); }
+  p.muted { color: var(--fg-muted); font-size: 0.95rem; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul { padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  .links {
+    display: flex; flex-wrap: wrap; gap: 12px; margin: 24px 0 8px;
+  }
+  .links a {
+    display: inline-block;
+    padding: 10px 18px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--fg);
+    font-weight: 500;
+  }
+  .links a:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+  }
+  .links a.primary {
+    background: var(--accent-deep);
+    border-color: var(--accent-deep);
+  }
+  .links a.primary:hover { background: #2575B8; border-color: #2575B8; }
+  footer {
+    margin-top: 64px; padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted); font-size: 0.85rem;
+  }
+  code {
+    background: var(--bg-elev); padding: 1px 6px; border-radius: 4px;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="icon-512.png" alt="HWFWM Compendium icon">
+    <div>
+      <h1>HWFWM <span class="accent">Compendium</span></h1>
+      <p class="tagline">An unofficial Android fan reference for the magical system from <em>He Who Fights With Monsters</em>.</p>
+    </div>
+  </header>
+
+  <p>Browse essences, abilities, awakening stones, and status effects. Build character sheets from essence and confluence combinations. Roll random essence sets. Contribute your own entries that survive canonical data updates. Works fully offline. No ads. No analytics. No sign-in.</p>
+
+  <div class="links">
+    <a class="primary" href="https://github.com/codemunkie/hwfwm-compendium">Source on GitHub</a>
+    <a href="privacy-policy.html">Privacy policy</a>
+    <a href="https://github.com/codemunkie/hwfwm-compendium/issues">Report an issue</a>
+  </div>
+
+  <h2>What it does</h2>
+  <ul>
+    <li><strong>Search & detail screens</strong> for essences, abilities, awakening stones, and status effects.</li>
+    <li><strong>Character build helper</strong> — assemble essence/confluence sets and see the combined ability roster.</li>
+    <li><strong>Randomizer</strong> — roll randomized essence and confluence combinations.</li>
+    <li><strong>Contributions layer</strong> — add or correct user-supplied entries. Stored separately from canonical data, so canonical updates can never overwrite your work.</li>
+    <li><strong>Backup & restore</strong> — export contributions as a JSON bundle or back them up to your own Google Drive.</li>
+  </ul>
+
+  <h2>Privacy at a glance</h2>
+  <p>No analytics. No telemetry. No advertising. No account required. Everything lives on your device unless you explicitly opt into Google Drive backup, which writes only to <em>your</em> Drive.</p>
+  <p class="muted">Full details: <a href="privacy-policy.html">privacy policy</a>.</p>
+
+  <h2>Credits</h2>
+  <p><strong>Shirtaloon (Travis Deverell)</strong> — author of <em>He Who Fights With Monsters</em>. The magical system, essences, abilities, awakening stones, and all related lore are his creation. Go read the books.</p>
+  <p><strong>llamawaffles555 (Discord)</strong> — aggregated and maintained the spreadsheet of essences, abilities, and awakening stones that seeds this app's canonical data.</p>
+
+  <p class="muted">This is a fan-made project. Not affiliated with, endorsed by, or licensed by the author or publisher. The MIT License covers the source code and the compilation of data in this repository, not the underlying <em>He Who Fights With Monsters</em> intellectual property.</p>
+
+  <footer>
+    Contact: <a href="mailto:codemunkie@gmail.com">codemunkie@gmail.com</a>
+    &nbsp;·&nbsp;
+    Package: <code>wizardry.compendium</code>
+  </footer>
+</main>
+</body>
+</html>
