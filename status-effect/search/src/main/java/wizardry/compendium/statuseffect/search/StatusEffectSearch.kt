@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,7 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.domain.model.StatusType
@@ -115,8 +118,23 @@ private fun Screen(
                 onValueChange = onFilterTermChanged,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = { showFilterSheet = true }) {
-                Text("Filter")
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(8.dp),
+                    )
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                TextButton(onClick = { showFilterSheet = true }) {
+                    Text(
+                        text = "Filter",
+                        textAlign = TextAlign.Center,
+                        fontSize = 16.sp,
+                    )
+                }
             }
         }
     }
