@@ -1,5 +1,7 @@
 package wizardry.compendium.drive.backup
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -104,11 +106,11 @@ class DriveAppFolderRestClient @Inject constructor(
     private fun authed(token: String, builder: Request.Builder): Request.Builder =
         builder.header("Authorization", "Bearer $token")
 
-    private inline fun <T> execute(
+    private suspend inline fun <T> execute(
         request: Request,
         crossinline parse: (String) -> T,
-    ): DriveResult<T> {
-        return try {
+    ): DriveResult<T> = withContext(Dispatchers.IO) {
+        try {
             httpClient.newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: ""
                 when {
@@ -126,20 +128,21 @@ class DriveAppFolderRestClient @Inject constructor(
         }
     }
 
-    private fun executeBinary(request: Request): DriveResult<ByteArray?> {
-        return try {
-            httpClient.newCall(request).execute().use { response ->
-                when {
-                    response.isSuccessful -> DriveResult.Success(response.body?.bytes())
-                    response.code == 401 -> DriveResult.AuthRequired("Token expired (401)")
-                    response.code in 500..599 -> DriveResult.Transient("Drive ${response.code}")
-                    else -> DriveResult.Fatal("Drive ${response.code}")
+    private suspend fun executeBinary(request: Request): DriveResult<ByteArray?> =
+        withContext(Dispatchers.IO) {
+            try {
+                httpClient.newCall(request).execute().use { response ->
+                    when {
+                        response.isSuccessful -> DriveResult.Success(response.body?.bytes())
+                        response.code == 401 -> DriveResult.AuthRequired("Token expired (401)")
+                        response.code in 500..599 -> DriveResult.Transient("Drive ${response.code}")
+                        else -> DriveResult.Fatal("Drive ${response.code}")
+                    }
                 }
+            } catch (e: IOException) {
+                DriveResult.Transient(e.message ?: "Network error")
             }
-        } catch (e: IOException) {
-            DriveResult.Transient(e.message ?: "Network error")
         }
-    }
 
     @Serializable
     private data class FileListResponse(val files: List<FileResource> = emptyList())
