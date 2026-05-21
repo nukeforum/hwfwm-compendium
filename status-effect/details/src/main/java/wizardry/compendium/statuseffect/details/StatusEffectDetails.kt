@@ -182,7 +182,7 @@ private fun Details(
                     .align(Alignment.BottomEnd)
                     .padding(16.dp),
             ) {
-                Icon(Icons.Filled.Edit, contentDescription = "Edit")
+                Icon(Icons.Filled.Edit, contentDescription = "Edit status effect")
             }
         }
     }
