@@ -67,19 +67,16 @@ class EssenceDetailViewModelShareTest {
     }
 
     @Test
-    fun `requestShareAsText emits EncodedAsText event with rendered text`() = runTest(dispatcher) {
+    fun `requestShareAsText emits EncodedAsText with renderer output`() = runTest(dispatcher) {
         val flame = Essence.of(name = "Flame", description = "fire", rarity = Rarity.Common, restricted = false)
         val repo = FakeEssenceRepo(listOf(flame))
-        val useCase = object : EssenceShareUseCase(
-            wireIo = stubWireIo(repo),
-            essenceRepository = repo,
-        ) {
-            override fun renderAsText(essence: Essence): String = "RENDERED"
-        }
         val vm = EssenceDetailViewModel(
             essenceRepository = repo,
             ioDispatcher = dispatcher,
-            shareUseCase = useCase,
+            shareUseCase = EssenceShareUseCase(
+                wireIo = stubWireIo(repo),
+                essenceRepository = repo,
+            ),
         )
         vm.load("Flame")
         advanceUntilIdle()
@@ -87,7 +84,8 @@ class EssenceDetailViewModelShareTest {
         vm.shareEvents.test {
             vm.requestShareAsText(flame)
             advanceUntilIdle()
-            assertEquals(EssenceDetailViewModel.ShareEvent.EncodedAsText("RENDERED"), awaitItem())
+            val expected = EssenceTextRenderer.renderAsText(flame)
+            assertEquals(EssenceDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
         }
     }
 

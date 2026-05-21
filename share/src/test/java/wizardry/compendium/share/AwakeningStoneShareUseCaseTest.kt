@@ -54,12 +54,4 @@ class AwakeningStoneShareUseCaseTest {
         val result = newUseCase().decodeSingleStone("")
         assertEquals("Paste is empty.", (result as DecodedSingle.Failed).reason)
     }
-
-    @Test
-    fun `renderAsText includes name rank and rarity`() {
-        val text = newUseCase().renderAsText(volcano)
-        assertTrue("missing name in $text", text.contains("Volcano Awakening Stone"))
-        assertTrue("missing rank in $text", text.contains(volcano.rank.toString().lowercase()))
-        assertTrue("missing rarity in $text", text.contains(volcano.rarity.toString().lowercase()))
-    }
 }

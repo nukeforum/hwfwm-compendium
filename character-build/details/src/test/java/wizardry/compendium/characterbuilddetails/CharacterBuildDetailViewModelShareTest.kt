@@ -25,6 +25,7 @@ import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
+import wizardry.compendium.ability.preview.AbilityTextRenderer
 import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.domain.model.AwakeningStone
 import wizardry.compendium.domain.model.CharacterBuild
@@ -64,14 +65,12 @@ class CharacterBuildDetailViewModelShareTest {
     }
 
     @Test
-    fun `requestShareAsText emits EncodedAsText event with plaintext`() = runTest(dispatcher) {
+    fun `requestShareAsText emits EncodedAsText with renderer output`() = runTest(dispatcher) {
         val build = CharacterBuild(name = "Hero", race = "Elf", racialAbilities = emptyList())
-        val useCase = object : CharacterBuildShareUseCase(
+        val useCase = CharacterBuildShareUseCase(
             wireIo = stubWireIo(),
             buildShareDecoder = stubBuildShareDecoder(),
-        ) {
-            override fun renderAsText(build: CharacterBuild, statusEffects: List<StatusEffect>): String = "PLAINTEXT"
-        }
+        )
         val vm = newVm(useCase, build)
         vm.load("Hero")
         advanceUntilIdle()
@@ -79,7 +78,8 @@ class CharacterBuildDetailViewModelShareTest {
         vm.shareEvents.test {
             vm.requestShareAsText()
             advanceUntilIdle()
-            assertEquals(CharacterBuildDetailViewModel.ShareEvent.EncodedAsText("PLAINTEXT"), awaitItem())
+            val expected = AbilityTextRenderer.renderBuild(build, emptyList())
+            assertEquals(CharacterBuildDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
         }
     }
 

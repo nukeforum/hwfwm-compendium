@@ -51,7 +51,7 @@ class StatusEffectDetailViewModel @Inject constructor(
 
     fun requestShareAsText(effect: StatusEffect) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.EncodedAsText(shareUseCase.renderAsText(effect)))
+            _shareEvents.emit(ShareEvent.EncodedAsText(StatusEffectTextRenderer.renderAsText(effect)))
         }
     }
 

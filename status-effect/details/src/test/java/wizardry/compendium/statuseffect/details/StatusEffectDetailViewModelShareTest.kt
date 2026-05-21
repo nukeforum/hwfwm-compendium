@@ -62,7 +62,7 @@ class StatusEffectDetailViewModelShareTest {
     }
 
     @Test
-    fun `requestShareAsText emits EncodedAsText event`() = runTest(dispatcher) {
+    fun `requestShareAsText emits EncodedAsText with renderer output`() = runTest(dispatcher) {
         val burn = StatusEffect(
             name = "Burn",
             type = StatusType.Affliction.Elemental,
@@ -70,17 +70,15 @@ class StatusEffectDetailViewModelShareTest {
             stackable = true,
             description = "fire dot",
         )
-        val useCase = object : StatusEffectShareUseCase(wireIo = stubWireIo()) {
-            override fun renderAsText(effect: StatusEffect): String = "RENDERED"
-        }
         val vm = StatusEffectDetailViewModel(
             repository = FakeRepo(),
-            shareUseCase = useCase,
+            shareUseCase = StatusEffectShareUseCase(wireIo = stubWireIo()),
         )
 
         vm.shareEvents.test {
             vm.requestShareAsText(burn)
-            assertEquals(StatusEffectDetailViewModel.ShareEvent.EncodedAsText("RENDERED"), awaitItem())
+            val expected = StatusEffectTextRenderer.renderAsText(burn)
+            assertEquals(StatusEffectDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
         }
     }
 }

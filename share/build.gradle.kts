@@ -11,7 +11,6 @@ dependencies {
     implementation(project(":repositories:api"))
     implementation(project(":wire"))
     implementation(project(":wire-repo"))
-    implementation(project(":ability-preview"))
 
     implementation("javax.inject:javax.inject:1")
 

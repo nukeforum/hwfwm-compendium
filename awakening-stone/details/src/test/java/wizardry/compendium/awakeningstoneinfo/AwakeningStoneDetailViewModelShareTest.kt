@@ -56,20 +56,18 @@ class AwakeningStoneDetailViewModelShareTest {
     }
 
     @Test
-    fun `requestShareAsText emits EncodedAsText event from use case`() = runTest(dispatcher) {
+    fun `requestShareAsText emits EncodedAsText with renderer output`() = runTest(dispatcher) {
         val stone = AwakeningStone.of("Volcano", Rarity.Epic)
-        val useCase = object : AwakeningStoneShareUseCase(wireIo = stubWireIo()) {
-            override fun renderAsText(stone: AwakeningStone): String = "RENDERED"
-        }
         val vm = AwakeningStoneDetailViewModel(
             awakeningStoneRepository = FakeStoneRepo(),
             ioDispatcher = dispatcher,
-            shareUseCase = useCase,
+            shareUseCase = AwakeningStoneShareUseCase(wireIo = stubWireIo()),
         )
 
         vm.shareEvents.test {
             vm.requestShareAsText(stone)
-            assertEquals(AwakeningStoneDetailViewModel.ShareEvent.EncodedAsText("RENDERED"), awaitItem())
+            val expected = AwakeningStoneTextRenderer.renderAsText(stone)
+            assertEquals(AwakeningStoneDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
         }
     }
 }

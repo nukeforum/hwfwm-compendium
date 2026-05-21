@@ -66,7 +66,7 @@ class EssenceDetailViewModel @Inject constructor(
 
     fun requestShareAsText(essence: Essence) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.EncodedAsText(shareUseCase.renderAsText(essence)))
+            _shareEvents.emit(ShareEvent.EncodedAsText(EssenceTextRenderer.renderAsText(essence)))
         }
     }
 

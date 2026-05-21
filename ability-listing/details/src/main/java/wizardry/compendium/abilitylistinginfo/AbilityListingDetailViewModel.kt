@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.StatusEffectRepository
+import wizardry.compendium.ability.preview.AbilityTextRenderer
 import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.domain.model.Rank
 import wizardry.compendium.share.AbilityListingShareUseCase
@@ -84,7 +85,13 @@ class AbilityListingDetailViewModel @Inject constructor(
         val success = state.value as? AbilityListingDetailUiState.Success ?: return
         viewModelScope.launch {
             _shareEvents.emit(
-                ShareEvent.EncodedAsText(shareUseCase.renderAsText(listing, success.statusEffects)),
+                ShareEvent.EncodedAsText(
+                    AbilityTextRenderer.renderAbilityReport(
+                        ability = listing,
+                        rankCeiling = null,
+                        statusEffects = success.statusEffects,
+                    ),
+                ),
             )
         }
     }

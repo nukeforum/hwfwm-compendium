@@ -35,13 +35,4 @@ class CharacterBuildShareUseCaseTest {
         assertEquals("Human", preview.race)
     }
 
-    @Test
-    fun `renderAsText returns plain-text rendering`() {
-        val useCase = newUseCase()
-        val build = CharacterBuild(name = "Frosty", race = "Human", racialAbilities = emptyList())
-
-        val text = useCase.renderAsText(build, statusEffects = emptyList())
-
-        assertTrue("text was: $text", text.startsWith("Frosty\nHuman\n"))
-    }
 }

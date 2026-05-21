@@ -190,22 +190,6 @@ class EssenceShareUseCaseTest {
         val result = newUseCase().decodeSingleManifestation("")
         assertEquals("Paste is empty.", (result as DecodedSingle.Failed).reason)
     }
-
-    @Test
-    fun `renderAsText for manifestation includes name rank rarity description`() {
-        val flame = Essence.of(name = "Flame", description = "fire essence", rarity = Rarity.Common, restricted = false)
-        val text = newUseCase().renderAsText(flame)
-        assertTrue("missing name in $text", text.contains("Flame Essence"))
-        assertTrue("missing rank in $text", text.contains(flame.rank.toString().lowercase()))
-        assertTrue("missing rarity in $text", text.contains(flame.rarity.toString().lowercase()))
-        assertTrue("missing description in $text", text.contains("fire essence"))
-    }
-
-    @Test
-    fun `renderAsText for confluence includes name and Confluence label`() {
-        val text = newUseCase().renderAsText(doom)
-        assertEquals("Doom Confluence", text)
-    }
 }
 
 private class FakeEssenceRepo(

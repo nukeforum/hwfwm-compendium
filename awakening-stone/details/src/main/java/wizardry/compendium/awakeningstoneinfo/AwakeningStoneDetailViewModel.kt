@@ -56,7 +56,7 @@ class AwakeningStoneDetailViewModel @Inject constructor(
 
     fun requestShareAsText(stone: AwakeningStone) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.EncodedAsText(shareUseCase.renderAsText(stone)))
+            _shareEvents.emit(ShareEvent.EncodedAsText(AwakeningStoneTextRenderer.renderAsText(stone)))
         }
     }
 

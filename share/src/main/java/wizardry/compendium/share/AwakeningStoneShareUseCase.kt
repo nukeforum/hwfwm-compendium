@@ -13,15 +13,6 @@ open class AwakeningStoneShareUseCase @Inject constructor(
 ) {
     open fun encode(stone: AwakeningStone): String = wireIo.encodeSingle(stone)
 
-    open fun renderAsText(stone: AwakeningStone): String = """
-        Item: [${stone.name} Awakening Stone]
-        (${stone.rank.toString().lowercase()}, ${stone.rarity.toString().lowercase()})
-
-        ${stone.description} (${stone.properties.joinToString(", ")}).
-
-        ${stone.effects.joinToString { "Effect: ${it.description}" }}
-    """.trimIndent()
-
     open fun decodeSingleStone(text: String): DecodedSingle<AwakeningStone> = decodeSingle(text) { envelope ->
         val others = envelope.manifestations.size + envelope.confluences.size +
             envelope.listings.size + envelope.statusEffects.size

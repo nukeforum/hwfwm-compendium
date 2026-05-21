@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.StatusEffectRepository
+import wizardry.compendium.ability.preview.AbilityTextRenderer
 import wizardry.compendium.domain.model.CharacterBuild
 import wizardry.compendium.share.CharacterBuildShareUseCase
 import wizardry.compendium.ui.coroutines.IoDispatcher
@@ -73,7 +74,9 @@ class CharacterBuildDetailViewModel @Inject constructor(
         val success = state.value as? CharacterBuildDetailUiState.Success ?: return
         viewModelScope.launch {
             _shareEvents.emit(
-                ShareEvent.EncodedAsText(shareUseCase.renderAsText(success.build, success.statusEffects)),
+                ShareEvent.EncodedAsText(
+                    AbilityTextRenderer.renderBuild(success.build, success.statusEffects),
+                ),
             )
         }
     }

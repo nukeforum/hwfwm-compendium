@@ -22,6 +22,7 @@ import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
+import wizardry.compendium.ability.preview.AbilityTextRenderer
 import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.domain.model.AwakeningStone
 import wizardry.compendium.domain.model.Essence
@@ -57,20 +58,14 @@ class AbilityListingDetailViewModelShareTest {
     }
 
     @Test
-    fun `requestShareAsText emits EncodedAsText event`() = runTest(dispatcher) {
+    fun `requestShareAsText emits EncodedAsText with renderer output`() = runTest(dispatcher) {
         val fireball = Ability.Listing.of("Fireball")
         val repo = FakeListingRepo(initial = listOf(fireball))
-        val useCase = object : AbilityListingShareUseCase(wireIo = stubWireIo()) {
-            override fun renderAsText(
-                listing: Ability.Listing,
-                statusEffects: List<StatusEffect>,
-            ): String = "RENDERED"
-        }
         val vm = AbilityListingDetailViewModel(
             abilityListingRepository = repo,
             statusEffectRepository = FakeEffectRepo(),
             ioDispatcher = dispatcher,
-            shareUseCase = useCase,
+            shareUseCase = AbilityListingShareUseCase(wireIo = stubWireIo()),
         )
         vm.load("Fireball")
         advanceUntilIdle()
@@ -78,7 +73,12 @@ class AbilityListingDetailViewModelShareTest {
         vm.shareEvents.test {
             vm.requestShareAsText(fireball)
             advanceUntilIdle()
-            assertEquals(AbilityListingDetailViewModel.ShareEvent.EncodedAsText("RENDERED"), awaitItem())
+            val expected = AbilityTextRenderer.renderAbilityReport(
+                ability = fireball,
+                rankCeiling = null,
+                statusEffects = emptyList(),
+            )
+            assertEquals(AbilityListingDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
         }
     }
 }

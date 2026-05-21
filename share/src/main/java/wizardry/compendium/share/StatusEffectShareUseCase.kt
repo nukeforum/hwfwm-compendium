@@ -1,7 +1,6 @@
 package wizardry.compendium.share
 
 import wizardry.compendium.domain.model.StatusEffect
-import wizardry.compendium.domain.model.StatusType
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeMapper
 import wizardry.compendium.wire.repo.WireIoRepository
@@ -13,24 +12,6 @@ open class StatusEffectShareUseCase @Inject constructor(
     private val wireIo: WireIoRepository,
 ) {
     open fun encode(effect: StatusEffect): String = wireIo.encodeSingle(effect)
-
-    open fun renderAsText(effect: StatusEffect): String = buildString {
-        appendLine(effect.name)
-        appendLine(typeLabel(effect.type))
-        if (effect.stackable) appendLine("Stackable")
-        appendLine()
-        append(effect.description)
-        if (effect.properties.isNotEmpty()) {
-            appendLine()
-            appendLine()
-            append("Properties: ${effect.properties.joinToString(", ")}")
-        }
-    }
-
-    private fun typeLabel(type: StatusType): String = when (type) {
-        is StatusType.Affliction -> "Affliction · ${type::class.simpleName}"
-        is StatusType.Boon -> "Boon · ${type::class.simpleName}"
-    }
 
     open fun decodeSingleStatusEffect(text: String): DecodedSingle<StatusEffect> = decodeSingle(text) { envelope ->
         val others = envelope.manifestations.size + envelope.confluences.size +
