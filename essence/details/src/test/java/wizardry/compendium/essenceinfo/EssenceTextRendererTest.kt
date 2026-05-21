@@ -10,7 +10,7 @@ import wizardry.compendium.domain.model.Rarity
 class EssenceTextRendererTest {
 
     @Test
-    fun `manifestation render includes name rank rarity description`() {
+    fun `manifestation render includes name rank rarity description effect and Requirements line`() {
         val flame = Essence.of(
             name = "Flame",
             description = "fire essence",
@@ -25,6 +25,10 @@ class EssenceTextRendererTest {
         assertTrue("missing rarity in $text", text.contains(flame.rarity.toString().lowercase()))
         assertTrue("missing description in $text", text.contains("fire essence"))
         assertTrue("missing Requirements line in $text", text.contains("Requirements: Less than 4 absorbed essences."))
+        // Essence.Manifestation always carries a default ItemEffect (see Essence.kt).
+        // Asserting it appears proves the effects.joinToString block is reached.
+        val effect = flame.effects.single()
+        assertTrue("missing effect description in $text", text.contains("Effect: ${effect.description}"))
     }
 
     @Test
