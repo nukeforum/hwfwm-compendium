@@ -66,13 +66,23 @@ class EssenceDetailViewModel @Inject constructor(
 
     fun requestShareAsText(essence: Essence) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.EncodedAsText(EssenceTextRenderer.renderAsText(essence)))
+            _shareEvents.emit(
+                ShareEvent.EncodedAsText(
+                    text = EssenceTextRenderer.renderAsText(essence),
+                    title = "Share ${essence.name} essence",
+                ),
+            )
         }
     }
 
     fun requestExport(essence: Essence) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(essence)))
+            _shareEvents.emit(
+                ShareEvent.Encoded(
+                    text = shareUseCase.encode(essence),
+                    title = "Export ${essence.name} essence",
+                ),
+            )
         }
     }
 
@@ -127,7 +137,9 @@ class EssenceDetailViewModel @Inject constructor(
     }
 
     sealed interface ShareEvent {
-        data class Encoded(val text: String) : ShareEvent
-        data class EncodedAsText(val text: String) : ShareEvent
+        val text: String
+        val title: String
+        data class Encoded(override val text: String, override val title: String) : ShareEvent
+        data class EncodedAsText(override val text: String, override val title: String) : ShareEvent
     }
 }

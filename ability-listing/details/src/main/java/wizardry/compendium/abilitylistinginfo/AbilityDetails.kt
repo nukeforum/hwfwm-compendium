@@ -65,13 +65,7 @@ fun AbilityDetails(
     val state by viewModel.state.collectAsState()
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
-            val name = (state as? AbilityListingDetailUiState.Success)?.listing?.name.orEmpty()
-            when (event) {
-                is AbilityListingDetailViewModel.ShareEvent.Encoded ->
-                    fireShareIntent(context, event.text, "Export $name ability")
-                is AbilityListingDetailViewModel.ShareEvent.EncodedAsText ->
-                    fireShareIntent(context, event.text, "Share $name ability")
-            }
+            fireShareIntent(context, event.text, event.title)
         }
     }
 

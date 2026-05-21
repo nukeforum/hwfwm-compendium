@@ -56,13 +56,7 @@ fun StatusEffectDetails(
     val state by viewModel.state.collectAsState()
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
-            val name = (state as? StatusEffectDetailUiState.Success)?.effect?.name.orEmpty()
-            when (event) {
-                is StatusEffectDetailViewModel.ShareEvent.Encoded ->
-                    fireShareIntent(context, event.text, "Export $name status effect")
-                is StatusEffectDetailViewModel.ShareEvent.EncodedAsText ->
-                    fireShareIntent(context, event.text, "Share $name status effect")
-            }
+            fireShareIntent(context, event.text, event.title)
         }
     }
 

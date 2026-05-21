@@ -75,7 +75,8 @@ class CharacterBuildDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _shareEvents.emit(
                 ShareEvent.EncodedAsText(
-                    AbilityTextRenderer.renderBuild(success.build, success.statusEffects),
+                    text = AbilityTextRenderer.renderBuild(success.build, success.statusEffects),
+                    title = "Share ${success.build.name} build",
                 ),
             )
         }
@@ -84,12 +85,19 @@ class CharacterBuildDetailViewModel @Inject constructor(
     fun requestShareAsFile() {
         val success = state.value as? CharacterBuildDetailUiState.Success ?: return
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(success.build)))
+            _shareEvents.emit(
+                ShareEvent.Encoded(
+                    text = shareUseCase.encode(success.build),
+                    title = "Export ${success.build.name} build",
+                ),
+            )
         }
     }
 
     sealed interface ShareEvent {
-        data class Encoded(val text: String) : ShareEvent
-        data class EncodedAsText(val text: String) : ShareEvent
+        val text: String
+        val title: String
+        data class Encoded(override val text: String, override val title: String) : ShareEvent
+        data class EncodedAsText(override val text: String, override val title: String) : ShareEvent
     }
 }

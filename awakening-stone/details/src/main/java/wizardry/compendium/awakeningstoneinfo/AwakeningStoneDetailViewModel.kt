@@ -56,13 +56,23 @@ class AwakeningStoneDetailViewModel @Inject constructor(
 
     fun requestShareAsText(stone: AwakeningStone) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.EncodedAsText(AwakeningStoneTextRenderer.renderAsText(stone)))
+            _shareEvents.emit(
+                ShareEvent.EncodedAsText(
+                    text = AwakeningStoneTextRenderer.renderAsText(stone),
+                    title = "Share ${stone.name} awakening stone",
+                ),
+            )
         }
     }
 
     fun requestExport(stone: AwakeningStone) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(stone)))
+            _shareEvents.emit(
+                ShareEvent.Encoded(
+                    text = shareUseCase.encode(stone),
+                    title = "Export ${stone.name} awakening stone",
+                ),
+            )
         }
     }
 
@@ -76,7 +86,9 @@ class AwakeningStoneDetailViewModel @Inject constructor(
         get() = (state.value as? AwakeningStoneDetailUiState.Success)?.stone
 
     sealed interface ShareEvent {
-        data class Encoded(val text: String) : ShareEvent
-        data class EncodedAsText(val text: String) : ShareEvent
+        val text: String
+        val title: String
+        data class Encoded(override val text: String, override val title: String) : ShareEvent
+        data class EncodedAsText(override val text: String, override val title: String) : ShareEvent
     }
 }

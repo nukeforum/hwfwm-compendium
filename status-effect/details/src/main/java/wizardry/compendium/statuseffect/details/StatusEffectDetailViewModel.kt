@@ -51,13 +51,23 @@ class StatusEffectDetailViewModel @Inject constructor(
 
     fun requestShareAsText(effect: StatusEffect) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.EncodedAsText(StatusEffectTextRenderer.renderAsText(effect)))
+            _shareEvents.emit(
+                ShareEvent.EncodedAsText(
+                    text = StatusEffectTextRenderer.renderAsText(effect),
+                    title = "Share ${effect.name} status effect",
+                ),
+            )
         }
     }
 
     fun requestExport(effect: StatusEffect) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(effect)))
+            _shareEvents.emit(
+                ShareEvent.Encoded(
+                    text = shareUseCase.encode(effect),
+                    title = "Export ${effect.name} status effect",
+                ),
+            )
         }
     }
 
@@ -70,7 +80,9 @@ class StatusEffectDetailViewModel @Inject constructor(
         get() = (state.value as? StatusEffectDetailUiState.Success)?.effect
 
     sealed interface ShareEvent {
-        data class Encoded(val text: String) : ShareEvent
-        data class EncodedAsText(val text: String) : ShareEvent
+        val text: String
+        val title: String
+        data class Encoded(override val text: String, override val title: String) : ShareEvent
+        data class EncodedAsText(override val text: String, override val title: String) : ShareEvent
     }
 }

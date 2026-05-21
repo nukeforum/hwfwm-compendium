@@ -86,11 +86,12 @@ class AbilityListingDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _shareEvents.emit(
                 ShareEvent.EncodedAsText(
-                    AbilityTextRenderer.renderAbilityReport(
+                    text = AbilityTextRenderer.renderAbilityReport(
                         ability = listing,
                         rankCeiling = null,
                         statusEffects = success.statusEffects,
                     ),
+                    title = "Share ${listing.name} ability",
                 ),
             )
         }
@@ -98,7 +99,12 @@ class AbilityListingDetailViewModel @Inject constructor(
 
     fun requestExport(listing: Ability.Listing) {
         viewModelScope.launch {
-            _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(listing)))
+            _shareEvents.emit(
+                ShareEvent.Encoded(
+                    text = shareUseCase.encode(listing),
+                    title = "Export ${listing.name} ability",
+                ),
+            )
         }
     }
 
@@ -106,7 +112,9 @@ class AbilityListingDetailViewModel @Inject constructor(
         get() = (state.value as? AbilityListingDetailUiState.Success)?.listing
 
     sealed interface ShareEvent {
-        data class Encoded(val text: String) : ShareEvent
-        data class EncodedAsText(val text: String) : ShareEvent
+        val text: String
+        val title: String
+        data class Encoded(override val text: String, override val title: String) : ShareEvent
+        data class EncodedAsText(override val text: String, override val title: String) : ShareEvent
     }
 }

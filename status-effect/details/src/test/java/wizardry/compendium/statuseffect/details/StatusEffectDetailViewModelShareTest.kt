@@ -57,7 +57,13 @@ class StatusEffectDetailViewModelShareTest {
 
         vm.shareEvents.test {
             vm.requestExport(burn)
-            assertEquals(StatusEffectDetailViewModel.ShareEvent.Encoded("BLOB"), awaitItem())
+            assertEquals(
+                StatusEffectDetailViewModel.ShareEvent.Encoded(
+                    text = "BLOB",
+                    title = "Export Burn status effect",
+                ),
+                awaitItem(),
+            )
         }
     }
 
@@ -78,7 +84,13 @@ class StatusEffectDetailViewModelShareTest {
         vm.shareEvents.test {
             vm.requestShareAsText(burn)
             val expected = StatusEffectTextRenderer.renderAsText(burn)
-            assertEquals(StatusEffectDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
+            assertEquals(
+                StatusEffectDetailViewModel.ShareEvent.EncodedAsText(
+                    text = expected,
+                    title = "Share Burn status effect",
+                ),
+                awaitItem(),
+            )
         }
     }
 }

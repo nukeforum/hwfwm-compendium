@@ -54,13 +54,7 @@ fun AwakeningStoneDetails(
     val state by viewModel.state.collectAsState()
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
-            val name = (state as? AwakeningStoneDetailUiState.Success)?.stone?.name.orEmpty()
-            when (event) {
-                is AwakeningStoneDetailViewModel.ShareEvent.Encoded ->
-                    fireShareIntent(context, event.text, "Export $name awakening stone")
-                is AwakeningStoneDetailViewModel.ShareEvent.EncodedAsText ->
-                    fireShareIntent(context, event.text, "Share $name awakening stone")
-            }
+            fireShareIntent(context, event.text, event.title)
         }
     }
 

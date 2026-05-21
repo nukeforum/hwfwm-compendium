@@ -78,10 +78,9 @@ fun CharacterBuildDetails(
 
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
-            val name = (state as? CharacterBuildDetailUiState.Success)?.build?.name.orEmpty()
             when (event) {
                 is CharacterBuildDetailViewModel.ShareEvent.EncodedAsText ->
-                    fireShareIntent(context, event.text, "Share $name build")
+                    fireShareIntent(context, event.text, event.title)
                 is CharacterBuildDetailViewModel.ShareEvent.Encoded -> {
                     val uri = pendingExportUri
                     if (uri != null) {

@@ -62,7 +62,13 @@ class EssenceDetailViewModelShareTest {
         vm.shareEvents.test {
             vm.requestExport(flame)
             advanceUntilIdle()
-            assertEquals(EssenceDetailViewModel.ShareEvent.Encoded("WIRE_BLOB"), awaitItem())
+            assertEquals(
+                EssenceDetailViewModel.ShareEvent.Encoded(
+                    text = "WIRE_BLOB",
+                    title = "Export Flame essence",
+                ),
+                awaitItem(),
+            )
         }
     }
 
@@ -85,7 +91,13 @@ class EssenceDetailViewModelShareTest {
             vm.requestShareAsText(flame)
             advanceUntilIdle()
             val expected = EssenceTextRenderer.renderAsText(flame)
-            assertEquals(EssenceDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
+            assertEquals(
+                EssenceDetailViewModel.ShareEvent.EncodedAsText(
+                    text = expected,
+                    title = "Share Flame essence",
+                ),
+                awaitItem(),
+            )
         }
     }
 

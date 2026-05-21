@@ -53,7 +53,13 @@ class AbilityListingDetailViewModelShareTest {
 
         vm.shareEvents.test {
             vm.requestExport(fireball)
-            assertEquals(AbilityListingDetailViewModel.ShareEvent.Encoded("BLOB"), awaitItem())
+            assertEquals(
+                AbilityListingDetailViewModel.ShareEvent.Encoded(
+                    text = "BLOB",
+                    title = "Export Fireball ability",
+                ),
+                awaitItem(),
+            )
         }
     }
 
@@ -78,7 +84,13 @@ class AbilityListingDetailViewModelShareTest {
                 rankCeiling = null,
                 statusEffects = emptyList(),
             )
-            assertEquals(AbilityListingDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
+            assertEquals(
+                AbilityListingDetailViewModel.ShareEvent.EncodedAsText(
+                    text = expected,
+                    title = "Share Fireball ability",
+                ),
+                awaitItem(),
+            )
         }
     }
 }

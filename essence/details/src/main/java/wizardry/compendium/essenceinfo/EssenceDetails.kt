@@ -54,13 +54,7 @@ fun EssenceDetails(
 
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
-            val name = (state as? EssenceDetailUiState.Success)?.essence?.name.orEmpty()
-            when (event) {
-                is EssenceDetailViewModel.ShareEvent.Encoded ->
-                    fireShareIntent(context, event.text, "Export $name essence")
-                is EssenceDetailViewModel.ShareEvent.EncodedAsText ->
-                    fireShareIntent(context, event.text, "Share $name essence")
-            }
+            fireShareIntent(context, event.text, event.title)
         }
     }
 

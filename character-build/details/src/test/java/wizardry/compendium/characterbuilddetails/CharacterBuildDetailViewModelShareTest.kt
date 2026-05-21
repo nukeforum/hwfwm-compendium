@@ -60,7 +60,13 @@ class CharacterBuildDetailViewModelShareTest {
         vm.shareEvents.test {
             vm.requestShareAsFile()
             advanceUntilIdle()
-            assertEquals(CharacterBuildDetailViewModel.ShareEvent.Encoded("WIRE_BLOB"), awaitItem())
+            assertEquals(
+                CharacterBuildDetailViewModel.ShareEvent.Encoded(
+                    text = "WIRE_BLOB",
+                    title = "Export Hero build",
+                ),
+                awaitItem(),
+            )
         }
     }
 
@@ -79,7 +85,13 @@ class CharacterBuildDetailViewModelShareTest {
             vm.requestShareAsText()
             advanceUntilIdle()
             val expected = AbilityTextRenderer.renderBuild(build, emptyList())
-            assertEquals(CharacterBuildDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
+            assertEquals(
+                CharacterBuildDetailViewModel.ShareEvent.EncodedAsText(
+                    text = expected,
+                    title = "Share Hero build",
+                ),
+                awaitItem(),
+            )
         }
     }
 

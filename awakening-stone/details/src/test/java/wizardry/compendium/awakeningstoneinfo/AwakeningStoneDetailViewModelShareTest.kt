@@ -51,7 +51,13 @@ class AwakeningStoneDetailViewModelShareTest {
 
         vm.shareEvents.test {
             vm.requestExport(stone)
-            assertEquals(AwakeningStoneDetailViewModel.ShareEvent.Encoded("BLOB"), awaitItem())
+            assertEquals(
+                AwakeningStoneDetailViewModel.ShareEvent.Encoded(
+                    text = "BLOB",
+                    title = "Export Volcano awakening stone",
+                ),
+                awaitItem(),
+            )
         }
     }
 
@@ -67,7 +73,13 @@ class AwakeningStoneDetailViewModelShareTest {
         vm.shareEvents.test {
             vm.requestShareAsText(stone)
             val expected = AwakeningStoneTextRenderer.renderAsText(stone)
-            assertEquals(AwakeningStoneDetailViewModel.ShareEvent.EncodedAsText(expected), awaitItem())
+            assertEquals(
+                AwakeningStoneDetailViewModel.ShareEvent.EncodedAsText(
+                    text = expected,
+                    title = "Share Volcano awakening stone",
+                ),
+                awaitItem(),
+            )
         }
     }
 }
