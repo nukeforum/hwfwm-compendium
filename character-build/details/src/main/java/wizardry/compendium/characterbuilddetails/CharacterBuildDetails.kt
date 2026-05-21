@@ -188,6 +188,8 @@ private fun Details(
                 AttributeSection("Recovery", state.build.Recovery.essence)
 
                 RacialAbilitiesSection(state.build.racialAbilities)
+
+                Spacer(Modifier.height(88.dp))
             }
 
             FloatingActionButton(

@@ -164,6 +164,10 @@ private fun Details(
                     onEssenceClick = onEssenceClick
                 )
             }
+
+            if (state.isContribution) {
+                Spacer(modifier = Modifier.height(88.dp))
+            }
         }
 
         if (state.isContribution) {
