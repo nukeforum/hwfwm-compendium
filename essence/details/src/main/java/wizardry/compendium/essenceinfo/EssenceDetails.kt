@@ -7,10 +7,13 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -51,8 +54,12 @@ fun EssenceDetails(
 
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
+            val name = (state as? EssenceDetailUiState.Success)?.essence?.name.orEmpty()
             when (event) {
-                is EssenceDetailViewModel.ShareEvent.Encoded -> fireShareIntent(context, event.text)
+                is EssenceDetailViewModel.ShareEvent.Encoded ->
+                    fireShareIntent(context, event.text, "Export $name essence")
+                is EssenceDetailViewModel.ShareEvent.EncodedAsText ->
+                    fireShareIntent(context, event.text, "Share $name essence")
             }
         }
     }
@@ -70,18 +77,21 @@ fun EssenceDetails(
                 state = details,
                 onEssenceClick = { viewModel.load(it) },
                 onEdit = { onEditContribution(details.essence) },
-                onShare = { viewModel.requestShare(details.essence) },
+                onShare = { viewModel.requestShareAsText(details.essence) },
+                onExport = { viewModel.requestExport(details.essence) },
             )
         }
     }
 }
 
-private fun fireShareIntent(context: Context, text: String) {
+private fun fireShareIntent(context: Context, text: String, title: String) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+        putExtra(Intent.EXTRA_SUBJECT, title)
     }
-    context.startActivity(Intent.createChooser(intent, "Share contribution"))
+    context.startActivity(Intent.createChooser(intent, title))
 }
 
 @Composable
@@ -110,53 +120,68 @@ private fun Details(
     onEssenceClick: (Essence) -> Unit,
     onEdit: () -> Unit,
     onShare: () -> Unit,
+    onExport: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-    ) {
-        if (state.isContribution) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                OutlinedButton(onClick = onShare) {
-                    Icon(Icons.Filled.Share, contentDescription = null)
-                    Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedButton(onClick = onEdit) {
-                    Icon(Icons.Filled.Edit, contentDescription = null)
-                    Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        ) {
+            if (state.isContribution) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    OutlinedButton(onClick = onExport) {
+                        Icon(Icons.Filled.IosShare, contentDescription = null)
+                        Text(text = " Export", modifier = Modifier.padding(start = 4.dp))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedButton(onClick = onShare) {
+                        Icon(Icons.Filled.Share, contentDescription = null)
+                        Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                    }
                 }
             }
-        }
-        Box(
-            modifier = Modifier
-                .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)
-                .border(1.dp, Color.DarkGray)
-                .padding(8.dp)
-        ) {
-            Text(
-                modifier = Modifier.align(Alignment.Center),
-                text = state.essence.report()
-            )
+            Box(
+                modifier = Modifier
+                    .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)
+                    .border(1.dp, Color.DarkGray)
+                    .padding(8.dp)
+            ) {
+                Text(
+                    modifier = Modifier.align(Alignment.Center),
+                    text = state.essence.report()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            when (state) {
+                is EssenceDetailUiState.Success.ConfluenceUiState -> ConfluenceDetails(
+                    state = state,
+                    onEssenceClick = onEssenceClick
+                )
+                is EssenceDetailUiState.Success.ManifestationUiState -> ManifestationDetails(
+                    state = state,
+                    onEssenceClick = onEssenceClick
+                )
+            }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        when (state) {
-            is EssenceDetailUiState.Success.ConfluenceUiState -> ConfluenceDetails(
-                state = state,
-                onEssenceClick = onEssenceClick
-            )
-            is EssenceDetailUiState.Success.ManifestationUiState -> ManifestationDetails(
-                state = state,
-                onEssenceClick = onEssenceClick
-            )
+        if (state.isContribution) {
+            FloatingActionButton(
+                onClick = onEdit,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit")
+            }
         }
     }
 }
@@ -286,6 +311,7 @@ private fun DetailsManifestationPreview() {
             onEssenceClick = {},
             onEdit = {},
             onShare = {},
+            onExport = {},
         )
     }
 }
@@ -304,6 +330,7 @@ private fun DetailsManifestationContributionPreview() {
             onEssenceClick = {},
             onEdit = {},
             onShare = {},
+            onExport = {},
         )
     }
 }

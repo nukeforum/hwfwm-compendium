@@ -21,4 +21,6 @@ docs/*
 .superpowers/
 .worktrees/
 .smoke-screenshots/
+screenshots/
+.kotlin/
 /play-listing/

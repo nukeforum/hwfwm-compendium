@@ -15,6 +15,23 @@ open class EssenceShareUseCase @Inject constructor(
 ) {
     open fun encode(essence: Essence): String = wireIo.encodeSingle(essence)
 
+    open fun renderAsText(essence: Essence): String = when (essence) {
+        is Essence.Confluence -> """
+            ${essence.name} Confluence
+        """.trimIndent()
+        is Essence.Manifestation -> """
+            Item: [${essence.name} Essence]
+            (${essence.rank.toString().lowercase()}, ${essence.rarity.toString().lowercase()})
+
+            ${essence.description} (${essence.properties.joinToString(", ")}).
+
+            Requirements: Less than 4 absorbed essences.
+
+            ${essence.effects.joinToString { "Effect: ${it.description}" }}
+        """.trimIndent()
+        else -> essence.name
+    }
+
     open fun decodeSingleManifestation(text: String): DecodedSingle<Essence.Manifestation> = decodeSingle(text) { envelope ->
         val others = envelope.confluences.size + envelope.stones.size +
             envelope.listings.size + envelope.statusEffects.size

@@ -3,6 +3,7 @@ package wizardry.compendium.abilitylistinginfo
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +17,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -59,15 +62,18 @@ fun AbilityDetails(
     }
 
     val context = LocalContext.current
+    val state by viewModel.state.collectAsState()
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
+            val name = (state as? AbilityListingDetailUiState.Success)?.listing?.name.orEmpty()
             when (event) {
-                is AbilityListingDetailViewModel.ShareEvent.Encoded -> fireShareIntent(context, event.text)
+                is AbilityListingDetailViewModel.ShareEvent.Encoded ->
+                    fireShareIntent(context, event.text, "Export $name ability")
+                is AbilityListingDetailViewModel.ShareEvent.EncodedAsText ->
+                    fireShareIntent(context, event.text, "Share $name ability")
             }
         }
     }
-
-    val state by viewModel.state.collectAsState()
 
     when (val details = state) {
         is AbilityListingDetailUiState.Error -> ErrorMessage(details.exception.message ?: "Unable to load ability")
@@ -77,19 +83,22 @@ fun AbilityDetails(
             Details(
                 state = details,
                 onEdit = { onEditContribution(details.listing) },
-                onShare = { viewModel.requestShare(details.listing) },
+                onShare = { viewModel.requestShareAsText(details.listing) },
+                onExport = { viewModel.requestExport(details.listing) },
                 onSelectRank = viewModel::selectRank,
             )
         }
     }
 }
 
-private fun fireShareIntent(context: Context, text: String) {
+private fun fireShareIntent(context: Context, text: String, title: String) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+        putExtra(Intent.EXTRA_SUBJECT, title)
     }
-    context.startActivity(Intent.createChooser(intent, null))
+    context.startActivity(Intent.createChooser(intent, title))
 }
 
 @Composable
@@ -117,50 +126,65 @@ private fun Details(
     state: AbilityListingDetailUiState.Success,
     onEdit: () -> Unit,
     onShare: () -> Unit,
+    onExport: () -> Unit,
     onSelectRank: (Rank?) -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-    ) {
-        if (state.isContribution) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                OutlinedButton(onClick = onShare) {
-                    Icon(Icons.Filled.Share, contentDescription = null)
-                    Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                OutlinedButton(onClick = onEdit) {
-                    Icon(Icons.Filled.Edit, contentDescription = null)
-                    Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))
-                }
-            }
-        }
-        Box(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)
-                .border(1.dp, Color.DarkGray)
-                .padding(8.dp),
+                .fillMaxSize()
+                .padding(16.dp),
         ) {
-            CompositionLocalProvider(LocalStatusEffects provides state.statusEffects) {
-                AbilityPreview(
-                    ability = state.listing,
-                    rankCeiling = state.selectedRank,
-                )
+            if (state.isContribution) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    OutlinedButton(onClick = onExport) {
+                        Icon(Icons.Filled.IosShare, contentDescription = null)
+                        Text(text = " Export", modifier = Modifier.padding(start = 4.dp))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    OutlinedButton(onClick = onShare) {
+                        Icon(Icons.Filled.Share, contentDescription = null)
+                        Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                    }
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)
+                    .border(1.dp, Color.DarkGray)
+                    .padding(8.dp),
+            ) {
+                CompositionLocalProvider(LocalStatusEffects provides state.statusEffects) {
+                    AbilityPreview(
+                        ability = state.listing,
+                        rankCeiling = state.selectedRank,
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            RankFilterRow(
+                effects = state.listing.effects,
+                selectedRank = state.selectedRank,
+                onSelect = onSelectRank,
+            )
+        }
+
+        if (state.isContribution) {
+            FloatingActionButton(
+                onClick = onEdit,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit")
             }
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        RankFilterRow(
-            effects = state.listing.effects,
-            selectedRank = state.selectedRank,
-            onSelect = onSelectRank,
-        )
     }
 }
 
@@ -199,6 +223,7 @@ private fun DetailsContributionPreview() {
             ),
             onEdit = {},
             onShare = {},
+            onExport = {},
             onSelectRank = {},
         )
     }
@@ -217,6 +242,7 @@ private fun DetailsCanonicalPreview() {
             ),
             onEdit = {},
             onShare = {},
+            onExport = {},
             onSelectRank = {},
         )
     }

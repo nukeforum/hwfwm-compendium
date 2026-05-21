@@ -10,6 +10,10 @@ import wizardry.compendium.domain.model.Effect
 import wizardry.compendium.domain.model.Rank
 import wizardry.compendium.domain.model.Resource
 import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.domain.model.StatusType
+import wizardry.compendium.domain.model.collectLinkedStatusEffects
+import wizardry.compendium.domain.model.resolveDescription
+import wizardry.compendium.domain.model.viewAt
 import kotlin.math.roundToInt
 import kotlin.time.Duration
 
@@ -60,6 +64,87 @@ object AbilityTextRenderer {
 
         return "$header\n\n$slotSections\n\n$racials"
     }
+
+    /**
+     * Plain-text mirror of the Compose `Report` composable used by `AbilityPreview`.
+     * Use for share intents on the ability-listing detail screen so the shared text
+     * matches the visual structure of the bordered details box.
+     */
+    fun renderAbilityReport(
+        ability: Ability.Listing,
+        rankCeiling: Rank? = null,
+        statusEffects: List<StatusEffect> = emptyList(),
+    ): String {
+        val rankedLines = ability.effects.viewAt(rankCeiling)
+        val visibleEffects = rankedLines.flatMap { it.effects }
+        return buildString {
+            appendLine("Ability: ${ability.name}")
+            appendLine()
+            appendLine("${reportType(visibleEffects)} (${reportProperties(visibleEffects)})")
+            appendLine("Cost: ${reportCost(visibleEffects)}.")
+            appendLine("Cooldown: ${reportCooldown(visibleEffects)}.")
+            rankedLines.forEach { line ->
+                appendLine()
+                append("Effect (${line.rank.name}): ")
+                line.effects.forEachIndexed { i, effect ->
+                    if (i > 0) append(" ")
+                    append(
+                        resolveDescription(
+                            template = effect.description,
+                            costs = effect.cost,
+                            cooldown = effect.cooldownText(),
+                            statusEffects = statusEffects,
+                        ),
+                    )
+                }
+            }
+            val linked = collectLinkedStatusEffects(visibleEffects, statusEffects)
+            if (linked.isNotEmpty()) {
+                appendLine()
+                linked.forEach { effect ->
+                    appendLine()
+                    val typeWord = when (effect.type) {
+                        is StatusType.Affliction -> "affliction"
+                        is StatusType.Boon -> "boon"
+                    }
+                    val propsList = effect.properties.joinToString(", ") { it.toString() }
+                    val tag = if (propsList.isEmpty()) typeWord else "$typeWord, $propsList"
+                    append("[${effect.name}] ($tag): ")
+                    append(
+                        resolveDescription(
+                            template = effect.description,
+                            costs = emptyList(),
+                            cooldown = "",
+                            statusEffects = statusEffects,
+                        ),
+                    )
+                }
+            }
+        }.trimEnd()
+    }
+
+    private fun reportType(effects: List<Effect.AbilityEffect>): String =
+        effects.map { it.type }.toSet().joinToString("/")
+
+    private fun reportProperties(effects: List<Effect.AbilityEffect>): String =
+        effects.flatMap { it.properties }.toSet().joinToString(", ")
+
+    private fun reportCost(effects: List<Effect.AbilityEffect>): String =
+        effects.flatMap { it.cost }
+            .runCatching { single { it is Cost.Upfront } }
+            .getOrNull()
+            ?.toString()
+            ?: "Varies"
+
+    private fun reportCooldown(effects: List<Effect.AbilityEffect>): String =
+        effects.map { it.cooldown }.toSet()
+            .takeIf { it.size == 1 }
+            ?.first()
+            ?.let { if (it == Duration.ZERO) "None" else it.toString() }
+            ?: "Varies"
+
+    private fun Effect.AbilityEffect.cooldownText(): String =
+        if (cooldown == Duration.ZERO) "" else cooldown.toString()
 
     fun renderAbility(
         ability: Ability,

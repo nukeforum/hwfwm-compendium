@@ -38,7 +38,7 @@ class AwakeningStoneDetailViewModelShareTest {
     @After fun tearDown() { Dispatchers.resetMain() }
 
     @Test
-    fun `requestShare emits Encoded event from use case`() = runTest(dispatcher) {
+    fun `requestExport emits Encoded event from use case`() = runTest(dispatcher) {
         val stone = AwakeningStone.of("Volcano", Rarity.Epic)
         val useCase = object : AwakeningStoneShareUseCase(wireIo = stubWireIo()) {
             override fun encode(stone: AwakeningStone): String = "BLOB"
@@ -50,8 +50,26 @@ class AwakeningStoneDetailViewModelShareTest {
         )
 
         vm.shareEvents.test {
-            vm.requestShare(stone)
+            vm.requestExport(stone)
             assertEquals(AwakeningStoneDetailViewModel.ShareEvent.Encoded("BLOB"), awaitItem())
+        }
+    }
+
+    @Test
+    fun `requestShareAsText emits EncodedAsText event from use case`() = runTest(dispatcher) {
+        val stone = AwakeningStone.of("Volcano", Rarity.Epic)
+        val useCase = object : AwakeningStoneShareUseCase(wireIo = stubWireIo()) {
+            override fun renderAsText(stone: AwakeningStone): String = "RENDERED"
+        }
+        val vm = AwakeningStoneDetailViewModel(
+            awakeningStoneRepository = FakeStoneRepo(),
+            ioDispatcher = dispatcher,
+            shareUseCase = useCase,
+        )
+
+        vm.shareEvents.test {
+            vm.requestShareAsText(stone)
+            assertEquals(AwakeningStoneDetailViewModel.ShareEvent.EncodedAsText("RENDERED"), awaitItem())
         }
     }
 }

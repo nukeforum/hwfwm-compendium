@@ -54,4 +54,14 @@ class StatusEffectShareUseCaseTest {
         val result = newUseCase().decodeSingleStatusEffect("")
         assertEquals("Paste is empty.", (result as DecodedSingle.Failed).reason)
     }
+
+    @Test
+    fun `renderAsText includes name type description and properties`() {
+        val text = newUseCase().renderAsText(burn)
+        assertTrue("missing name in $text", text.contains("Burn"))
+        assertTrue("missing type label in $text", text.contains("Affliction"))
+        assertTrue("missing description in $text", text.contains("Deals fire damage over time."))
+        assertTrue("missing properties in $text", text.contains("fire"))
+        assertTrue("missing stackable marker in $text", text.contains("Stackable"))
+    }
 }

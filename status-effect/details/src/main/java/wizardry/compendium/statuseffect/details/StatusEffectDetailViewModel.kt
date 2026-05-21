@@ -49,7 +49,13 @@ class StatusEffectDetailViewModel @Inject constructor(
         }
     }
 
-    fun requestShare(effect: StatusEffect) {
+    fun requestShareAsText(effect: StatusEffect) {
+        viewModelScope.launch {
+            _shareEvents.emit(ShareEvent.EncodedAsText(shareUseCase.renderAsText(effect)))
+        }
+    }
+
+    fun requestExport(effect: StatusEffect) {
         viewModelScope.launch {
             _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(effect)))
         }
@@ -65,5 +71,6 @@ class StatusEffectDetailViewModel @Inject constructor(
 
     sealed interface ShareEvent {
         data class Encoded(val text: String) : ShareEvent
+        data class EncodedAsText(val text: String) : ShareEvent
     }
 }

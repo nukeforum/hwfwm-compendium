@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -37,7 +38,7 @@ class AbilityListingDetailViewModelShareTest {
     @After fun tearDown() { Dispatchers.resetMain() }
 
     @Test
-    fun `requestShare emits Encoded event`() = runTest(dispatcher) {
+    fun `requestExport emits Encoded event`() = runTest(dispatcher) {
         val fireball = Ability.Listing.of("Fireball")
         val useCase = object : AbilityListingShareUseCase(wireIo = stubWireIo()) {
             override fun encode(listing: Ability.Listing): String = "BLOB"
@@ -50,8 +51,34 @@ class AbilityListingDetailViewModelShareTest {
         )
 
         vm.shareEvents.test {
-            vm.requestShare(fireball)
+            vm.requestExport(fireball)
             assertEquals(AbilityListingDetailViewModel.ShareEvent.Encoded("BLOB"), awaitItem())
+        }
+    }
+
+    @Test
+    fun `requestShareAsText emits EncodedAsText event`() = runTest(dispatcher) {
+        val fireball = Ability.Listing.of("Fireball")
+        val repo = FakeListingRepo(initial = listOf(fireball))
+        val useCase = object : AbilityListingShareUseCase(wireIo = stubWireIo()) {
+            override fun renderAsText(
+                listing: Ability.Listing,
+                statusEffects: List<StatusEffect>,
+            ): String = "RENDERED"
+        }
+        val vm = AbilityListingDetailViewModel(
+            abilityListingRepository = repo,
+            statusEffectRepository = FakeEffectRepo(),
+            ioDispatcher = dispatcher,
+            shareUseCase = useCase,
+        )
+        vm.load("Fireball")
+        advanceUntilIdle()
+
+        vm.shareEvents.test {
+            vm.requestShareAsText(fireball)
+            advanceUntilIdle()
+            assertEquals(AbilityListingDetailViewModel.ShareEvent.EncodedAsText("RENDERED"), awaitItem())
         }
     }
 }
@@ -120,10 +147,12 @@ private object StubEffectRepo : StatusEffectRepository {
     override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
 }
 
-private class FakeListingRepo : AbilityListingRepository {
-    override val abilityListings = flowOf(emptyList<Ability.Listing>())
+private class FakeListingRepo(
+    private val initial: List<Ability.Listing> = emptyList(),
+) : AbilityListingRepository {
+    override val abilityListings = flowOf(initial)
     override val conflicts = flowOf(emptyList<AbilityListingConflict>())
-    override suspend fun getAbilityListings() = emptyList<Ability.Listing>()
+    override suspend fun getAbilityListings() = initial
     override suspend fun getContributions() = emptyList<Ability.Listing>()
     override suspend fun getConflicts() = emptyList<AbilityListingConflict>()
     override suspend fun saveAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success

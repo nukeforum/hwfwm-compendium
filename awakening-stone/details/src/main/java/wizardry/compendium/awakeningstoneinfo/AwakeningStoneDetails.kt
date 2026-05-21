@@ -3,6 +3,7 @@ package wizardry.compendium.awakeningstoneinfo
 import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -48,15 +51,18 @@ fun AwakeningStoneDetails(
     }
 
     val context = LocalContext.current
+    val state by viewModel.state.collectAsState()
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
+            val name = (state as? AwakeningStoneDetailUiState.Success)?.stone?.name.orEmpty()
             when (event) {
-                is AwakeningStoneDetailViewModel.ShareEvent.Encoded -> fireShareIntent(context, event.text)
+                is AwakeningStoneDetailViewModel.ShareEvent.Encoded ->
+                    fireShareIntent(context, event.text, "Export $name awakening stone")
+                is AwakeningStoneDetailViewModel.ShareEvent.EncodedAsText ->
+                    fireShareIntent(context, event.text, "Share $name awakening stone")
             }
         }
     }
-
-    val state by viewModel.state.collectAsState()
 
     when (val details = state) {
         is AwakeningStoneDetailUiState.Error -> ErrorMessage(details.exception.message ?: "Unable to load awakening stone")
@@ -66,7 +72,8 @@ fun AwakeningStoneDetails(
             Details(
                 state = details,
                 onEdit = { onEditContribution(details.stone) },
-                onShare = { viewModel.requestShare(details.stone) },
+                onShare = { viewModel.requestShareAsText(details.stone) },
+                onExport = { viewModel.requestExport(details.stone) },
             )
         }
     }
@@ -97,40 +104,55 @@ private fun Details(
     state: AwakeningStoneDetailUiState.Success,
     onEdit: () -> Unit,
     onShare: () -> Unit,
+    onExport: () -> Unit,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-    ) {
-        if (state.isContribution) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                OutlinedButton(onClick = onShare) {
-                    Icon(Icons.Filled.Share, contentDescription = null)
-                    Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
-                }
-                Spacer(modifier = Modifier.size(8.dp))
-                OutlinedButton(onClick = onEdit) {
-                    Icon(Icons.Filled.Edit, contentDescription = null)
-                    Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+        ) {
+            if (state.isContribution) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    OutlinedButton(onClick = onExport) {
+                        Icon(Icons.Filled.IosShare, contentDescription = null)
+                        Text(text = " Export", modifier = Modifier.padding(start = 4.dp))
+                    }
+                    Spacer(modifier = Modifier.size(8.dp))
+                    OutlinedButton(onClick = onShare) {
+                        Icon(Icons.Filled.Share, contentDescription = null)
+                        Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                    }
                 }
             }
+            Box(
+                modifier = Modifier
+                    .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)
+                    .border(1.dp, Color.DarkGray)
+                    .padding(8.dp)
+            ) {
+                Text(
+                    modifier = Modifier.align(Alignment.Center),
+                    text = state.stone.report()
+                )
+            }
         }
-        Box(
-            modifier = Modifier
-                .defaultMinSize(minWidth = Dp.Infinity, minHeight = 80.dp)
-                .border(1.dp, Color.DarkGray)
-                .padding(8.dp)
-        ) {
-            Text(
-                modifier = Modifier.align(Alignment.Center),
-                text = state.stone.report()
-            )
+
+        if (state.isContribution) {
+            FloatingActionButton(
+                onClick = onEdit,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit")
+            }
         }
     }
 }
@@ -146,12 +168,14 @@ private fun AwakeningStone.report(): String {
     """.trimIndent()
 }
 
-private fun fireShareIntent(context: Context, text: String) {
+private fun fireShareIntent(context: Context, text: String, title: String) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+        putExtra(Intent.EXTRA_SUBJECT, title)
     }
-    context.startActivity(Intent.createChooser(intent, null))
+    context.startActivity(Intent.createChooser(intent, title))
 }
 
 @PreviewLightDark
@@ -165,6 +189,7 @@ private fun DetailsCanonicalPreview() {
             ),
             onEdit = {},
             onShare = {},
+            onExport = {},
         )
     }
 }
@@ -180,6 +205,7 @@ private fun DetailsContributionPreview() {
             ),
             onEdit = {},
             onShare = {},
+            onExport = {},
         )
     }
 }

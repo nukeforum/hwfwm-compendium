@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -76,9 +78,10 @@ fun CharacterBuildDetails(
 
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
+            val name = (state as? CharacterBuildDetailUiState.Success)?.build?.name.orEmpty()
             when (event) {
                 is CharacterBuildDetailViewModel.ShareEvent.EncodedAsText ->
-                    fireShareIntent(context, event.text)
+                    fireShareIntent(context, event.text, "Share $name build")
                 is CharacterBuildDetailViewModel.ShareEvent.Encoded -> {
                     val uri = pendingExportUri
                     if (uri != null) {
@@ -108,12 +111,14 @@ fun CharacterBuildDetails(
     }
 }
 
-private fun fireShareIntent(context: Context, text: String) {
+private fun fireShareIntent(context: Context, text: String, title: String) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+        putExtra(Intent.EXTRA_SUBJECT, title)
     }
-    context.startActivity(Intent.createChooser(intent, "Share build"))
+    context.startActivity(Intent.createChooser(intent, title))
 }
 
 private fun writeToUri(context: Context, uri: Uri, text: String) {
@@ -152,42 +157,49 @@ private fun Details(
     }
 
     CompositionLocalProvider(LocalStatusEffects provides state.statusEffects) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-        ) {
-            Row(
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.End,
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
-                OutlinedButton(onClick = onShareText) {
-                    Icon(Icons.Filled.Share, contentDescription = null)
-                    Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    OutlinedButton(onClick = { createDocumentLauncher.launch("$sanitized.compendium") }) {
+                        Icon(Icons.Filled.Save, contentDescription = null)
+                        Text(text = " Export", modifier = Modifier.padding(start = 4.dp))
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    OutlinedButton(onClick = onShareText) {
+                        Icon(Icons.Filled.Share, contentDescription = null)
+                        Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                    }
                 }
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(onClick = { createDocumentLauncher.launch("$sanitized.compendium") }) {
-                    Icon(Icons.Filled.Save, contentDescription = null)
-                    Text(text = " Export", modifier = Modifier.padding(start = 4.dp))
-                }
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(onClick = onEdit) {
-                    Icon(Icons.Filled.Edit, contentDescription = null)
-                    Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))
-                }
+
+                BuildHeader(state.build)
+
+                AttributeSection("Power", state.build.Power.essence)
+                AttributeSection("Speed", state.build.Speed.essence)
+                AttributeSection("Spirit", state.build.Spirit.essence)
+                AttributeSection("Recovery", state.build.Recovery.essence)
+
+                RacialAbilitiesSection(state.build.racialAbilities)
             }
 
-            BuildHeader(state.build)
-
-            AttributeSection("Power", state.build.Power.essence)
-            AttributeSection("Speed", state.build.Speed.essence)
-            AttributeSection("Spirit", state.build.Spirit.essence)
-            AttributeSection("Recovery", state.build.Recovery.essence)
-
-            RacialAbilitiesSection(state.build.racialAbilities)
+            FloatingActionButton(
+                onClick = onEdit,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit")
+            }
         }
     }
 }

@@ -54,7 +54,13 @@ class AwakeningStoneDetailViewModel @Inject constructor(
         }
     }
 
-    fun requestShare(stone: AwakeningStone) {
+    fun requestShareAsText(stone: AwakeningStone) {
+        viewModelScope.launch {
+            _shareEvents.emit(ShareEvent.EncodedAsText(shareUseCase.renderAsText(stone)))
+        }
+    }
+
+    fun requestExport(stone: AwakeningStone) {
         viewModelScope.launch {
             _shareEvents.emit(ShareEvent.Encoded(shareUseCase.encode(stone)))
         }
@@ -71,5 +77,6 @@ class AwakeningStoneDetailViewModel @Inject constructor(
 
     sealed interface ShareEvent {
         data class Encoded(val text: String) : ShareEvent
+        data class EncodedAsText(val text: String) : ShareEvent
     }
 }

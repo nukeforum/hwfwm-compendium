@@ -1,6 +1,8 @@
 package wizardry.compendium.share
 
+import wizardry.compendium.ability.preview.AbilityTextRenderer
 import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.wire.Envelope
 import wizardry.compendium.wire.EnvelopeMapper
 import wizardry.compendium.wire.repo.WireIoRepository
@@ -12,6 +14,13 @@ open class AbilityListingShareUseCase @Inject constructor(
     private val wireIo: WireIoRepository,
 ) {
     open fun encode(listing: Ability.Listing): String = wireIo.encodeSingle(listing)
+
+    open fun renderAsText(listing: Ability.Listing, statusEffects: List<StatusEffect>): String =
+        AbilityTextRenderer.renderAbilityReport(
+            ability = listing,
+            rankCeiling = null,
+            statusEffects = statusEffects,
+        )
 
     open fun decodeSingleAbility(text: String): DecodedSingle<Ability.Listing> = decodeSingle(text) { envelope ->
         val others = envelope.manifestations.size + envelope.confluences.size +

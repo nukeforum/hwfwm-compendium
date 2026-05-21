@@ -46,4 +46,10 @@ class AbilityListingShareUseCaseTest {
         val result = newUseCase().decodeSingleAbility("")
         assertEquals("Paste is empty.", (result as DecodedSingle.Failed).reason)
     }
+
+    @Test
+    fun `renderAsText includes ability name`() {
+        val text = newUseCase().renderAsText(fireball, statusEffects = emptyList())
+        assertTrue("missing name in $text", text.contains("Fireball"))
+    }
 }

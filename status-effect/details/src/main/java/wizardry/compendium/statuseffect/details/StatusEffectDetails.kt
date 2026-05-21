@@ -2,6 +2,7 @@ package wizardry.compendium.statuseffect.details
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,8 +18,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.IosShare
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -50,15 +53,18 @@ fun StatusEffectDetails(
     LaunchedEffect(effectName) { viewModel.load(effectName) }
 
     val context = LocalContext.current
+    val state by viewModel.state.collectAsState()
     LaunchedEffect(viewModel) {
         viewModel.shareEvents.collect { event ->
+            val name = (state as? StatusEffectDetailUiState.Success)?.effect?.name.orEmpty()
             when (event) {
-                is StatusEffectDetailViewModel.ShareEvent.Encoded -> fireShareIntent(context, event.text)
+                is StatusEffectDetailViewModel.ShareEvent.Encoded ->
+                    fireShareIntent(context, event.text, "Export $name status effect")
+                is StatusEffectDetailViewModel.ShareEvent.EncodedAsText ->
+                    fireShareIntent(context, event.text, "Share $name status effect")
             }
         }
     }
-
-    val state by viewModel.state.collectAsState()
 
     when (val s = state) {
         StatusEffectDetailUiState.Loading -> Loading()
@@ -67,19 +73,22 @@ fun StatusEffectDetails(
             LaunchedEffect(s.effect.name) { onEffectLoaded(s.effect) }
             Details(
                 state = s,
-                onShare = { viewModel.requestShare(s.effect) },
+                onShare = { viewModel.requestShareAsText(s.effect) },
+                onExport = { viewModel.requestExport(s.effect) },
                 onEdit = { onEditContribution(s.effect) },
             )
         }
     }
 }
 
-private fun fireShareIntent(context: Context, text: String) {
+private fun fireShareIntent(context: Context, text: String, title: String) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, text)
+        putExtra(Intent.EXTRA_TITLE, title)
+        putExtra(Intent.EXTRA_SUBJECT, title)
     }
-    context.startActivity(Intent.createChooser(intent, null))
+    context.startActivity(Intent.createChooser(intent, title))
 }
 
 @Composable
@@ -101,65 +110,80 @@ private fun ErrorMessage(message: String) {
 private fun Details(
     state: StatusEffectDetailUiState.Success,
     onShare: () -> Unit,
+    onExport: () -> Unit,
     onEdit: () -> Unit,
 ) {
     val effect = state.effect
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(text = effect.name, style = MaterialTheme.typography.titleLarge)
-
-        Text(
-            text = typeText(effect.type),
-            style = MaterialTheme.typography.labelMedium,
-        )
-
-        if (effect.stackable) {
-            SuggestionChip(
-                onClick = {},
-                label = { Text("Stackable") },
-            )
-        }
-
-        Text(
-            text = effect.description,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-
-        if (effect.properties.isNotEmpty()) {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                effect.properties.forEach { property ->
-                    AssistChip(
-                        onClick = {},
-                        label = { Text(property.toString()) },
-                    )
-                }
-            }
-        }
-
-        Row(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.End,
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            OutlinedButton(onClick = onShare) {
-                Icon(Icons.Filled.Share, contentDescription = null)
-                Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+            Text(text = effect.name, style = MaterialTheme.typography.titleLarge)
+
+            Text(
+                text = typeText(effect.type),
+                style = MaterialTheme.typography.labelMedium,
+            )
+
+            if (effect.stackable) {
+                SuggestionChip(
+                    onClick = {},
+                    label = { Text("Stackable") },
+                )
             }
-            if (state.isContribution) {
-                Spacer(modifier = Modifier.size(8.dp))
-                OutlinedButton(onClick = onEdit) {
-                    Icon(Icons.Filled.Edit, contentDescription = null)
-                    Text(text = " Edit", modifier = Modifier.padding(start = 4.dp))
+
+            Text(
+                text = effect.description,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+
+            if (effect.properties.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    effect.properties.forEach { property ->
+                        AssistChip(
+                            onClick = {},
+                            label = { Text(property.toString()) },
+                        )
+                    }
                 }
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                if (state.isContribution) {
+                    OutlinedButton(onClick = onExport) {
+                        Icon(Icons.Filled.IosShare, contentDescription = null)
+                        Text(text = " Export", modifier = Modifier.padding(start = 4.dp))
+                    }
+                    Spacer(modifier = Modifier.size(8.dp))
+                }
+                OutlinedButton(onClick = onShare) {
+                    Icon(Icons.Filled.Share, contentDescription = null)
+                    Text(text = " Share", modifier = Modifier.padding(start = 4.dp))
+                }
+            }
+        }
+
+        if (state.isContribution) {
+            FloatingActionButton(
+                onClick = onEdit,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+            ) {
+                Icon(Icons.Filled.Edit, contentDescription = "Edit")
             }
         }
     }
@@ -186,6 +210,7 @@ private fun DetailsAfflictionPreview() {
                 isContribution = false,
             ),
             onShare = {},
+            onExport = {},
             onEdit = {},
         )
     }
@@ -207,6 +232,7 @@ private fun DetailsBoonContributionPreview() {
                 isContribution = true,
             ),
             onShare = {},
+            onExport = {},
             onEdit = {},
         )
     }
