@@ -23,8 +23,8 @@ import wizardry.compendium.domain.model.Rarity
 class MigrationTest {
 
     @Test
-    fun `schema version is 5`() {
-        assertEquals(5L, CompendiumDatabase.Schema.version)
+    fun `schema version is 6`() {
+        assertEquals(6L, CompendiumDatabase.Schema.version)
     }
 
     @Test

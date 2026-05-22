@@ -1,0 +1,298 @@
+-- v5 -> v6: surrogate ids on the five contributable entity tables, integer FKs
+-- on the two intra-DB references that pointed at names, and tagged-string TEXT
+-- refs on the six cross-domain reference columns ('contr:<id>' if the name
+-- resolves in the just-built contribution table, otherwise 'canon:<name>').
+--
+-- Strategy: create-new-table copy-rename within the implicit migration
+-- transaction. Every step is non-destructive until the final RENAME pass; if
+-- any statement fails the whole transaction rolls back and the device stays
+-- on v5 with its data intact. PRAGMA foreign_keys is set defensively even
+-- though SQLDelight runs migrations with FK enforcement off by default --
+-- inside a transaction the pragma is a no-op, but it documents intent.
+--
+-- New tables reference the *_new parent names in their FK constraints so the
+-- SQLDelight static analyzer (which doesn't yet know we're about to rename
+-- the parents in) sees a valid schema at parse time. SQLite rewrites FK
+-- references through ALTER TABLE RENAME (default legacy_alter_table=OFF),
+-- so once we rename ability_listing_new -> ability_listing the dependent
+-- ability_effect_new's FK string transparently updates to reference the
+-- final name. effect_property and effect_cost are NOT rebuilt -- their
+-- schema is unchanged, and their REFERENCES ability_effect(id) rebinds
+-- correctly once ability_effect_new is renamed in.
+--
+-- Orphan rows (e.g. an ability_effect pointing at a listing_name that no
+-- longer exists in ability_listing because the user deleted it with FKs off)
+-- are dropped during the copy. This is the lesser of two evils: keeping them
+-- would violate the new NOT NULL integer FK; failing the migration would
+-- leave the device unrecoverable.
+
+PRAGMA foreign_keys = 0;
+
+-- 0. Re-declare the v5 shape of the Essences tables so SQLDelight's static
+--    migration analyzer can see them. The Essences family (manifestation,
+--    confluence, confluence_set) was introduced at v1 baseline via the .sq
+--    files only -- no earlier .sqm creates them. SQLDelight 2.x parses each
+--    .sqm against a schema built ONLY from prior .sqm statements, so without
+--    these IF NOT EXISTS declarations the analyzer rejects every SELECT FROM
+--    manifestation/confluence/confluence_set in the body of this file. The
+--    declarations are no-ops at runtime: real-world v5 devices already have
+--    these tables, and IF NOT EXISTS skips them. Schemas match v5 shape
+--    (name PK on the entities; confluence_name/essence1..3 TEXT FKs on the
+--    set) so the SELECT statements below type-check.
+
+CREATE TABLE IF NOT EXISTS manifestation (
+    name TEXT PRIMARY KEY NOT NULL,
+    rarity TEXT NOT NULL,
+    description TEXT NOT NULL,
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS confluence (
+    name TEXT PRIMARY KEY NOT NULL,
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS confluence_set (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    confluence_name TEXT NOT NULL REFERENCES confluence(name),
+    essence1 TEXT NOT NULL REFERENCES manifestation(name),
+    essence2 TEXT NOT NULL REFERENCES manifestation(name),
+    essence3 TEXT NOT NULL REFERENCES manifestation(name),
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+-- 1. Build all *_new tables alongside the old ones. -----------------------
+
+CREATE TABLE IF NOT EXISTS ability_listing_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
+);
+
+CREATE TABLE IF NOT EXISTS manifestation_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    rarity TEXT NOT NULL,
+    description TEXT NOT NULL,
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS confluence_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS awakening_stone_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    rarity TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS status_effect_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    type TEXT NOT NULL,
+    stackable INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    properties TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ability_effect_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    listing_id INTEGER NOT NULL REFERENCES ability_listing_new(id),
+    rank TEXT NOT NULL,
+    type TEXT NOT NULL,
+    cooldown_seconds INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    replacement_key TEXT,
+    ordinal INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS confluence_set_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    confluence_id INTEGER NOT NULL REFERENCES confluence_new(id),
+    essence1_ref TEXT NOT NULL,
+    essence2_ref TEXT NOT NULL,
+    essence3_ref TEXT NOT NULL,
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS character_build_racial_ability_new (
+    build_name TEXT NOT NULL REFERENCES character_build(name),
+    listing_ref TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (build_name, ordinal)
+);
+
+CREATE TABLE IF NOT EXISTS character_build_attribute_new (
+    build_name TEXT NOT NULL REFERENCES character_build(name),
+    kind TEXT NOT NULL,
+    essence_ref TEXT NOT NULL,
+    PRIMARY KEY (build_name, kind)
+);
+
+CREATE TABLE IF NOT EXISTS character_build_acquired_ability_new (
+    build_name TEXT NOT NULL,
+    attribute_kind TEXT NOT NULL,
+    listing_ref TEXT NOT NULL,
+    rank TEXT NOT NULL,
+    tier INTEGER NOT NULL,
+    progress REAL NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (build_name, attribute_kind, ordinal),
+    FOREIGN KEY (build_name, attribute_kind)
+        REFERENCES character_build_attribute_new(build_name, kind)
+);
+
+-- 2. Populate the five entity *_new tables. AUTOINCREMENT assigns ids in
+--    insertion order; ORDER BY name gives deterministic, stable ids across
+--    runs of the migration. -----------------------------------------------
+
+INSERT INTO ability_listing_new (name)
+SELECT name FROM ability_listing ORDER BY name;
+
+INSERT INTO manifestation_new (name, rarity, description, is_restricted)
+SELECT name, rarity, description, is_restricted FROM manifestation ORDER BY name;
+
+INSERT INTO confluence_new (name, is_restricted)
+SELECT name, is_restricted FROM confluence ORDER BY name;
+
+INSERT INTO awakening_stone_new (name, rarity)
+SELECT name, rarity FROM awakening_stone ORDER BY name;
+
+INSERT INTO status_effect_new (name, type, stackable, description, properties)
+SELECT name, type, stackable, description, properties FROM status_effect ORDER BY name;
+
+-- 3. Populate the dependent tables with id translations and tagged-ref
+--    encoding. EXISTS guards drop rows whose parent reference no longer
+--    resolves (orphans that snuck in while FKs were off). -----------------
+
+-- ability_effect: text listing_name -> integer listing_id. Preserve the old
+-- effect ids so effect_property.effect_id and effect_cost.effect_id still
+-- resolve once ability_effect_new is renamed in.
+INSERT INTO ability_effect_new (id, listing_id, rank, type, cooldown_seconds, description, replacement_key, ordinal)
+SELECT ability_effect.id,
+       (SELECT id FROM ability_listing_new WHERE ability_listing_new.name = ability_effect.listing_name),
+       ability_effect.rank,
+       ability_effect.type,
+       ability_effect.cooldown_seconds,
+       ability_effect.description,
+       ability_effect.replacement_key,
+       ability_effect.ordinal
+FROM ability_effect
+WHERE ability_effect.listing_name IN (SELECT name FROM ability_listing_new);
+
+-- confluence_set: text confluence_name -> integer confluence_id, and the
+-- three essence{1,2,3} slots become essence{1,2,3}_ref tagged strings. An
+-- essence slot may name either a manifestation or a confluence; check both.
+INSERT INTO confluence_set_new (id, confluence_id, essence1_ref, essence2_ref, essence3_ref, is_restricted)
+SELECT confluence_set.id,
+       (SELECT id FROM confluence_new WHERE confluence_new.name = confluence_set.confluence_name),
+       CASE
+           WHEN confluence_set.essence1 IN (SELECT name FROM manifestation_new)
+               THEN 'contr:' || (SELECT id FROM manifestation_new WHERE manifestation_new.name = confluence_set.essence1)
+           WHEN confluence_set.essence1 IN (SELECT name FROM confluence_new)
+               THEN 'contr:' || (SELECT id FROM confluence_new WHERE confluence_new.name = confluence_set.essence1)
+           ELSE 'canon:' || confluence_set.essence1
+       END,
+       CASE
+           WHEN confluence_set.essence2 IN (SELECT name FROM manifestation_new)
+               THEN 'contr:' || (SELECT id FROM manifestation_new WHERE manifestation_new.name = confluence_set.essence2)
+           WHEN confluence_set.essence2 IN (SELECT name FROM confluence_new)
+               THEN 'contr:' || (SELECT id FROM confluence_new WHERE confluence_new.name = confluence_set.essence2)
+           ELSE 'canon:' || confluence_set.essence2
+       END,
+       CASE
+           WHEN confluence_set.essence3 IN (SELECT name FROM manifestation_new)
+               THEN 'contr:' || (SELECT id FROM manifestation_new WHERE manifestation_new.name = confluence_set.essence3)
+           WHEN confluence_set.essence3 IN (SELECT name FROM confluence_new)
+               THEN 'contr:' || (SELECT id FROM confluence_new WHERE confluence_new.name = confluence_set.essence3)
+           ELSE 'canon:' || confluence_set.essence3
+       END,
+       confluence_set.is_restricted
+FROM confluence_set
+WHERE confluence_set.confluence_name IN (SELECT name FROM confluence_new);
+
+-- character_build_racial_ability: listing_name -> listing_ref.
+INSERT INTO character_build_racial_ability_new (build_name, listing_ref, ordinal)
+SELECT character_build_racial_ability.build_name,
+       CASE
+           WHEN character_build_racial_ability.listing_name IN (SELECT name FROM ability_listing_new)
+               THEN 'contr:' || (SELECT id FROM ability_listing_new WHERE ability_listing_new.name = character_build_racial_ability.listing_name)
+           ELSE 'canon:' || character_build_racial_ability.listing_name
+       END,
+       character_build_racial_ability.ordinal
+FROM character_build_racial_ability;
+
+-- character_build_attribute: essence_name -> essence_ref (manifestation or confluence).
+INSERT INTO character_build_attribute_new (build_name, kind, essence_ref)
+SELECT character_build_attribute.build_name,
+       character_build_attribute.kind,
+       CASE
+           WHEN character_build_attribute.essence_name IN (SELECT name FROM manifestation_new)
+               THEN 'contr:' || (SELECT id FROM manifestation_new WHERE manifestation_new.name = character_build_attribute.essence_name)
+           WHEN character_build_attribute.essence_name IN (SELECT name FROM confluence_new)
+               THEN 'contr:' || (SELECT id FROM confluence_new WHERE confluence_new.name = character_build_attribute.essence_name)
+           ELSE 'canon:' || character_build_attribute.essence_name
+       END
+FROM character_build_attribute;
+
+-- character_build_acquired_ability: listing_name -> listing_ref.
+INSERT INTO character_build_acquired_ability_new (build_name, attribute_kind, listing_ref, rank, tier, progress, ordinal)
+SELECT character_build_acquired_ability.build_name,
+       character_build_acquired_ability.attribute_kind,
+       CASE
+           WHEN character_build_acquired_ability.listing_name IN (SELECT name FROM ability_listing_new)
+               THEN 'contr:' || (SELECT id FROM ability_listing_new WHERE ability_listing_new.name = character_build_acquired_ability.listing_name)
+           ELSE 'canon:' || character_build_acquired_ability.listing_name
+       END,
+       character_build_acquired_ability.rank,
+       character_build_acquired_ability.tier,
+       character_build_acquired_ability.progress,
+       character_build_acquired_ability.ordinal
+FROM character_build_acquired_ability;
+
+-- 4. Drop old tables. Dependents before parents (defensive even with FKs off).
+--    effect_property and effect_cost are left untouched -- their schema is
+--    unchanged and their REFERENCES ability_effect(id) rebinds once
+--    ability_effect_new is renamed in below.
+
+DROP TABLE character_build_acquired_ability;
+DROP TABLE character_build_attribute;
+DROP TABLE character_build_racial_ability;
+DROP TABLE ability_effect;
+DROP TABLE confluence_set;
+DROP TABLE ability_listing;
+DROP TABLE manifestation;
+DROP TABLE confluence;
+DROP TABLE awakening_stone;
+DROP TABLE status_effect;
+
+-- 5. Rename *_new tables into their final names. SQLite (3.25+, default
+--    legacy_alter_table=OFF) rewrites FK references in dependent tables
+--    during RENAME, so the FK strings in ability_effect_new, confluence_set_new
+--    and character_build_acquired_ability_new transparently track the
+--    renames below.
+
+ALTER TABLE ability_listing_new RENAME TO ability_listing;
+ALTER TABLE manifestation_new RENAME TO manifestation;
+ALTER TABLE confluence_new RENAME TO confluence;
+ALTER TABLE awakening_stone_new RENAME TO awakening_stone;
+ALTER TABLE status_effect_new RENAME TO status_effect;
+ALTER TABLE ability_effect_new RENAME TO ability_effect;
+ALTER TABLE confluence_set_new RENAME TO confluence_set;
+ALTER TABLE character_build_racial_ability_new RENAME TO character_build_racial_ability;
+ALTER TABLE character_build_attribute_new RENAME TO character_build_attribute;
+ALTER TABLE character_build_acquired_ability_new RENAME TO character_build_acquired_ability;
+
+-- 6. Re-create the indexes for the new ref columns. CharacterBuilds.sq
+--    declares these on the v6 schema; the migration must create them
+--    explicitly so migrated devices reach the same final state.
+
+CREATE INDEX IF NOT EXISTS idx_racial_ability_listing_ref ON character_build_racial_ability(listing_ref);
+
+CREATE INDEX IF NOT EXISTS idx_acquired_ability_listing_ref ON character_build_acquired_ability(listing_ref);
+
+CREATE INDEX IF NOT EXISTS idx_attribute_essence_ref ON character_build_attribute(essence_ref);
+
+PRAGMA foreign_keys = 1;
