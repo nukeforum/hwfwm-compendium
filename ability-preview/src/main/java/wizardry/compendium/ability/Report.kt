@@ -31,6 +31,8 @@ import wizardry.compendium.domain.model.Resource
 import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.domain.model.StatusType
 import wizardry.compendium.domain.model.collectLinkedStatusEffects
+import wizardry.compendium.domain.model.render
+import wizardry.compendium.domain.model.summarizeCost
 import wizardry.compendium.domain.model.viewAt
 import kotlin.time.Duration
 
@@ -99,11 +101,7 @@ private fun List<Effect.AbilityEffect>.reportProperties(): String =
     flatMap { it.properties }.toSet().joinToString(", ")
 
 private fun List<Effect.AbilityEffect>.reportCost(): String =
-    flatMap { it.cost }
-        .runCatching { single { it is Cost.Upfront } }
-        .getOrNull()
-        ?.toString()
-        ?: "Varies"
+    summarizeCost().render()
 
 private fun List<Effect.AbilityEffect>.reportCooldown(): String =
     map { it.cooldown }.toSet()
