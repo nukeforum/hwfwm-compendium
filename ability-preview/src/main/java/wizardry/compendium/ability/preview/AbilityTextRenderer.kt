@@ -12,7 +12,9 @@ import wizardry.compendium.domain.model.Resource
 import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.domain.model.StatusType
 import wizardry.compendium.domain.model.collectLinkedStatusEffects
+import wizardry.compendium.domain.model.render
 import wizardry.compendium.domain.model.resolveDescription
+import wizardry.compendium.domain.model.summarizeCost
 import wizardry.compendium.domain.model.viewAt
 import kotlin.math.roundToInt
 import kotlin.time.Duration
@@ -130,11 +132,7 @@ object AbilityTextRenderer {
         effects.flatMap { it.properties }.toSet().joinToString(", ")
 
     private fun reportCost(effects: List<Effect.AbilityEffect>): String =
-        effects.flatMap { it.cost }
-            .runCatching { single { it is Cost.Upfront } }
-            .getOrNull()
-            ?.toString()
-            ?: "Varies"
+        effects.summarizeCost().render()
 
     private fun reportCooldown(effects: List<Effect.AbilityEffect>): String =
         effects.map { it.cooldown }.toSet()

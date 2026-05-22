@@ -150,15 +150,68 @@ class AbilityTextRendererTest {
     }
 
     @Test
-    fun `renderAbilityReport on an empty ability still produces header and Varies fallbacks`() {
+    fun `renderAbilityReport on an empty ability produces header with None Cost and Varies Cooldown`() {
         val ability = Ability.Listing(name = "Empty", effects = emptyList())
 
         val text = AbilityTextRenderer.renderAbilityReport(ability)
 
         assertTrue("missing name header", text.startsWith("Ability: Empty"))
-        // With no effects, the "type" and "properties" join to empty strings, and
-        // Cost/Cooldown fall back to "Varies". Assert the structural lines are present.
-        assertTrue("missing Cost: Varies fallback", text.contains("Cost: Varies."))
+        assertTrue("missing Cost: None for empty effects", text.contains("Cost: None."))
         assertTrue("missing Cooldown: Varies fallback", text.contains("Cooldown: Varies."))
+    }
+
+    @Test
+    fun `renderAbilityReport reports single shared cost across effects`() {
+        val ability = Ability.Listing(
+            name = "Burn",
+            effects = listOf(
+                ironEffect("Burn."),
+                ironEffect("Burn more."),
+            ),
+        )
+
+        val text = AbilityTextRenderer.renderAbilityReport(ability)
+
+        val expectedCost = wizardry.compendium.domain.model.Cost.Upfront(
+            amount = wizardry.compendium.domain.model.Amount.Low,
+            resource = Resource.Mana,
+        ).toString()
+        assertTrue(
+            "expected Cost: $expectedCost in $text",
+            text.contains("Cost: $expectedCost."),
+        )
+    }
+
+    @Test
+    fun `renderAbilityReport reports Varies when costs differ`() {
+        val ability = Ability.Listing(
+            name = "Mixed",
+            effects = listOf(
+                ironEffect("Cheap."),
+                bronzeEffect("Expensive."),
+            ),
+        )
+
+        val text = AbilityTextRenderer.renderAbilityReport(ability)
+
+        assertTrue("expected Cost: Varies in $text", text.contains("Cost: Varies."))
+    }
+
+    @Test
+    fun `renderAbilityReport reports None when every effect has Cost None`() {
+        val noneCostEffect = Effect.AbilityEffect(
+            rank = Rank.Iron,
+            type = AbilityType.Spell,
+            properties = listOf(Property.Fire),
+            cost = listOf(wizardry.compendium.domain.model.Cost.None),
+            cooldown = Duration.ZERO,
+            description = "Passive.",
+            replacementKey = null,
+        )
+        val ability = Ability.Listing(name = "Passive", effects = listOf(noneCostEffect))
+
+        val text = AbilityTextRenderer.renderAbilityReport(ability)
+
+        assertTrue("expected Cost: None in $text", text.contains("Cost: None."))
     }
 }
