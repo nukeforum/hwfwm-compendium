@@ -56,7 +56,7 @@ selectAllConfluences:
 SELECT id, name, is_restricted FROM confluence;
 
 selectAllConfluenceSets:
-SELECT * FROM confluence_set;
+SELECT id, confluence_id, essence1_ref, essence2_ref, essence3_ref, is_restricted FROM confluence_set;
 
 deleteConfluenceSetsForConfluence:
 DELETE FROM confluence_set WHERE confluence_id = ?;
