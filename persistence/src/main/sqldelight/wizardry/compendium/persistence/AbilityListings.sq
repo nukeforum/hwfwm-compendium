@@ -1,10 +1,11 @@
 CREATE TABLE ability_listing (
-    name TEXT PRIMARY KEY NOT NULL
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE ability_effect (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    listing_name TEXT NOT NULL REFERENCES ability_listing(name),
+    listing_id INTEGER NOT NULL REFERENCES ability_listing(id),
     rank TEXT NOT NULL,
     type TEXT NOT NULL,
     cooldown_seconds INTEGER NOT NULL,
@@ -28,10 +29,22 @@ CREATE TABLE effect_cost (
 );
 
 insertAbilityListing:
-INSERT OR REPLACE INTO ability_listing(name) VALUES (?);
+INSERT INTO ability_listing(name) VALUES (?);
+
+selectAbilityListingId:
+SELECT id FROM ability_listing WHERE name = ?;
+
+updateAbilityListingName:
+UPDATE ability_listing SET name = ? WHERE id = ?;
+
+deleteAbilityListingById:
+DELETE FROM ability_listing WHERE id = ?;
+
+deleteEffectsForListing:
+DELETE FROM ability_effect WHERE listing_id = ?;
 
 insertAbilityEffect:
-INSERT INTO ability_effect(listing_name, rank, type, cooldown_seconds, description, replacement_key, ordinal)
+INSERT INTO ability_effect(listing_id, rank, type, cooldown_seconds, description, replacement_key, ordinal)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
 lastInsertRowId:
@@ -44,16 +57,25 @@ insertEffectCost:
 INSERT INTO effect_cost(effect_id, kind, amount, resource, ordinal) VALUES (?, ?, ?, ?, ?);
 
 selectAllAbilityListings:
-SELECT * FROM ability_listing;
+SELECT id, name FROM ability_listing;
 
 selectAllAbilityEffects:
-SELECT * FROM ability_effect ORDER BY listing_name, ordinal;
+SELECT * FROM ability_effect ORDER BY listing_id, ordinal;
 
 selectAllEffectProperties:
 SELECT * FROM effect_property ORDER BY effect_id, ordinal;
 
 selectAllEffectCosts:
 SELECT * FROM effect_cost ORDER BY effect_id, ordinal;
+
+selectEffectIdsForListing:
+SELECT id FROM ability_effect WHERE listing_id = ?;
+
+deleteEffectPropertiesForEffect:
+DELETE FROM effect_property WHERE effect_id = ?;
+
+deleteEffectCostsForEffect:
+DELETE FROM effect_cost WHERE effect_id = ?;
 
 deleteAllEffectCosts:
 DELETE FROM effect_cost;
@@ -66,3 +88,9 @@ DELETE FROM ability_effect;
 
 deleteAllAbilityListings:
 DELETE FROM ability_listing;
+
+updateEffectDescription:
+UPDATE ability_effect SET description = ? WHERE id = ?;
+
+selectEffectsWithStatusTokens:
+SELECT id, description FROM ability_effect WHERE description LIKE '%{status:%';

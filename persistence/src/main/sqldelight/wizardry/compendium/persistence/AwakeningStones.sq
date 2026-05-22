@@ -1,13 +1,23 @@
 CREATE TABLE awakening_stone (
-    name TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
     rarity TEXT NOT NULL
 );
 
 insertAwakeningStone:
-INSERT OR REPLACE INTO awakening_stone(name, rarity) VALUES (?, ?);
+INSERT INTO awakening_stone(name, rarity) VALUES (?, ?);
+
+selectAwakeningStoneId:
+SELECT id FROM awakening_stone WHERE name = ?;
+
+updateAwakeningStoneName:
+UPDATE awakening_stone SET name = ? WHERE id = ?;
+
+deleteAwakeningStoneById:
+DELETE FROM awakening_stone WHERE id = ?;
 
 selectAllAwakeningStones:
-SELECT * FROM awakening_stone;
+SELECT id, name, rarity FROM awakening_stone;
 
 deleteAllAwakeningStones:
 DELETE FROM awakening_stone;

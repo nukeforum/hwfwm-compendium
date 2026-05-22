@@ -1,42 +1,65 @@
 CREATE TABLE manifestation (
-    name TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
     rarity TEXT NOT NULL,
     description TEXT NOT NULL,
     is_restricted INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE confluence (
-    name TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
     is_restricted INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE confluence_set (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    confluence_name TEXT NOT NULL REFERENCES confluence(name),
-    essence1 TEXT NOT NULL REFERENCES manifestation(name),
-    essence2 TEXT NOT NULL REFERENCES manifestation(name),
-    essence3 TEXT NOT NULL REFERENCES manifestation(name),
+    confluence_id INTEGER NOT NULL REFERENCES confluence(id),
+    essence1_ref TEXT NOT NULL,
+    essence2_ref TEXT NOT NULL,
+    essence3_ref TEXT NOT NULL,
     is_restricted INTEGER NOT NULL DEFAULT 0
 );
 
 insertManifestation:
-INSERT OR REPLACE INTO manifestation(name, rarity, description, is_restricted) VALUES (?, ?, ?, ?);
+INSERT INTO manifestation(name, rarity, description, is_restricted) VALUES (?, ?, ?, ?);
+
+selectManifestationId:
+SELECT id FROM manifestation WHERE name = ?;
+
+updateManifestationName:
+UPDATE manifestation SET name = ? WHERE id = ?;
+
+deleteManifestationById:
+DELETE FROM manifestation WHERE id = ?;
 
 insertConfluence:
-INSERT OR REPLACE INTO confluence(name, is_restricted) VALUES (?, ?);
+INSERT INTO confluence(name, is_restricted) VALUES (?, ?);
+
+selectConfluenceId:
+SELECT id FROM confluence WHERE name = ?;
+
+updateConfluenceName:
+UPDATE confluence SET name = ? WHERE id = ?;
+
+deleteConfluenceById:
+DELETE FROM confluence WHERE id = ?;
 
 insertConfluenceSet:
-INSERT INTO confluence_set(confluence_name, essence1, essence2, essence3, is_restricted)
+INSERT INTO confluence_set(confluence_id, essence1_ref, essence2_ref, essence3_ref, is_restricted)
 VALUES (?, ?, ?, ?, ?);
 
 selectAllManifestations:
-SELECT * FROM manifestation;
+SELECT id, name, rarity, description, is_restricted FROM manifestation;
 
 selectAllConfluences:
-SELECT * FROM confluence;
+SELECT id, name, is_restricted FROM confluence;
 
 selectAllConfluenceSets:
 SELECT * FROM confluence_set;
+
+deleteConfluenceSetsForConfluence:
+DELETE FROM confluence_set WHERE confluence_id = ?;
 
 deleteAllConfluenceSets:
 DELETE FROM confluence_set;

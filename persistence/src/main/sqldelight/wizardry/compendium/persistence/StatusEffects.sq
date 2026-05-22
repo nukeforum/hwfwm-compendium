@@ -1,5 +1,6 @@
 CREATE TABLE status_effect (
-    name TEXT PRIMARY KEY NOT NULL,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
     type TEXT NOT NULL,
     stackable INTEGER NOT NULL,
     description TEXT NOT NULL,
@@ -7,10 +8,19 @@ CREATE TABLE status_effect (
 );
 
 insertStatusEffect:
-INSERT OR REPLACE INTO status_effect(name, type, stackable, description, properties) VALUES (?, ?, ?, ?, ?);
+INSERT INTO status_effect(name, type, stackable, description, properties) VALUES (?, ?, ?, ?, ?);
+
+selectStatusEffectId:
+SELECT id FROM status_effect WHERE name = ?;
+
+updateStatusEffectName:
+UPDATE status_effect SET name = ? WHERE id = ?;
+
+deleteStatusEffectById:
+DELETE FROM status_effect WHERE id = ?;
 
 selectAllStatusEffects:
-SELECT * FROM status_effect;
+SELECT id, name, type, stackable, description, properties FROM status_effect;
 
 deleteAllStatusEffects:
 DELETE FROM status_effect;
