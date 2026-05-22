@@ -24,8 +24,11 @@ object RefCodec {
     }
 
     fun decodeAbilityRef(raw: String): AbilityRef = when {
-        raw.startsWith(CANON_PREFIX) ->
-            AbilityRef.Canonical(raw.substring(CANON_PREFIX.length))
+        raw.startsWith(CANON_PREFIX) -> {
+            val name = raw.substring(CANON_PREFIX.length)
+            if (name.isEmpty()) throw MalformedRefException(raw)
+            AbilityRef.Canonical(name)
+        }
         raw.startsWith(CONTR_PREFIX) ->
             AbilityRef.Contributed(
                 raw.substring(CONTR_PREFIX.length).toLongOrNull()
@@ -40,8 +43,11 @@ object RefCodec {
     }
 
     fun decodeEssenceRef(raw: String): EssenceRef = when {
-        raw.startsWith(CANON_PREFIX) ->
-            EssenceRef.Canonical(raw.substring(CANON_PREFIX.length))
+        raw.startsWith(CANON_PREFIX) -> {
+            val name = raw.substring(CANON_PREFIX.length)
+            if (name.isEmpty()) throw MalformedRefException(raw)
+            EssenceRef.Canonical(name)
+        }
         raw.startsWith(CONTR_PREFIX) ->
             EssenceRef.Contributed(
                 raw.substring(CONTR_PREFIX.length).toLongOrNull()

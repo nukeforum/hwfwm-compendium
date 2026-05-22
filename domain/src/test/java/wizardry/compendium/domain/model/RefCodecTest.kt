@@ -66,4 +66,38 @@ class RefCodecTest {
             RefCodec.decodeAbilityRef("contr:abc")
         }
     }
+
+    @Test
+    fun `malformed empty string throws MalformedRefException`() {
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeAbilityRef("")
+        }
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeEssenceRef("")
+        }
+    }
+
+    @Test
+    fun `malformed canon prefix with empty name throws MalformedRefException for ability ref`() {
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeAbilityRef("canon:")
+        }
+    }
+
+    @Test
+    fun `malformed canon prefix with empty name throws MalformedRefException for essence ref`() {
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeEssenceRef("canon:")
+        }
+    }
+
+    @Test
+    fun `malformed contr prefix with empty id throws MalformedRefException`() {
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeAbilityRef("contr:")
+        }
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeEssenceRef("contr:")
+        }
+    }
 }
