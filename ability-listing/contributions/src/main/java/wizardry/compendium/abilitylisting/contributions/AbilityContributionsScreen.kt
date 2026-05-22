@@ -1010,7 +1010,7 @@ private inline fun <reified T : Any> sealedObjects(): List<T> =
 private val AbilityTypeOptions: List<AbilityType> =
     sealedObjects<AbilityType>().filterNot { it === AbilityType.Use }
 
-private val AmountOptions: List<Amount> = sealedObjects<Amount>()
+internal val AmountOptions: List<Amount> = sealedObjects<Amount>().filterNot { it == Amount.None }
 
 private val ResourceOptions: List<Resource> = sealedObjects<Resource>()
 
