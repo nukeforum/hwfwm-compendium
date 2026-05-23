@@ -117,8 +117,9 @@ private class TestStubAwakeningStoneRepository(initial: List<AwakeningStone>) : 
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult =
         error("not used in tests")
-    override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone): ContributionResult =
+    override suspend fun updateAwakeningStoneContribution(originalName: String, stone: AwakeningStone): ContributionResult =
         error("not used in tests")
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private class TestStubAbilityListingRepository(initial: List<Ability.Listing>) : AbilityListingRepository {

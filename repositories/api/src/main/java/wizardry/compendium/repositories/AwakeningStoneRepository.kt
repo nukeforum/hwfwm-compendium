@@ -21,5 +21,7 @@ interface AwakeningStoneRepository {
 
     suspend fun deleteContribution(name: String): ContributionResult
 
-    suspend fun updateAwakeningStoneContribution(stone: AwakeningStone): ContributionResult
+    suspend fun updateAwakeningStoneContribution(originalName: String, stone: AwakeningStone): ContributionResult
+
+    suspend fun checkDeleteImpact(name: String): DeleteImpact
 }

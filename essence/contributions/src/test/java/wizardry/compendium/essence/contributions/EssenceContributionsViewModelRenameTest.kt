@@ -232,7 +232,8 @@ class EssenceContributionsViewModelRenameTest {
         override suspend fun saveAwakeningStoneContribution(stone: AwakeningStone): ContributionResult = ContributionResult.Failure("not used")
         override suspend fun isContribution(name: String): Boolean = false
         override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
-        override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone): ContributionResult = ContributionResult.Success
+        override suspend fun updateAwakeningStoneContribution(originalName: String, stone: AwakeningStone): ContributionResult = ContributionResult.Success
+        override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
     }
 
     private object NoopListingRepo : AbilityListingRepository {
@@ -299,7 +300,8 @@ private object VmTestStubStoneRepo : AwakeningStoneRepository {
     override suspend fun saveAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
+    override suspend fun updateAwakeningStoneContribution(originalName: String, stone: AwakeningStone) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private object VmTestStubListingRepo : AbilityListingRepository {

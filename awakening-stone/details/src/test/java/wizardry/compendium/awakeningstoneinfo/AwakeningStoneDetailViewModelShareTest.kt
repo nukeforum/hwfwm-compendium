@@ -94,7 +94,8 @@ private class FakeStoneRepo : AwakeningStoneRepository {
     override suspend fun saveAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone) = ContributionResult.Success
+    override suspend fun updateAwakeningStoneContribution(originalName: String, stone: AwakeningStone) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private fun stubWireIo(): WireIoRepository = WireIoRepository(

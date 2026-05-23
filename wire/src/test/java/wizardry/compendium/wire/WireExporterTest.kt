@@ -125,8 +125,9 @@ private class StubAwakeningStoneRepository(
         ContributionResult.Success
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
-    override suspend fun updateAwakeningStoneContribution(stone: AwakeningStone): ContributionResult =
+    override suspend fun updateAwakeningStoneContribution(originalName: String, stone: AwakeningStone): ContributionResult =
         ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private class StubAbilityListingRepository(

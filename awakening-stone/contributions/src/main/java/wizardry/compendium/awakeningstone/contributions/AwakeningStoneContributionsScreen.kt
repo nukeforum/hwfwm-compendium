@@ -34,6 +34,7 @@ import wizardry.compendium.ui.ContributionDropdown
 import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.ContributionReportCard
 import wizardry.compendium.ui.DeleteContributionButton
+import wizardry.compendium.ui.DeleteWithReferencesDialog
 import wizardry.compendium.ui.EditPreviewToggle
 
 @Composable
@@ -44,6 +45,7 @@ fun AwakeningStoneContributionsScreen(
 ) {
     val saveState by viewModel.saveState.collectAsState()
     val mode by viewModel.mode.collectAsState()
+    val deleteImpact by viewModel.deleteImpact.collectAsState()
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -94,11 +96,23 @@ fun AwakeningStoneContributionsScreen(
                 isEdit = true,
                 saveState = saveState,
                 onSave = { name, rarity -> viewModel.saveAwakeningStone(name, rarity) },
-                onDelete = viewModel::deleteContribution,
+                onDelete = viewModel::requestDelete,
                 // Edit mode doesn't surface an Import button — you're
                 // editing an existing entry, not bringing in fresh data.
                 onImportClick = null,
             )
+            deleteImpact?.let { impact ->
+                if (impact.isEmpty) {
+                    LaunchedEffect(impact) { viewModel.confirmDelete() }
+                } else {
+                    DeleteWithReferencesDialog(
+                        contributionName = current.stone.name,
+                        impact = impact,
+                        onCancel = viewModel::cancelDelete,
+                        onConfirm = viewModel::confirmDelete,
+                    )
+                }
+            }
         }
     }
 
@@ -186,7 +200,6 @@ private fun AwakeningStoneForm(
                 label = { Text("Name *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                readOnly = isEdit,
             )
 
             ContributionDropdown(

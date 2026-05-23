@@ -11,6 +11,7 @@ import kotlinx.coroutines.sync.withLock
 import wizardry.compendium.repositories.AwakeningStoneConflict
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.repositories.detectAwakeningStoneConflicts
@@ -122,23 +123,34 @@ internal class DefaultAwakeningStoneRepository @Inject constructor(
     }
 
     override suspend fun updateAwakeningStoneContribution(
+        originalName: String,
         stone: AwakeningStone,
     ): ContributionResult = writeMutex.withLock {
-        val key = stone.name.normalized()
+        val originalKey = originalName.normalized()
+        val newKey = stone.name.normalized()
         val existing = contributionsCache.contents
-        if (existing.none { it.name.normalized() == key }) {
-            return@withLock ContributionResult.Failure(
-                "No contributed awakening stone named \"${stone.name}\""
-            )
-        }
-        val id = contributionsCache.findIdByName(stone.name)
+        val id = contributionsCache.findIdByName(originalName)
             ?: return@withLock ContributionResult.Failure(
-                "No contributed awakening stone named \"${stone.name}\""
+                "No contributed awakening stone named \"$originalName\""
             )
+        // If the name is changing, check for collisions in canonical and other contributions.
+        if (originalKey != newKey) {
+            val canonical = ensureCanonicalLoaded()
+            val canonicalNames = canonical.map { it.name.normalized() }.toSet()
+            val contributedNames = existing.filter { it.name.normalized() != originalKey }
+                .map { it.name.normalized() }.toSet()
+            if (newKey in canonicalNames || newKey in contributedNames) {
+                return@withLock ContributionResult.Failure(
+                    "An awakening stone named \"${stone.name}\" already exists"
+                )
+            }
+        }
         contributionsCache.update(id, stone)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
+
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 
     private suspend fun ensureCanonicalLoaded(): List<AwakeningStone> {
         val current = canonicalCache.contents

@@ -215,7 +215,8 @@ private object RenameTestStubStoneRepo : wizardry.compendium.repositories.Awaken
     override suspend fun saveAwakeningStoneContribution(stone: wizardry.compendium.domain.model.AwakeningStone) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateAwakeningStoneContribution(stone: wizardry.compendium.domain.model.AwakeningStone) = ContributionResult.Success
+    override suspend fun updateAwakeningStoneContribution(originalName: String, stone: wizardry.compendium.domain.model.AwakeningStone) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private object RenameTestStubListingRepo : AbilityListingRepository {

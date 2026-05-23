@@ -13,9 +13,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.share.AwakeningStoneShareUseCase
 import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.ui.coroutines.IoDispatcher
@@ -36,6 +38,9 @@ class AwakeningStoneContributionsViewModel @Inject constructor(
 
     private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
     val mode = _mode.asStateFlow()
+
+    private val _deleteImpact = MutableStateFlow<DeleteImpact?>(null)
+    val deleteImpact: StateFlow<DeleteImpact?> = _deleteImpact.asStateFlow()
 
     private val _importEvents = MutableSharedFlow<ImportEvent>(extraBufferCapacity = 1)
     val importEvents: SharedFlow<ImportEvent> = _importEvents.asSharedFlow()
@@ -62,7 +67,10 @@ class AwakeningStoneContributionsViewModel @Inject constructor(
             _saveState.emit(SaveState.Saving)
             val stone = AwakeningStone.of(name = name.trim(), rarity = rarity)
             val result = if (editName != null) {
-                awakeningStoneRepository.updateAwakeningStoneContribution(stone)
+                awakeningStoneRepository.updateAwakeningStoneContribution(
+                    originalName = editName,
+                    stone = stone,
+                )
             } else {
                 awakeningStoneRepository.saveAwakeningStoneContribution(stone)
             }
@@ -71,6 +79,22 @@ class AwakeningStoneContributionsViewModel @Inject constructor(
                 is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
             }
         }
+    }
+
+    fun requestDelete() {
+        val target = (mode.value as? Mode.Edit.Ready)?.stone ?: return
+        viewModelScope.launch(ioDispatcher) {
+            _deleteImpact.value = awakeningStoneRepository.checkDeleteImpact(target.name)
+        }
+    }
+
+    fun cancelDelete() {
+        _deleteImpact.value = null
+    }
+
+    fun confirmDelete() {
+        _deleteImpact.value = null
+        deleteContribution()
     }
 
     fun deleteContribution() {
