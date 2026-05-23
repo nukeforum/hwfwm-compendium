@@ -20,6 +20,7 @@ import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneConflict
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectConflict
@@ -100,8 +101,9 @@ class AbilityListingContributionsViewModelStatusEffectsTest {
         override suspend fun isContribution(name: String): Boolean = false
         override suspend fun deleteContribution(name: String): ContributionResult =
             ContributionResult.Failure("not used")
-        override suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult =
+        override suspend fun updateAbilityListingContribution(originalName: String, listing: Ability.Listing): ContributionResult =
             ContributionResult.Failure("not used")
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 }
 
@@ -156,7 +158,8 @@ private object VmStubListingRepo : AbilityListingRepository {
     override suspend fun saveAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+    override suspend fun updateAbilityListingContribution(originalName: String, listing: Ability.Listing) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private object VmStubEffectRepo : StatusEffectRepository {

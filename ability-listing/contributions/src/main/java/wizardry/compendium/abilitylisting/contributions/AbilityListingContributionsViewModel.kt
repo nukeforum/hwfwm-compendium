@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.domain.model.Ability
@@ -58,6 +59,9 @@ class AbilityListingContributionsViewModel @Inject constructor(
 
     private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
     val mode = _mode.asStateFlow()
+
+    private val _deleteImpact = MutableStateFlow<DeleteImpact?>(null)
+    val deleteImpact: StateFlow<DeleteImpact?> = _deleteImpact.asStateFlow()
 
     /**
      * Pre-fill name supplied by an Import action. Null in normal Create
@@ -139,7 +143,10 @@ class AbilityListingContributionsViewModel @Inject constructor(
             val effects = drafts.map { it.toEffect() }
             val listing = Ability.Listing.of(name = name.trim()).copy(effects = effects)
             val result = if (editName != null) {
-                abilityListingRepository.updateAbilityListingContribution(listing)
+                abilityListingRepository.updateAbilityListingContribution(
+                    originalName = editName,
+                    listing = listing,
+                )
             } else {
                 abilityListingRepository.saveAbilityListingContribution(listing)
             }
@@ -148,6 +155,22 @@ class AbilityListingContributionsViewModel @Inject constructor(
                 is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
             }
         }
+    }
+
+    fun requestDelete() {
+        val target = (mode.value as? Mode.Edit.Ready)?.listing ?: return
+        viewModelScope.launch(ioDispatcher) {
+            _deleteImpact.value = abilityListingRepository.checkDeleteImpact(target.name)
+        }
+    }
+
+    fun cancelDelete() {
+        _deleteImpact.value = null
+    }
+
+    fun confirmDelete() {
+        _deleteImpact.value = null
+        deleteContribution()
     }
 
     fun deleteContribution() {

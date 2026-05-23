@@ -79,9 +79,11 @@ import wizardry.compendium.domain.model.Property
 import wizardry.compendium.domain.model.Rank
 import wizardry.compendium.domain.model.Resource
 import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.ui.ContributionDropdown
 import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.DeleteContributionButton
+import wizardry.compendium.ui.DeleteWithReferencesDialog
 import kotlin.time.Duration
 
 @Composable
@@ -95,6 +97,7 @@ fun AbilityContributionsScreen(
     val mode by viewModel.mode.collectAsState()
     val importedName by viewModel.importedName.collectAsState()
     val statusEffects by viewModel.statusEffects.collectAsState()
+    val deleteImpact by viewModel.deleteImpact.collectAsState()
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -146,19 +149,33 @@ fun AbilityContributionsScreen(
                 showImportDialog = true
             },
         )
-        is AbilityListingContributionsViewModel.Mode.Edit.Ready -> AbilityListingForm(
-            initialName = current.listing.name,
-            isEdit = true,
-            effects = effects,
-            statusEffects = statusEffects,
-            saveState = saveState,
-            onUpdateEffect = viewModel::updateEffect,
-            onRemoveEffect = viewModel::removeEffect,
-            onAppendEffect = viewModel::appendEffect,
-            onSave = viewModel::saveAbilityListing,
-            onDelete = viewModel::deleteContribution,
-            onImportClick = null,
-        )
+        is AbilityListingContributionsViewModel.Mode.Edit.Ready -> {
+            AbilityListingForm(
+                initialName = current.listing.name,
+                isEdit = true,
+                effects = effects,
+                statusEffects = statusEffects,
+                saveState = saveState,
+                onUpdateEffect = viewModel::updateEffect,
+                onRemoveEffect = viewModel::removeEffect,
+                onAppendEffect = viewModel::appendEffect,
+                onSave = viewModel::saveAbilityListing,
+                onDelete = viewModel::requestDelete,
+                onImportClick = null,
+            )
+            deleteImpact?.let { impact ->
+                if (impact.isEmpty) {
+                    LaunchedEffect(impact) { viewModel.confirmDelete() }
+                } else {
+                    DeleteWithReferencesDialog(
+                        contributionName = current.listing.name,
+                        impact = impact,
+                        onCancel = viewModel::cancelDelete,
+                        onConfirm = viewModel::confirmDelete,
+                    )
+                }
+            }
+        }
     }
 
     if (showImportDialog) {
@@ -252,7 +269,6 @@ private fun AbilityListingForm(
                     label = { Text("Name *") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    readOnly = isEdit,
                 )
 
                 effects.forEachIndexed { index, draft ->

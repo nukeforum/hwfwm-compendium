@@ -310,7 +310,8 @@ class DefaultIntegritySweepTest {
         override suspend fun saveAbilityListingContribution(listing: Ability.Listing): ContributionResult = error("not used")
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String): ContributionResult = error("not used")
-        override suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult = error("not used")
+        override suspend fun updateAbilityListingContribution(originalName: String, listing: Ability.Listing): ContributionResult = error("not used")
+        override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
     }
 
     private class StubEssenceRepo(private val canonical: List<Essence>) : EssenceRepository {

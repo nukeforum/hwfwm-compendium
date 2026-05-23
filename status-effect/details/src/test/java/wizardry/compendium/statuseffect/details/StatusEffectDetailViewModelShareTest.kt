@@ -156,5 +156,6 @@ private object StubListingRepo : AbilityListingRepository {
     override suspend fun saveAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+    override suspend fun updateAbilityListingContribution(originalName: String, listing: Ability.Listing) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
 }

@@ -11,11 +11,15 @@ import kotlinx.coroutines.sync.withLock
 import wizardry.compendium.repositories.AbilityListingConflict
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.repositories.detectAbilityListingConflicts
 import wizardry.compendium.domain.model.Ability
+import wizardry.compendium.domain.model.AbilityRef
+import wizardry.compendium.domain.model.RefCodec
 import wizardry.compendium.persistence.AbilityListingCache
 import wizardry.compendium.persistence.Canonical
+import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.preferences.AbilityListingContributionsToggle
 import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
@@ -25,6 +29,7 @@ internal class DefaultAbilityListingRepository @Inject constructor(
     private val dataLoader: AbilityListingDataLoader,
     @param:Canonical private val canonicalCache: AbilityListingCache,
     @param:Contributions private val contributionsCache: AbilityListingCache,
+    @param:Contributions private val characterBuildDatabase: CharacterBuildDatabase,
     private val toggle: AbilityListingContributionsToggle,
     toggleFlow: AbilityListingContributionsToggleFlow,
 ) : AbilityListingRepository {
@@ -99,22 +104,36 @@ internal class DefaultAbilityListingRepository @Inject constructor(
     }
 
     override suspend fun updateAbilityListingContribution(
+        originalName: String,
         listing: Ability.Listing,
     ): ContributionResult = writeMutex.withLock {
-        val key = listing.name.normalized()
-        val existing = contributionsCache.contents
-        if (existing.none { it.name.normalized() == key }) {
-            return@withLock ContributionResult.Failure(
-                "No contributed ability named \"${listing.name}\""
-            )
-        }
-        val id = contributionsCache.findIdByName(listing.name)
+        val id = contributionsCache.findIdByName(originalName)
             ?: return@withLock ContributionResult.Failure(
-                "No contributed ability named \"${listing.name}\""
+                "No contributed ability named \"$originalName\""
             )
+        if (!listing.name.equals(originalName, ignoreCase = true)) {
+            val canonical = ensureCanonicalLoaded()
+            val key = listing.name.normalized()
+            val canonicalNames = canonical.map { it.name.normalized() }.toSet()
+            val contributedNames = contributionsCache.identified
+                .map { it.listing.name.normalized() }
+                .toSet() - originalName.normalized()
+            if (key in canonicalNames || key in contributedNames) {
+                return@withLock ContributionResult.Failure(
+                    "An ability named \"${listing.name}\" already exists"
+                )
+            }
+        }
         contributionsCache.update(id, listing)
         invalidations.update { it + 1 }
         ContributionResult.Success
+    }
+
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact {
+        val id = contributionsCache.findIdByName(name) ?: return DeleteImpact()
+        val ref = RefCodec.encodeAbilityRef(AbilityRef.Contributed(id))
+        val builds = characterBuildDatabase.buildsReferencingListingRef(ref)
+        return DeleteImpact(referencingBuilds = builds)
     }
 
     private suspend fun ensureCanonicalLoaded(): List<Ability.Listing> {

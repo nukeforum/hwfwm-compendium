@@ -1,14 +1,18 @@
 package wizardry.compendium.repositories
 
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.persistence.AbilityListingCache
+import wizardry.compendium.persistence.CharacterBuildDatabase
+import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.IdentifiedListing
 import wizardry.compendium.preferences.AbilityListingContributionsToggle
 import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
@@ -55,6 +59,51 @@ class DefaultAbilityListingRepositoryConflictTest {
         repo.deleteContribution("Fireball")
         assertEquals(0, repo.getConflicts().size)
     }
+
+    @Test
+    fun `update preserves the same id when name changes`() = runTest {
+        val repo = repository(canonical = emptyList(), contributions = listOf(listing("OldName")), toggle = true)
+        val result = repo.updateAbilityListingContribution("OldName", listing("NewName"))
+        assertEquals(ContributionResult.Success, result)
+        val contributions = repo.getContributions()
+        assertEquals(1, contributions.size)
+        assertEquals("NewName", contributions.single().name)
+    }
+
+    @Test
+    fun `update fails when new name collides with a canonical listing`() = runTest {
+        val repo = repository(canonical = listOf(listing("Fireball")), contributions = listOf(listing("Frost")), toggle = true)
+        val result = repo.updateAbilityListingContribution("Frost", listing("Fireball"))
+        assertTrue(result is ContributionResult.Failure)
+    }
+
+    @Test
+    fun `update fails when new name collides with another contribution`() = runTest {
+        val repo = repository(canonical = emptyList(), contributions = listOf(listing("Alpha"), listing("Beta")), toggle = true)
+        val result = repo.updateAbilityListingContribution("Alpha", listing("Beta"))
+        assertTrue(result is ContributionResult.Failure)
+    }
+
+    @Test
+    fun `update succeeds when new name is the same as originalName case-insensitively`() = runTest {
+        val repo = repository(canonical = emptyList(), contributions = listOf(listing("Fireball")), toggle = true)
+        val result = repo.updateAbilityListingContribution("Fireball", listing("fireball"))
+        assertEquals(ContributionResult.Success, result)
+    }
+
+    @Test
+    fun `checkDeleteImpact returns empty when no builds reference this listing`() = runTest {
+        val repo = repository(canonical = emptyList(), contributions = listOf(listing("Frost")), toggle = true)
+        val impact = repo.checkDeleteImpact("Frost")
+        assertTrue(impact.isEmpty)
+    }
+
+    @Test
+    fun `update fails when originalName not found`() = runTest {
+        val repo = repository(canonical = emptyList(), contributions = emptyList(), toggle = true)
+        val result = repo.updateAbilityListingContribution("DoesNotExist", listing("NewName"))
+        assertTrue(result is ContributionResult.Failure)
+    }
 }
 
 private fun repository(
@@ -62,10 +111,14 @@ private fun repository(
     contributions: List<Ability.Listing>,
     toggle: Boolean,
 ): DefaultAbilityListingRepository {
+    val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    CompendiumDatabase.Schema.create(driver)
+    val buildDatabase = CharacterBuildDatabase(driver)
     return DefaultAbilityListingRepository(
         dataLoader = FakeAbilityListingDataLoader(canonical),
         canonicalCache = FakeAbilityListingCache(canonical),
         contributionsCache = FakeAbilityListingCache(contributions),
+        characterBuildDatabase = buildDatabase,
         toggle = FakeAbilityListingToggle(toggle),
         toggleFlow = FakeAbilityListingToggleFlow(toggle),
     )

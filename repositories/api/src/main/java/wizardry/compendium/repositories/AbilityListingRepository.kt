@@ -21,5 +21,20 @@ interface AbilityListingRepository {
 
     suspend fun deleteContribution(name: String): ContributionResult
 
-    suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult
+    /**
+     * Update a contributed ability listing identified by [originalName]. If
+     * [listing.name] differs from [originalName], the contribution is renamed.
+     * Collision checks run before the write: returns Failure if the new name
+     * conflicts with any canonical or contributed listing.
+     */
+    suspend fun updateAbilityListingContribution(
+        originalName: String,
+        listing: Ability.Listing,
+    ): ContributionResult
+
+    /**
+     * Returns the references that would be broken by deleting the contribution
+     * named [name]. An empty impact means deletion is safe.
+     */
+    suspend fun checkDeleteImpact(name: String): DeleteImpact
 }

@@ -252,7 +252,8 @@ private object StubListingRepoForShare : AbilityListingRepository {
     override suspend fun saveAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateAbilityListingContribution(listing: Ability.Listing) = ContributionResult.Success
+    override suspend fun updateAbilityListingContribution(originalName: String, listing: Ability.Listing) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private object StubEffectRepoForShare : StatusEffectRepository {
@@ -365,5 +366,6 @@ private class FakeAbilityListingRepository : AbilityListingRepository {
     override suspend fun saveAbilityListingContribution(listing: Ability.Listing): ContributionResult = ContributionResult.Success
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
-    override suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult = ContributionResult.Success
+    override suspend fun updateAbilityListingContribution(originalName: String, listing: Ability.Listing): ContributionResult = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
 }

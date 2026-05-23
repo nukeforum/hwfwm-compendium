@@ -478,6 +478,7 @@ private class FakeBuildListingRepository(private val data: List<Ability.Listing>
         error("not used")
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult = error("not used")
-    override suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult =
+    override suspend fun updateAbilityListingContribution(originalName: String, listing: Ability.Listing): ContributionResult =
         error("not used")
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
 }

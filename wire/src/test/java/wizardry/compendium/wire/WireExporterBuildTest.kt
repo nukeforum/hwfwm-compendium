@@ -95,8 +95,9 @@ private class BuildTestStubAbilityListingRepository : AbilityListingRepository {
         ContributionResult.Success
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
-    override suspend fun updateAbilityListingContribution(listing: Ability.Listing): ContributionResult =
+    override suspend fun updateAbilityListingContribution(originalName: String, listing: Ability.Listing): ContributionResult =
         ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private class BuildTestStubStatusEffectRepository : StatusEffectRepository {
