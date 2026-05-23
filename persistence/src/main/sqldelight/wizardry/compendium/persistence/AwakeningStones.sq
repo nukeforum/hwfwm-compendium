@@ -21,3 +21,6 @@ SELECT id, name, rarity FROM awakening_stone;
 
 deleteAllAwakeningStones:
 DELETE FROM awakening_stone;
+
+lastInsertRowId:
+SELECT last_insert_rowid();
