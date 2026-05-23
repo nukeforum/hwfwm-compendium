@@ -33,6 +33,7 @@ dependencies {
     implementation(project(":model-core"))
     implementation(project(":domain"))
     api(project(":preferences"))
+    implementation(project(":repositories:api"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlin.coroutines)
