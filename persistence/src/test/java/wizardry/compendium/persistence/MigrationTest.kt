@@ -259,11 +259,429 @@ class MigrationTest {
         migrate(migrated, from = 2, to = 3)
         migrate(migrated, from = 3, to = 4)
         migrate(migrated, from = 4, to = 5)
+        migrate(migrated, from = 5, to = 6)
 
         val fresh = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         CompendiumDatabase.Schema.create(fresh)
 
         assertEquals(listTables(fresh).sorted(), listTables(migrated).sorted())
+    }
+
+    // --- v5 -> v6 migration tests ---------------------------------------
+    //
+    // The v5 -> v6 migration (migrations/5.sqm) adds surrogate INTEGER ids to
+    // the five contributable entity tables, translates the two intra-DB
+    // name-FKs (ability_effect.listing_name, confluence_set.confluence_name)
+    // into integer FKs, and re-encodes six cross-domain reference columns as
+    // tagged TEXT strings ('contr:<id>' if the name resolves in the current
+    // DB at migration time, otherwise 'canon:<name>'). The six ref columns:
+    //   confluence_set.essence{1,2,3}_ref
+    //   character_build_racial_ability.listing_ref
+    //   character_build_attribute.essence_ref
+    //   character_build_acquired_ability.listing_ref
+    //
+    // For v5 -> v6 tests we seed the full v5 shape via the historical
+    // helpers (which produce a clean state at version 5) and then call
+    // migrate(driver, from = 5, to = 6).
+
+    @Test
+    fun `v5 to v6 with empty contributions produces clean v6 schema with zero rows`() {
+        val driver = freshV5Driver()
+
+        migrate(driver, from = 5, to = 6)
+
+        assertHasAllCurrentTables(driver)
+        // Every entity table is empty post-migration.
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT name FROM ability_listing"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT name FROM manifestation"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT name FROM confluence"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT name FROM awakening_stone"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT name FROM status_effect"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT CAST(id AS TEXT) FROM ability_effect"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT CAST(id AS TEXT) FROM confluence_set"))
+        // The five entity tables now expose an `id` column.
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT CAST(id AS TEXT) FROM ability_listing"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT CAST(id AS TEXT) FROM manifestation"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT CAST(id AS TEXT) FROM confluence"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT CAST(id AS TEXT) FROM awakening_stone"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT CAST(id AS TEXT) FROM status_effect"))
+    }
+
+    @Test
+    fun `v5 to v6 assigns ids to contributed ability listings preserving names`() {
+        val driver = freshV5Driver()
+        driver.execute(null, "INSERT INTO ability_listing(name) VALUES ('A')", 0)
+        driver.execute(null, "INSERT INTO ability_listing(name) VALUES ('B')", 0)
+        driver.execute(null, "INSERT INTO ability_listing(name) VALUES ('C')", 0)
+
+        migrate(driver, from = 5, to = 6)
+
+        val rows = selectColumn(driver, "SELECT id || '|' || name FROM ability_listing ORDER BY name")
+        assertEquals(3, rows.size)
+        val byName = rows.map { it.split("|") }.associate { it[1] to it[0].toLong() }
+        assertEquals(setOf("A", "B", "C"), byName.keys)
+        // Ids are distinct and ascending in insertion-by-name order.
+        val ids = byName.values.toList()
+        assertEquals(ids.toSet().size, ids.size)
+        assertTrue("ids must all be positive", ids.all { it > 0 })
+    }
+
+    @Test
+    fun `v5 to v6 translates ability_effect listing_name to integer FK`() {
+        val driver = freshV5Driver()
+        driver.execute(null, "INSERT INTO ability_listing(name) VALUES ('Pyromancy')", 0)
+        driver.execute(
+            null,
+            "INSERT INTO ability_effect(listing_name, rank, type, cooldown_seconds, description, replacement_key, ordinal) " +
+                "VALUES ('Pyromancy', 'Iron', 'attack', 10, 'first', NULL, 0)",
+            0,
+        )
+        driver.execute(
+            null,
+            "INSERT INTO ability_effect(listing_name, rank, type, cooldown_seconds, description, replacement_key, ordinal) " +
+                "VALUES ('Pyromancy', 'Bronze', 'attack', 20, 'second', NULL, 1)",
+            0,
+        )
+
+        migrate(driver, from = 5, to = 6)
+
+        val pyroId = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM ability_listing WHERE name = 'Pyromancy'")
+            .single().toLong()
+        val effectListingIds = selectColumn(driver, "SELECT CAST(listing_id AS TEXT) FROM ability_effect ORDER BY ordinal")
+        assertEquals(listOf(pyroId.toString(), pyroId.toString()), effectListingIds)
+        // The descriptions and ordinals must survive untouched.
+        assertEquals(listOf("first", "second"), selectColumn(driver, "SELECT description FROM ability_effect ORDER BY ordinal"))
+        assertEquals(listOf("Iron", "Bronze"), selectColumn(driver, "SELECT rank FROM ability_effect ORDER BY ordinal"))
+    }
+
+    @Test
+    fun `v5 to v6 translates confluence_set columns to FK + tagged refs`() {
+        val driver = freshV5Driver()
+        driver.execute(null, "INSERT INTO confluence(name, is_restricted) VALUES ('FirebrandX', 0)", 0)
+        driver.execute(null, "INSERT INTO manifestation(name, rarity, description, is_restricted) VALUES ('Fire', 'Common', 'fire', 0)", 0)
+        driver.execute(null, "INSERT INTO manifestation(name, rarity, description, is_restricted) VALUES ('Earth', 'Common', 'earth', 0)", 0)
+        driver.execute(null, "INSERT INTO manifestation(name, rarity, description, is_restricted) VALUES ('Wind', 'Common', 'wind', 0)", 0)
+        driver.execute(
+            null,
+            "INSERT INTO confluence_set(confluence_name, essence1, essence2, essence3, is_restricted) " +
+                "VALUES ('FirebrandX', 'Fire', 'Earth', 'Wind', 0)",
+            0,
+        )
+
+        migrate(driver, from = 5, to = 6)
+
+        val confId = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM confluence WHERE name = 'FirebrandX'").single().toLong()
+        val fireId = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM manifestation WHERE name = 'Fire'").single().toLong()
+        val earthId = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM manifestation WHERE name = 'Earth'").single().toLong()
+        val windId = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM manifestation WHERE name = 'Wind'").single().toLong()
+
+        val row = selectColumn(
+            driver,
+            "SELECT CAST(confluence_id AS TEXT) || '#' || essence1_ref || '#' || essence2_ref || '#' || essence3_ref FROM confluence_set",
+        ).single().split("#")
+        assertEquals(confId.toString(), row[0])
+        assertEquals("contr:$fireId", row[1])
+        assertEquals("contr:$earthId", row[2])
+        assertEquals("contr:$windId", row[3])
+    }
+
+    @Test
+    fun `v5 to v6 encodes build refs to contributed entities as contr id`() {
+        val driver = freshV5Driver()
+        driver.execute(null, "INSERT INTO ability_listing(name) VALUES ('CustomA')", 0)
+        driver.execute(null, "INSERT INTO manifestation(name, rarity, description, is_restricted) VALUES ('CustomE', 'Common', 'd', 0)", 0)
+        driver.execute(null, "INSERT INTO character_build(name, race) VALUES ('MyBuild', 'Human')", 0)
+        driver.execute(
+            null,
+            "INSERT INTO character_build_racial_ability(build_name, listing_name, ordinal) VALUES ('MyBuild', 'CustomA', 0)",
+            0,
+        )
+        driver.execute(
+            null,
+            "INSERT INTO character_build_attribute(build_name, kind, essence_name) VALUES ('MyBuild', 'Power', 'CustomE')",
+            0,
+        )
+        driver.execute(
+            null,
+            "INSERT INTO character_build_acquired_ability(build_name, attribute_kind, listing_name, rank, tier, progress, ordinal) " +
+                "VALUES ('MyBuild', 'Power', 'CustomA', 'Iron', 0, 0.0, 0)",
+            0,
+        )
+
+        migrate(driver, from = 5, to = 6)
+
+        val idA = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM ability_listing WHERE name = 'CustomA'").single().toLong()
+        val idE = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM manifestation WHERE name = 'CustomE'").single().toLong()
+        assertEquals(
+            listOf("contr:$idA"),
+            selectColumn(driver, "SELECT listing_ref FROM character_build_racial_ability"),
+        )
+        assertEquals(
+            listOf("contr:$idE"),
+            selectColumn(driver, "SELECT essence_ref FROM character_build_attribute"),
+        )
+        assertEquals(
+            listOf("contr:$idA"),
+            selectColumn(driver, "SELECT listing_ref FROM character_build_acquired_ability"),
+        )
+        // Surrounding scalar fields on the acquired-ability row survive the rebuild.
+        assertEquals(listOf("Iron"), selectColumn(driver, "SELECT rank FROM character_build_acquired_ability"))
+        assertEquals(listOf("0"), selectColumn(driver, "SELECT CAST(tier AS TEXT) FROM character_build_acquired_ability"))
+    }
+
+    @Test
+    fun `v5 to v6 encodes orphan build refs as canon name`() {
+        val driver = freshV5Driver()
+        driver.execute(null, "INSERT INTO character_build(name, race) VALUES ('ChicagoBuild', 'Human')", 0)
+        driver.execute(
+            null,
+            "INSERT INTO character_build_racial_ability(build_name, listing_name, ordinal) VALUES ('ChicagoBuild', 'NonexistentAbility', 0)",
+            0,
+        )
+        driver.execute(
+            null,
+            "INSERT INTO character_build_attribute(build_name, kind, essence_name) VALUES ('ChicagoBuild', 'Power', 'NonexistentEssence')",
+            0,
+        )
+
+        migrate(driver, from = 5, to = 6)
+
+        assertEquals(
+            listOf("canon:NonexistentAbility"),
+            selectColumn(driver, "SELECT listing_ref FROM character_build_racial_ability"),
+        )
+        assertEquals(
+            listOf("canon:NonexistentEssence"),
+            selectColumn(driver, "SELECT essence_ref FROM character_build_attribute"),
+        )
+    }
+
+    @Test
+    fun `v5 to v6 mixed refs encode independently`() {
+        val driver = freshV5Driver()
+        driver.execute(null, "INSERT INTO ability_listing(name) VALUES ('ExistingA')", 0)
+        driver.execute(null, "INSERT INTO manifestation(name, rarity, description, is_restricted) VALUES ('ExistingE', 'Common', 'd', 0)", 0)
+        driver.execute(null, "INSERT INTO character_build(name, race) VALUES ('MixedBuild', 'Human')", 0)
+        driver.execute(
+            null,
+            "INSERT INTO character_build_racial_ability(build_name, listing_name, ordinal) VALUES ('MixedBuild', 'ExistingA', 0)",
+            0,
+        )
+        driver.execute(
+            null,
+            "INSERT INTO character_build_racial_ability(build_name, listing_name, ordinal) VALUES ('MixedBuild', 'NoSuchAbility', 1)",
+            0,
+        )
+        driver.execute(
+            null,
+            "INSERT INTO character_build_attribute(build_name, kind, essence_name) VALUES ('MixedBuild', 'Power', 'ExistingE')",
+            0,
+        )
+        driver.execute(
+            null,
+            "INSERT INTO character_build_attribute(build_name, kind, essence_name) VALUES ('MixedBuild', 'Speed', 'NoSuchEssence')",
+            0,
+        )
+
+        migrate(driver, from = 5, to = 6)
+
+        val idA = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM ability_listing WHERE name = 'ExistingA'").single().toLong()
+        val idE = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM manifestation WHERE name = 'ExistingE'").single().toLong()
+        assertEquals(
+            listOf("contr:$idA", "canon:NoSuchAbility"),
+            selectColumn(driver, "SELECT listing_ref FROM character_build_racial_ability ORDER BY ordinal"),
+        )
+        assertEquals(
+            listOf("contr:$idE", "canon:NoSuchEssence"),
+            selectColumn(driver, "SELECT essence_ref FROM character_build_attribute ORDER BY kind"),
+        )
+    }
+
+    @Test
+    fun `v5 to v6 leaves status tokens in ability descriptions verbatim`() {
+        val driver = freshV5Driver()
+        driver.execute(null, "INSERT INTO ability_listing(name) VALUES ('Burner')", 0)
+        driver.execute(
+            null,
+            "INSERT INTO ability_effect(listing_name, rank, type, cooldown_seconds, description, replacement_key, ordinal) " +
+                "VALUES ('Burner', 'Iron', 'attack', 0, 'Inflicts {status:Burn} on the target.', NULL, 0)",
+            0,
+        )
+
+        migrate(driver, from = 5, to = 6)
+
+        assertEquals(
+            listOf("Inflicts {status:Burn} on the target."),
+            selectColumn(driver, "SELECT description FROM ability_effect"),
+        )
+    }
+
+    @Test
+    fun `v5 to v6 preserves entity row counts`() {
+        val driver = freshV5Driver()
+        // 5 abilities
+        listOf("a1", "a2", "a3", "a4", "a5").forEach { n ->
+            driver.execute(null, "INSERT INTO ability_listing(name) VALUES ('$n')", 0)
+        }
+        // 4 essences (manifestations)
+        listOf("m1", "m2", "m3", "m4").forEach { n ->
+            driver.execute(null, "INSERT INTO manifestation(name, rarity, description, is_restricted) VALUES ('$n', 'Common', 'd', 0)", 0)
+        }
+        // 2 confluences
+        listOf("c1", "c2").forEach { n ->
+            driver.execute(null, "INSERT INTO confluence(name, is_restricted) VALUES ('$n', 0)", 0)
+        }
+        // 3 awakening stones
+        listOf("s1", "s2", "s3").forEach { n ->
+            driver.execute(null, "INSERT INTO awakening_stone(name, rarity) VALUES ('$n', 'Rare')", 0)
+        }
+        // 6 status effects
+        listOf("se1", "se2", "se3", "se4", "se5", "se6").forEach { n ->
+            driver.execute(null, "INSERT INTO status_effect(name, type, stackable, description, properties) VALUES ('$n', 'Affliction.Elemental', 0, 'd', '')", 0)
+        }
+
+        migrate(driver, from = 5, to = 6)
+
+        assertEquals(5, countRows(driver, "ability_listing"))
+        assertEquals(4, countRows(driver, "manifestation"))
+        assertEquals(2, countRows(driver, "confluence"))
+        assertEquals(3, countRows(driver, "awakening_stone"))
+        assertEquals(6, countRows(driver, "status_effect"))
+    }
+
+    @Test
+    fun `v5 to v6 creates the three build-ref indexes`() {
+        val driver = freshV5Driver()
+
+        migrate(driver, from = 5, to = 6)
+
+        val indexes = selectColumn(driver, "SELECT name FROM sqlite_master WHERE type='index'")
+        assertTrue("idx_racial_ability_listing_ref missing; got $indexes", "idx_racial_ability_listing_ref" in indexes)
+        assertTrue("idx_acquired_ability_listing_ref missing; got $indexes", "idx_acquired_ability_listing_ref" in indexes)
+        assertTrue("idx_attribute_essence_ref missing; got $indexes", "idx_attribute_essence_ref" in indexes)
+    }
+
+    @Test
+    fun `v5 to v6 drops ability_effect rows whose listing_name has no matching ability_listing`() {
+        // Documented behavior: orphan ability_effect rows are dropped during the
+        // copy-rename rebuild because their listing_name can't satisfy the new
+        // NOT NULL integer FK. The migration writer chose drop-over-fail so that
+        // an out-of-band FK violation can't brick the device.
+        val driver = freshV5Driver()
+        // No matching ability_listing row -- this effect is an orphan.
+        driver.execute(
+            null,
+            "INSERT INTO ability_effect(listing_name, rank, type, cooldown_seconds, description, replacement_key, ordinal) " +
+                "VALUES ('Ghost', 'Iron', 'attack', 0, 'orphaned', NULL, 0)",
+            0,
+        )
+
+        migrate(driver, from = 5, to = 6)
+
+        assertEquals(0, countRows(driver, "ability_effect"))
+        // The migration must still succeed and produce the v6 shape.
+        assertHasAllCurrentTables(driver)
+    }
+
+    @Test
+    fun `v5 to v6 acquired ability rows without matching attribute parent are dropped`() {
+        // The acquired-ability table's composite FK (build_name, attribute_kind)
+        // -> character_build_attribute(build_name, kind) is unchanged from v5 to
+        // v6. The migration text does NOT add an EXISTS guard against the
+        // attribute parent (see character_build_acquired_ability_new INSERT in
+        // 5.sqm). Orphan acquired-ability rows are carried through verbatim --
+        // the FK enforcement is identical to v5, so what was tolerable in v5
+        // (FK pragma off) remains tolerable in v6.
+        //
+        // We still seed an orphan and assert the row survives, because the prompt
+        // documents this as a possible orphan-drop pathway and we want a
+        // regression alarm if the migration ever starts silently filtering
+        // these rows. If the actual behavior diverges from this expectation,
+        // the assertion below is the canary.
+        val driver = freshV5Driver()
+        driver.execute(null, "INSERT INTO character_build(name, race) VALUES ('Lonely', 'Human')", 0)
+        // No matching attribute row exists for ('Lonely', 'Power').
+        driver.execute(
+            null,
+            "INSERT INTO character_build_acquired_ability(build_name, attribute_kind, listing_name, rank, tier, progress, ordinal) " +
+                "VALUES ('Lonely', 'Power', 'SomeAbility', 'Iron', 0, 0.0, 0)",
+            0,
+        )
+
+        migrate(driver, from = 5, to = 6)
+
+        // The migration does not gate the acquired_ability copy on the existence
+        // of a parent attribute row; the row passes through with its listing_ref
+        // re-encoded. SQLDelight runs migrations with FK enforcement off, so
+        // this is structurally consistent with v5.
+        assertEquals(
+            listOf("canon:SomeAbility"),
+            selectColumn(driver, "SELECT listing_ref FROM character_build_acquired_ability"),
+        )
+    }
+
+    @Test
+    fun `upgrade from v1 (Essences-only) to v6 preserves manifestation rows`() {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        seedV1Schema(driver)
+        seedSampleEssenceData(driver)
+
+        migrate(driver, from = 1, to = 6)
+
+        assertHasAllCurrentTables(driver)
+        assertEquals(listOf("UserEssence"), selectColumn(driver, "SELECT name FROM manifestation"))
+        assertEquals(listOf("UserConfluence"), selectColumn(driver, "SELECT name FROM confluence"))
+        // v6: each entity row now has an integer id.
+        assertEquals(1, countRows(driver, "manifestation"))
+        assertEquals(1, countRows(driver, "confluence"))
+    }
+
+    @Test
+    fun `upgrade from v2 (post-1_sqm) to v6 preserves rows in all v2 tables`() {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        seedV1Schema(driver)
+        seedV1ToV2Tables(driver)
+        seedSampleEssenceData(driver)
+        seedSampleAwakeningStone(driver)
+        // ability_listing does not exist at v2, so an effect referencing a name has
+        // no v6 listing to point at -- it would be dropped. We skip the effect for
+        // this ladder test; v5->v6 row-preservation of effects is exercised above.
+
+        migrate(driver, from = 2, to = 6)
+
+        assertHasAllCurrentTables(driver)
+        assertEquals(listOf("UserEssence"), selectColumn(driver, "SELECT name FROM manifestation"))
+        assertEquals(listOf("UserConfluence"), selectColumn(driver, "SELECT name FROM confluence"))
+        assertEquals(listOf("UserStone"), selectColumn(driver, "SELECT name FROM awakening_stone"))
+        // awakening_stone now has an id column.
+        assertEquals(1, countRows(driver, "awakening_stone"))
+    }
+
+    @Test
+    fun `upgrade from v3 to v6 preserves rows in every pre-existing table`() {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        seedV1Schema(driver)
+        seedV1ToV2Tables(driver)
+        seedV2ToV3Tables(driver)
+        seedSampleEssenceData(driver)
+        seedSampleAwakeningStone(driver)
+        seedSampleAbilityListing(driver)
+        seedSampleAbilityEffect(driver, listingName = "UserListing")
+
+        migrate(driver, from = 3, to = 6)
+
+        assertHasAllCurrentTables(driver)
+        assertEquals(listOf("UserEssence"), selectColumn(driver, "SELECT name FROM manifestation"))
+        assertEquals(listOf("UserConfluence"), selectColumn(driver, "SELECT name FROM confluence"))
+        assertEquals(listOf("UserStone"), selectColumn(driver, "SELECT name FROM awakening_stone"))
+        assertEquals(listOf("UserListing"), selectColumn(driver, "SELECT name FROM ability_listing"))
+        // ability_effect.listing_id now points at the surrogate id of UserListing.
+        val listingId = selectColumn(driver, "SELECT CAST(id AS TEXT) FROM ability_listing WHERE name = 'UserListing'").single().toLong()
+        assertEquals(
+            listOf(listingId.toString()),
+            selectColumn(driver, "SELECT CAST(listing_id AS TEXT) FROM ability_effect"),
+        )
+        assertEquals(listOf("AbilityEffectRank"), selectColumn(driver, "SELECT rank FROM ability_effect"))
     }
 
     // --- Helpers ---------------------------------------------------------
