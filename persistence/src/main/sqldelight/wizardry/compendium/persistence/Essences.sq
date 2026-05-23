@@ -40,7 +40,7 @@ selectConfluenceId:
 SELECT id FROM confluence WHERE name = ?;
 
 updateConfluenceName:
-UPDATE confluence SET name = ? WHERE id = ?;
+UPDATE confluence SET name = ?, is_restricted = ? WHERE id = ?;
 
 deleteConfluenceById:
 DELETE FROM confluence WHERE id = ?;

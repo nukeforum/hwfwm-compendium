@@ -1,113 +1,131 @@
 package wizardry.compendium.persistence
 
 import app.cash.sqldelight.db.SqlDriver
-import wizardry.compendium.domain.model.AbsorbedEssence
 import wizardry.compendium.domain.model.Ability
-import wizardry.compendium.domain.model.Attribute
 import wizardry.compendium.domain.model.CharacterBuild
 import wizardry.compendium.domain.model.Essence
-import wizardry.compendium.domain.model.Rank
-import wizardry.compendium.domain.model.Rarity
 import javax.inject.Inject
 
 /**
- * Persists CharacterBuild rows in contributions.db. Stores ESSENCE/LISTING NAMES,
- * not embedded entities — cross-DB FKs aren't supported in SQLite. Hydration is the
- * repository's job; this layer just round-trips bytes.
- *
- * Read-time hydration uses placeholder Essence.Manifestation / Ability.Listing values.
- * The repository (DefaultCharacterBuildRepository) replaces placeholders with real
- * lookups against EssenceRepository / AbilityListingRepository.
+ * Raw row tuples returned from CharacterBuildDatabase. The persistence
+ * layer cannot resolve tagged-string refs (canonical lives outside the DB),
+ * so the caller (repository) decodes [listingRef] / [essenceRef] via
+ * RefCodec and resolves against the canonical and contributions caches.
  */
+data class RawBuildRow(val name: String, val race: String)
+
+data class RawRacialAbilityRow(val buildName: String, val listingRef: String, val ordinal: Long)
+
+data class RawAttributeRow(val buildName: String, val kind: String, val essenceRef: String)
+
+data class RawAcquiredAbilityRow(
+    val buildName: String,
+    val attributeKind: String,
+    val listingRef: String,
+    val rank: String,
+    val tier: Long,
+    val progress: Double,
+    val ordinal: Long,
+)
+
+/**
+ * Strategy provided by the repository layer to encode `Ability.Listing` /
+ * `Essence` references into tagged-string form at write time.
+ *
+ * - For a listing or essence that exists in the contributions DB → `contr:<id>`.
+ * - Otherwise → `canon:<name>`.
+ */
+interface BuildRefResolver {
+    fun encodeListing(listing: Ability.Listing): String
+    fun encodeEssence(essence: Essence): String
+}
+
 class CharacterBuildDatabase @Inject constructor(driver: SqlDriver) {
     private val db = CompendiumDatabase(driver)
+    private val q get() = db.characterBuildsQueries
 
-    fun writeAll(builds: List<CharacterBuild>) {
+    // --- Read path: raw rows only ---------------------------------------
+
+    fun readAllBuilds(): List<RawBuildRow> =
+        q.selectAllCharacterBuilds().executeAsList()
+            .map { RawBuildRow(name = it.name, race = it.race) }
+
+    fun readAllRacialAbilities(): List<RawRacialAbilityRow> =
+        q.selectAllRacialAbilities().executeAsList()
+            .map { RawRacialAbilityRow(buildName = it.build_name, listingRef = it.listing_ref, ordinal = it.ordinal) }
+
+    fun readAllAttributes(): List<RawAttributeRow> =
+        q.selectAllAttributes().executeAsList()
+            .map { RawAttributeRow(buildName = it.build_name, kind = it.kind, essenceRef = it.essence_ref) }
+
+    fun readAllAcquiredAbilities(): List<RawAcquiredAbilityRow> =
+        q.selectAllAcquiredAbilities().executeAsList()
+            .map {
+                RawAcquiredAbilityRow(
+                    buildName = it.build_name,
+                    attributeKind = it.attribute_kind,
+                    listingRef = it.listing_ref,
+                    rank = it.rank,
+                    tier = it.tier,
+                    progress = it.progress,
+                    ordinal = it.ordinal,
+                )
+            }
+
+    /**
+     * Returns the names of builds that reference the given listing ref string
+     * (the caller passes already-encoded form, e.g. "contr:42" or "canon:Flame Bolt").
+     * Searches both racial-ability and acquired-ability tables. Sorted, distinct.
+     */
+    fun buildsReferencingListingRef(ref: String): List<String> {
+        val a = q.selectRacialAbilitiesReferencingListing(listing_ref = ref).executeAsList()
+        val b = q.selectAcquiredAbilitiesReferencingListing(listing_ref = ref).executeAsList()
+        return (a + b).distinct().sorted()
+    }
+
+    /** Same shape for essence_ref. Searches the attribute table. */
+    fun buildsReferencingEssenceRef(ref: String): List<String> =
+        q.selectAttributesReferencingEssence(essence_ref = ref).executeAsList()
+            .distinct().sorted()
+
+    // --- Write path: takes a BuildRefResolver ---------------------------
+
+    fun writeAll(builds: List<CharacterBuild>, resolver: BuildRefResolver) {
         db.transaction {
-            db.characterBuildsQueries.deleteAllAcquiredAbilities()
-            db.characterBuildsQueries.deleteAllAttributes()
-            db.characterBuildsQueries.deleteAllRacialAbilities()
-            db.characterBuildsQueries.deleteAllCharacterBuilds()
-            builds.forEach { build -> writeBuild(build) }
+            q.deleteAllAcquiredAbilities()
+            q.deleteAllAttributes()
+            q.deleteAllRacialAbilities()
+            q.deleteAllCharacterBuilds()
+            builds.forEach { writeBuildInternal(it, resolver) }
+        }
+    }
+
+    fun upsert(build: CharacterBuild, resolver: BuildRefResolver) {
+        db.transaction {
+            q.deleteAcquiredAbilitiesForBuild(build_name = build.name)
+            q.deleteAttributesForBuild(build_name = build.name)
+            q.deleteRacialAbilitiesForBuild(build_name = build.name)
+            q.deleteCharacterBuildByName(name = build.name)
+            writeBuildInternal(build, resolver)
         }
     }
 
     fun deleteByName(name: String) {
         db.transaction {
-            db.characterBuildsQueries.deleteAcquiredAbilitiesForBuild(name)
-            db.characterBuildsQueries.deleteAttributesForBuild(name)
-            db.characterBuildsQueries.deleteRacialAbilitiesForBuild(name)
-            db.characterBuildsQueries.deleteCharacterBuildByName(name)
+            q.deleteAcquiredAbilitiesForBuild(build_name = name)
+            q.deleteAttributesForBuild(build_name = name)
+            q.deleteRacialAbilitiesForBuild(build_name = name)
+            q.deleteCharacterBuildByName(name = name)
         }
     }
 
-    fun upsert(build: CharacterBuild) {
-        db.transaction {
-            db.characterBuildsQueries.deleteAcquiredAbilitiesForBuild(build.name)
-            db.characterBuildsQueries.deleteAttributesForBuild(build.name)
-            db.characterBuildsQueries.deleteRacialAbilitiesForBuild(build.name)
-            db.characterBuildsQueries.deleteCharacterBuildByName(build.name)
-            writeBuild(build)
-        }
-    }
-
-    fun readAll(): List<CharacterBuild> {
-        val buildRows = db.characterBuildsQueries.selectAllCharacterBuilds().executeAsList()
-        if (buildRows.isEmpty()) return emptyList()
-        val racials = db.characterBuildsQueries.selectAllRacialAbilities().executeAsList()
-            .groupBy { it.build_name }
-        val attrs = db.characterBuildsQueries.selectAllAttributes().executeAsList()
-            .groupBy { it.build_name }
-        val acquired = db.characterBuildsQueries.selectAllAcquiredAbilities().executeAsList()
-            .groupBy { it.build_name to it.attribute_kind }
-
-        return buildRows.map { row ->
-            val racialAbilities = (racials[row.name].orEmpty())
-                .sortedBy { it.ordinal }
-                .map { Ability.Listing.of(it.listing_name) }
-
-            val attributes = AttributeKind.entries.map { kind ->
-                val attrRow = attrs[row.name].orEmpty().firstOrNull { it.kind == kind.name }
-                if (attrRow == null) {
-                    kind.empty()
-                } else {
-                    val placeholderEssence = placeholderEssence(attrRow.essence_name)
-                    val absorbed = AbsorbedEssence(
-                        essence = placeholderEssence,
-                        abilities = (acquired[row.name to kind.name].orEmpty())
-                            .sortedBy { it.ordinal }
-                            .map { ability ->
-                                Ability.Acquired(
-                                    name = ability.listing_name,
-                                    effects = emptyList(),
-                                    rank = Rank.valueOf(ability.rank),
-                                    tier = ability.tier.toInt(),
-                                    progress = ability.progress.toFloat(),
-                                    boundEssence = placeholderEssence,
-                                    listing = Ability.Listing.of(ability.listing_name),
-                                )
-                            },
-                    )
-                    kind.withEssence(absorbed)
-                }
-            }.toSet()
-
-            CharacterBuild(
-                name = row.name,
-                race = row.race,
-                racialAbilities = racialAbilities,
-                attributes = attributes,
-            )
-        }.sortedBy { it.name }
-    }
-
-    private fun writeBuild(build: CharacterBuild) {
-        db.characterBuildsQueries.insertCharacterBuild(name = build.name, race = build.race)
+    private fun writeBuildInternal(build: CharacterBuild, resolver: BuildRefResolver) {
+        q.insertCharacterBuild(name = build.name, race = build.race)
 
         build.racialAbilities.forEachIndexed { ordinal, listing ->
-            db.characterBuildsQueries.insertRacialAbility(
+            q.insertRacialAbility(
                 build_name = build.name,
-                listing_name = listing.name,
+                listing_ref = resolver.encodeListing(listing),
                 ordinal = ordinal.toLong(),
             )
         }
@@ -115,16 +133,16 @@ class CharacterBuildDatabase @Inject constructor(driver: SqlDriver) {
         AttributeKind.entries.forEach { kind ->
             val attribute = build.attributeFor(kind)
             val absorbed = attribute.essence ?: return@forEach
-            db.characterBuildsQueries.insertAttribute(
+            q.insertAttribute(
                 build_name = build.name,
                 kind = kind.name,
-                essence_name = absorbed.essence.name,
+                essence_ref = resolver.encodeEssence(absorbed.essence),
             )
             absorbed.abilities.forEachIndexed { ordinal, acquired ->
-                db.characterBuildsQueries.insertAcquiredAbility(
+                q.insertAcquiredAbility(
                     build_name = build.name,
                     attribute_kind = kind.name,
-                    listing_name = acquired.name,
+                    listing_ref = resolver.encodeListing(Ability.Listing.of(acquired.name)),
                     rank = acquired.rank.name,
                     tier = acquired.tier.toLong(),
                     progress = acquired.progress.toDouble(),
@@ -134,35 +152,11 @@ class CharacterBuildDatabase @Inject constructor(driver: SqlDriver) {
         }
     }
 
-    private fun placeholderEssence(name: String): Essence.Manifestation =
-        Essence.Manifestation(
-            name = name,
-            rank = Rank.Unranked,
-            rarity = Rarity.Unknown,
-            properties = emptyList(),
-            description = "",
-            isRestricted = false,
-        )
-
     private enum class AttributeKind {
         Power, Speed, Spirit, Recovery;
-
-        fun empty(): Attribute = when (this) {
-            Power -> Attribute.Power()
-            Speed -> Attribute.Speed()
-            Spirit -> Attribute.Spirit()
-            Recovery -> Attribute.Recovery()
-        }
-
-        fun withEssence(absorbed: AbsorbedEssence): Attribute = when (this) {
-            Power -> Attribute.Power(essence = absorbed)
-            Speed -> Attribute.Speed(essence = absorbed)
-            Spirit -> Attribute.Spirit(essence = absorbed)
-            Recovery -> Attribute.Recovery(essence = absorbed)
-        }
     }
 
-    private fun CharacterBuild.attributeFor(kind: AttributeKind): Attribute = when (kind) {
+    private fun CharacterBuild.attributeFor(kind: AttributeKind): wizardry.compendium.domain.model.Attribute = when (kind) {
         AttributeKind.Power -> Power
         AttributeKind.Speed -> Speed
         AttributeKind.Spirit -> Spirit

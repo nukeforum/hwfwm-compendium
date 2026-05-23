@@ -81,7 +81,7 @@ class EssenceDatabase @Inject constructor(driver: SqlDriver) : EssenceCache {
     }
 
     override fun updateConfluence(id: Long, name: String, isRestricted: Boolean, sets: List<RawConfluenceSet>) = db.transaction {
-        q.updateConfluenceName(name = name, id = id)
+        q.updateConfluenceName(name = name, is_restricted = if (isRestricted) 1L else 0L, id = id)
         q.deleteConfluenceSetsForConfluence(confluence_id = id)
         sets.forEach { set ->
             q.insertConfluenceSet(

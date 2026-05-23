@@ -166,16 +166,12 @@ class MigrationTest {
     }
 
     @Test
-    fun `CharacterBuild round trips through CharacterBuildDatabase against the migrated v5 schema`() {
-        // Walk the migration ladder up to v5, then exercise CharacterBuildDatabase
-        // writeAll/readAll with a build that populates name, race, racial abilities,
+    fun `CharacterBuild round trips through CharacterBuildDatabase against the migrated v6 schema`() {
+        // Walk the migration ladder up to v6, then exercise CharacterBuildDatabase
+        // writeAll/readAll*raw* with a build that populates name, race, racial abilities,
         // and a Power attribute with two acquired abilities at distinct rank/tier/progress.
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        seedV1Schema(driver)
-        migrate(driver, from = 1, to = 2)
-        migrate(driver, from = 2, to = 3)
-        migrate(driver, from = 3, to = 4)
-        migrate(driver, from = 4, to = 5)
+        // The new API exposes raw ref-tagged rows; full hydration is the repository's job.
+        val driver = freshV6Driver()
 
         val placeholderEssence = Essence.Manifestation(
             name = "Fire",
@@ -215,38 +211,42 @@ class MigrationTest {
             ),
         )
 
+        // Use a canon-only resolver: all refs encoded as "canon:<name>".
+        val resolver = object : BuildRefResolver {
+            override fun encodeListing(listing: Ability.Listing): String = "canon:${listing.name}"
+            override fun encodeEssence(essence: Essence): String = "canon:${essence.name}"
+        }
         val db = CharacterBuildDatabase(driver)
-        db.writeAll(listOf(build))
-        val read = db.readAll()
+        db.writeAll(listOf(build), resolver)
 
-        assertEquals(1, read.size)
-        val roundTripped = read.single()
-        assertEquals("Hero", roundTripped.name)
-        assertEquals("Human", roundTripped.race)
-        assertEquals(listOf("Trait1", "Trait2"), roundTripped.racialAbilities.map { it.name })
+        // Verify raw rows.
+        val builds = db.readAllBuilds()
+        assertEquals(1, builds.size)
+        assertEquals("Hero", builds.single().name)
+        assertEquals("Human", builds.single().race)
 
-        val power = roundTripped.Power
-        val absorbed = power.essence
-        assertTrue("expected Power attribute to carry an essence", absorbed != null)
-        assertEquals("Fire", absorbed!!.essence.name)
-        assertEquals(2, absorbed.abilities.size)
+        val racials = db.readAllRacialAbilities().sortedBy { it.ordinal }
+        assertEquals(listOf("canon:Trait1", "canon:Trait2"), racials.map { it.listingRef })
 
-        val first = absorbed.abilities[0]
-        assertEquals("Flame Bolt", first.name)
-        assertEquals(Rank.Iron, first.rank)
-        assertEquals(2, first.tier)
-        assertEquals(0.25f, first.progress, 0.0001f)
+        val attrs = db.readAllAttributes()
+        assertEquals(1, attrs.size)
+        assertEquals("Power", attrs.single().kind)
+        assertEquals("canon:Fire", attrs.single().essenceRef)
 
-        val second = absorbed.abilities[1]
-        assertEquals("Inferno", second.name)
-        assertEquals(Rank.Bronze, second.rank)
-        assertEquals(0, second.tier)
-        assertEquals(0.75f, second.progress, 0.0001f)
+        val acquired = db.readAllAcquiredAbilities().sortedBy { it.ordinal }
+        assertEquals(2, acquired.size)
+        assertEquals("canon:Flame Bolt", acquired[0].listingRef)
+        assertEquals("Iron", acquired[0].rank)
+        assertEquals(2L, acquired[0].tier)
+        assertEquals("canon:Inferno", acquired[1].listingRef)
+        assertEquals("Bronze", acquired[1].rank)
+        assertEquals(0L, acquired[1].tier)
 
-        // Unset attributes must round-trip as essence-less placeholders.
-        assertEquals(null, roundTripped.Speed.essence)
-        assertEquals(null, roundTripped.Spirit.essence)
-        assertEquals(null, roundTripped.Recovery.essence)
+        // Speed/Spirit/Recovery have no essence: no attribute rows for those kinds.
+        val attributeKinds = attrs.map { it.kind }
+        assertTrue("Speed should have no attribute row", "Speed" !in attributeKinds)
+        assertTrue("Spirit should have no attribute row", "Spirit" !in attributeKinds)
+        assertTrue("Recovery should have no attribute row", "Recovery" !in attributeKinds)
     }
 
     @Test
@@ -685,6 +685,42 @@ class MigrationTest {
     }
 
     // --- Helpers ---------------------------------------------------------
+
+    /**
+     * Returns a driver whose schema matches v5: all tables up to and including the
+     * character_build family with listing_name / essence_name columns (before v6 renames).
+     */
+    private fun freshV5Driver(): SqlDriver {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        seedV1Schema(driver)
+        seedV1ToV2Tables(driver)
+        seedV2ToV3Tables(driver)
+        seedV3ToV4Tables(driver)
+        seedV4ToV5Tables(driver)
+        driver.execute(null, "PRAGMA user_version = 5", 0)
+        return driver
+    }
+
+    /**
+     * Returns a driver at the current (v6) schema, as produced by
+     * walking the full migration ladder from v5 to the current version.
+     */
+    private fun freshV6Driver(): SqlDriver {
+        val driver = freshV5Driver()
+        migrate(driver, from = 5, to = 6)
+        return driver
+    }
+
+    /** Count rows in [table]. */
+    private fun countRows(driver: SqlDriver, table: String): Int =
+        driver.executeQuery(
+            identifier = null,
+            sql = "SELECT COUNT(*) FROM $table",
+            mapper = { cursor ->
+                QueryResult.Value(if (cursor.next().value) cursor.getLong(0)!!.toInt() else 0)
+            },
+            parameters = 0,
+        ).value
 
     private fun migrate(driver: SqlDriver, from: Long, to: Long) {
         CompendiumDatabase.Schema.migrate(driver, from, to, callbacks = arrayOf<AfterVersion>())
