@@ -70,5 +70,13 @@ DELETE FROM confluence;
 deleteAllManifestations:
 DELETE FROM manifestation;
 
+selectConfluenceSetsReferencingEssenceRef:
+SELECT DISTINCT confluence.name
+FROM confluence_set
+INNER JOIN confluence ON confluence_set.confluence_id = confluence.id
+WHERE confluence_set.essence1_ref = ?
+   OR confluence_set.essence2_ref = ?
+   OR confluence_set.essence3_ref = ?;
+
 lastInsertRowId:
 SELECT last_insert_rowid();

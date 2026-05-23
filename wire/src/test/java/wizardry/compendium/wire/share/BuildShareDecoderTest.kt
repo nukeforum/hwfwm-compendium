@@ -11,6 +11,7 @@ import wizardry.compendium.repositories.AbilityListingConflict
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.domain.model.Ability
@@ -165,8 +166,9 @@ private class StubEssenceRepository(
     ): ContributionResult = ContributionResult.Success
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
-    override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation): ContributionResult = ContributionResult.Success
-    override suspend fun updateConfluenceContribution(confluence: Essence.Confluence): ContributionResult = ContributionResult.Success
+    override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation): ContributionResult = ContributionResult.Success
+    override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult = ContributionResult.Success
+    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private class StubAbilityListingRepository(

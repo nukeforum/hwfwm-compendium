@@ -19,6 +19,7 @@ import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneConflict
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.IntegrityIssue
@@ -213,14 +214,18 @@ private class FakeEssenceRepo(
         deleted += name
         return ContributionResult.Success
     }
-    override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) =
-        ContributionResult.Success
+    override suspend fun updateManifestationContribution(
+        originalName: String,
+        manifestation: Essence.Manifestation,
+    ) = ContributionResult.Success
     override suspend fun updateConfluenceContribution(
+        originalName: String,
         confluence: Essence.Confluence,
     ): ContributionResult {
         confluenceUpdates += confluence
         return ContributionResult.Success
     }
+    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private class FakeStoneRepo(

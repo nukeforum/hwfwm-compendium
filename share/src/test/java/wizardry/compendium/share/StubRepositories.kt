@@ -56,8 +56,9 @@ internal object StubEssenceRepo : EssenceRepository {
     ) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
-    override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
+    override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
+    override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
+    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 internal object StubStoneRepo : AwakeningStoneRepository {

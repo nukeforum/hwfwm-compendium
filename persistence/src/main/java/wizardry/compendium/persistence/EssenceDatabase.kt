@@ -102,6 +102,18 @@ class EssenceDatabase @Inject constructor(driver: SqlDriver) : EssenceCache {
     override fun findConfluenceIdByName(name: String): Long? =
         q.selectConfluenceId(name = name).executeAsOneOrNull()
 
+    /**
+     * Returns the names of confluences whose confluence_sets include the given
+     * essence ref (encoded as `canon:<name>` or `contr:<id>` by the caller).
+     * Used by checkEssenceDeleteImpact to find dependent confluence sets.
+     */
+    fun confluenceNamesReferencingEssenceRef(ref: String): List<String> =
+        q.selectConfluenceSetsReferencingEssenceRef(
+            essence1_ref = ref,
+            essence2_ref = ref,
+            essence3_ref = ref,
+        ).executeAsList()
+
     override fun replaceAll(essences: List<Essence>) = db.transaction {
         q.deleteAllConfluenceSets()
         q.deleteAllConfluences()

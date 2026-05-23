@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.domain.model.ConfluenceSet
@@ -124,6 +125,9 @@ class EssenceContributionsViewModel @Inject constructor(
     private val _saveState = MutableStateFlow<SaveState>(SaveState.Idle)
     val saveState = _saveState.asStateFlow()
 
+    private val _deleteImpact = MutableStateFlow<DeleteImpact?>(null)
+    val deleteImpact: StateFlow<DeleteImpact?> = _deleteImpact.asStateFlow()
+
     private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
     val mode = _mode.asStateFlow()
 
@@ -167,7 +171,10 @@ class EssenceContributionsViewModel @Inject constructor(
                 restricted = isRestricted,
             )
             val result = if (editName != null) {
-                essenceRepository.updateManifestationContribution(manifestation)
+                essenceRepository.updateManifestationContribution(
+                    originalName = editName,
+                    manifestation = manifestation,
+                )
             } else {
                 essenceRepository.saveManifestationContribution(manifestation)
             }
@@ -183,7 +190,10 @@ class EssenceContributionsViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             val updated = source.copy(name = name.trim(), isRestricted = isRestricted)
-            essenceRepository.updateConfluenceContribution(updated).emit()
+            essenceRepository.updateConfluenceContribution(
+                originalName = editName ?: source.name,
+                confluence = updated,
+            ).emit()
         }
     }
 
@@ -232,6 +242,26 @@ class EssenceContributionsViewModel @Inject constructor(
             val combination = ConfluenceSet(manifestation1, manifestation2, manifestation3, isRestricted)
             essenceRepository.addCombinationToConfluence(target, combination).emit()
         }
+    }
+
+    fun requestDelete() {
+        val name = when (val m = mode.value) {
+            is Mode.Edit.ManifestationReady -> m.manifestation.name
+            is Mode.Edit.ConfluenceReady -> m.confluence.name
+            else -> return
+        }
+        viewModelScope.launch(ioDispatcher) {
+            _deleteImpact.value = essenceRepository.checkEssenceDeleteImpact(name)
+        }
+    }
+
+    fun cancelDelete() {
+        _deleteImpact.value = null
+    }
+
+    fun confirmDelete() {
+        _deleteImpact.value = null
+        deleteContribution()
     }
 
     fun deleteContribution() {

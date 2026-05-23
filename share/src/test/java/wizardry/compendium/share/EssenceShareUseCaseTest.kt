@@ -8,6 +8,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.domain.model.ConfluenceSet
@@ -215,8 +216,9 @@ private class FakeEssenceRepo(
     ) = ContributionResult.Success
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) =
+    override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) =
         ContributionResult.Success
-    override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) =
+    override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) =
         ContributionResult.Success
+    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }

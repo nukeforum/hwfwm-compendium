@@ -38,10 +38,14 @@ interface EssenceRepository {
     suspend fun deleteContribution(name: String): ContributionResult
 
     suspend fun updateManifestationContribution(
+        originalName: String,
         manifestation: Essence.Manifestation,
     ): ContributionResult
 
     suspend fun updateConfluenceContribution(
+        originalName: String,
         confluence: Essence.Confluence,
     ): ContributionResult
+
+    suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact
 }

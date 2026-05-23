@@ -97,5 +97,13 @@ abstract class DatabaseModule {
             CharacterBuildDatabase(
                 AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
             )
+
+        @Provides
+        @Singleton
+        @Contributions
+        fun provideContributionsEssenceDatabase(@ApplicationContext context: Context): EssenceDatabase =
+            EssenceDatabase(
+                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
+            )
     }
 }

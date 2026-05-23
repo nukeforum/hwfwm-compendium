@@ -103,7 +103,8 @@ class ConflictsViewModel @Inject constructor(
                 essenceRepository.deleteContribution(contribution.name)
             } else {
                 essenceRepository.updateConfluenceContribution(
-                    contribution.copy(confluenceSets = remaining),
+                    originalName = contribution.name,
+                    confluence = contribution.copy(confluenceSets = remaining),
                 )
             }
         }

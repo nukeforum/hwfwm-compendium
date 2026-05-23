@@ -15,8 +15,10 @@ import wizardry.compendium.domain.model.MalformedRefException
 import wizardry.compendium.domain.model.RefCodec
 import wizardry.compendium.essences.dataloader.EssenceDataLoader
 import wizardry.compendium.persistence.Canonical
+import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.EssenceCache
+import wizardry.compendium.persistence.EssenceDatabase
 import wizardry.compendium.persistence.IdentifiedConfluence
 import wizardry.compendium.persistence.RawConfluenceSet
 import wizardry.compendium.preferences.EssenceContributionsToggle
@@ -27,6 +29,8 @@ internal class DefaultEssenceRepository @Inject constructor(
     private val dataLoader: EssenceDataLoader,
     @param:Canonical private val canonicalCache: EssenceCache,
     @param:Contributions private val contributionsCache: EssenceCache,
+    @param:Contributions private val essenceDatabase: EssenceDatabase,
+    @param:Contributions private val characterBuildDatabase: CharacterBuildDatabase,
     private val toggle: EssenceContributionsToggle,
     toggleFlow: EssenceContributionsToggleFlow,
 ) : EssenceRepository {
@@ -239,24 +243,38 @@ internal class DefaultEssenceRepository @Inject constructor(
     }
 
     override suspend fun updateManifestationContribution(
+        originalName: String,
         manifestation: Essence.Manifestation,
     ): ContributionResult = writeMutex.withLock {
-        val id = contributionsCache.findManifestationIdByName(manifestation.name)
+        val id = contributionsCache.findManifestationIdByName(originalName)
             ?: return@withLock ContributionResult.Failure(
-                "No contributed essence named \"${manifestation.name}\""
+                "No contributed essence named \"$originalName\""
             )
+        if (!manifestation.name.equals(originalName, ignoreCase = true)) {
+            val collision = nameCollidesExcluding(manifestation.name, excludingOriginalName = originalName)
+            if (collision != null) {
+                return@withLock ContributionResult.Failure(collision)
+            }
+        }
         contributionsCache.updateManifestation(id, manifestation)
         invalidate()
         ContributionResult.Success
     }
 
     override suspend fun updateConfluenceContribution(
+        originalName: String,
         confluence: Essence.Confluence,
     ): ContributionResult = writeMutex.withLock {
-        val id = contributionsCache.findConfluenceIdByName(confluence.name)
+        val id = contributionsCache.findConfluenceIdByName(originalName)
             ?: return@withLock ContributionResult.Failure(
-                "No contributed confluence named \"${confluence.name}\""
+                "No contributed confluence named \"$originalName\""
             )
+        if (!confluence.name.equals(originalName, ignoreCase = true)) {
+            val collision = nameCollidesExcluding(confluence.name, excludingOriginalName = originalName)
+            if (collision != null) {
+                return@withLock ContributionResult.Failure(collision)
+            }
+        }
         val canonical = readCanonical()
         contributionsCache.updateConfluence(
             id = id,
@@ -266,6 +284,46 @@ internal class DefaultEssenceRepository @Inject constructor(
         )
         invalidate()
         ContributionResult.Success
+    }
+
+    private suspend fun nameCollidesExcluding(newName: String, excludingOriginalName: String): String? {
+        val key = newName.normalized()
+        val originalKey = excludingOriginalName.normalized()
+        val canonical = readCanonical()
+        val canonicalNames = canonical.map { it.name.normalized() }.toSet()
+        if (key in canonicalNames) {
+            return "An essence named \"$newName\" already exists"
+        }
+        val otherContributedManifestations = contributionsCache.identifiedManifestations
+            .map { it.manifestation.name.normalized() }
+            .toSet() - originalKey
+        val otherContributedConfluences = contributionsCache.identifiedConfluences
+            .map { it.name.normalized() }
+            .toSet() - originalKey
+        if (key in otherContributedManifestations || key in otherContributedConfluences) {
+            return "An essence named \"$newName\" already exists"
+        }
+        return null
+    }
+
+    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact {
+        val manifestationId = contributionsCache.findManifestationIdByName(name)
+        if (manifestationId != null) {
+            val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId))
+            val builds = characterBuildDatabase.buildsReferencingEssenceRef(ref)
+            val confluences = essenceDatabase.confluenceNamesReferencingEssenceRef(ref)
+            return DeleteImpact(
+                referencingBuilds = builds,
+                referencingConfluenceSets = confluences,
+            )
+        }
+        val confluenceId = contributionsCache.findConfluenceIdByName(name)
+        if (confluenceId != null) {
+            val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(confluenceId))
+            val builds = characterBuildDatabase.buildsReferencingEssenceRef(ref)
+            return DeleteImpact(referencingBuilds = builds)
+        }
+        return DeleteImpact()
     }
 
     private fun invalidate() {

@@ -18,10 +18,12 @@ import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.domain.model.ConfluenceSet
 import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.domain.model.Rarity
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.ui.ContributionDropdown
 import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.ContributionReportCard
 import wizardry.compendium.ui.DeleteContributionButton
+import wizardry.compendium.ui.DeleteWithReferencesDialog
 import wizardry.compendium.ui.EditPreviewToggle
 import kotlinx.coroutines.launch
 
@@ -36,6 +38,7 @@ fun EssenceContributionsScreen(
     val availableConfluences by viewModel.availableConfluences.collectAsState()
     val saveState by viewModel.saveState.collectAsState()
     val mode by viewModel.mode.collectAsState()
+    val deleteImpact by viewModel.deleteImpact.collectAsState()
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -131,22 +134,50 @@ fun EssenceContributionsScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) { Text("This essence is not a user contribution and cannot be edited.") }
-                is EssenceContributionsViewModel.Mode.Edit.ManifestationReady -> ManifestationForm(
-                    initial = current.manifestation,
-                    isEdit = true,
-                    saveState = saveState,
-                    onSave = { name, rarity, description, isRestricted ->
-                        viewModel.saveManifestation(name, rarity, description, isRestricted)
-                    },
-                    onDelete = viewModel::deleteContribution,
-                    onImportClick = null,
-                )
-                is EssenceContributionsViewModel.Mode.Edit.ConfluenceReady -> ConfluenceEditForm(
-                    initial = current.confluence,
-                    saveState = saveState,
-                    onSave = { name, isRestricted -> viewModel.updateConfluence(name, isRestricted) },
-                    onDelete = viewModel::deleteContribution,
-                )
+                is EssenceContributionsViewModel.Mode.Edit.ManifestationReady -> {
+                    ManifestationForm(
+                        initial = current.manifestation,
+                        isEdit = true,
+                        saveState = saveState,
+                        onSave = { name, rarity, description, isRestricted ->
+                            viewModel.saveManifestation(name, rarity, description, isRestricted)
+                        },
+                        onDelete = viewModel::requestDelete,
+                        onImportClick = null,
+                    )
+                    deleteImpact?.let { impact ->
+                        if (impact.isEmpty) {
+                            LaunchedEffect(impact) { viewModel.confirmDelete() }
+                        } else {
+                            DeleteWithReferencesDialog(
+                                contributionName = current.manifestation.name,
+                                impact = impact,
+                                onCancel = viewModel::cancelDelete,
+                                onConfirm = viewModel::confirmDelete,
+                            )
+                        }
+                    }
+                }
+                is EssenceContributionsViewModel.Mode.Edit.ConfluenceReady -> {
+                    ConfluenceEditForm(
+                        initial = current.confluence,
+                        saveState = saveState,
+                        onSave = { name, isRestricted -> viewModel.updateConfluence(name, isRestricted) },
+                        onDelete = viewModel::requestDelete,
+                    )
+                    deleteImpact?.let { impact ->
+                        if (impact.isEmpty) {
+                            LaunchedEffect(impact) { viewModel.confirmDelete() }
+                        } else {
+                            DeleteWithReferencesDialog(
+                                contributionName = current.confluence.name,
+                                impact = impact,
+                                onCancel = viewModel::cancelDelete,
+                                onConfirm = viewModel::confirmDelete,
+                            )
+                        }
+                    }
+                }
                 EssenceContributionsViewModel.Mode.Create -> CreateContributions(
                     availableManifestations = availableManifestations,
                     availableConfluences = availableConfluences,
@@ -331,7 +362,7 @@ private fun ConfluenceEditForm(
     onSave: (name: String, isRestricted: Boolean) -> Unit,
     onDelete: () -> Unit,
 ) {
-    val name = initial.name
+    var name by remember(initial) { mutableStateOf(initial.name) }
     var isRestricted by remember(initial) { mutableStateOf(initial.isRestricted) }
 
     val saving = saveState is EssenceContributionsViewModel.SaveState.Saving
@@ -345,11 +376,10 @@ private fun ConfluenceEditForm(
     ) {
         OutlinedTextField(
             value = name,
-            onValueChange = {},
+            onValueChange = { name = it },
             label = { Text("Name") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            readOnly = true,
         )
 
         Row(
@@ -418,7 +448,6 @@ private fun ManifestationForm(
                 label = { Text("Name *") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                readOnly = isEdit,
             )
 
             ContributionDropdown(

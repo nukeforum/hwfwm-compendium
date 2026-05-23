@@ -1,5 +1,6 @@
 package wizardry.compendium.repositories
 
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
@@ -14,7 +15,10 @@ import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.domain.model.EssenceRef
 import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.domain.model.RefCodec
+import wizardry.compendium.persistence.CharacterBuildDatabase
+import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.EssenceCache
+import wizardry.compendium.persistence.EssenceDatabase
 import wizardry.compendium.persistence.IdentifiedConfluence
 import wizardry.compendium.persistence.IdentifiedManifestation
 import wizardry.compendium.persistence.RawConfluenceSet
@@ -211,7 +215,7 @@ class DefaultEssenceRepositoryConflictTest {
         val cleanedDoom = originalDoom.copy(
             confluenceSets = originalDoom.confluenceSets.filterNot { it == set("A", "B", "C") }.toSet(),
         )
-        repo.updateConfluenceContribution(cleanedDoom)
+        repo.updateConfluenceContribution("Doom", cleanedDoom)
 
         assertEquals(0, repo.getConflicts().size)
         // Doom (cleaned) should now appear in merged results
@@ -240,10 +244,16 @@ private fun repository(
     val toggleSource = FakeEssenceToggle(toggle)
     val toggleFlow = FakeEssenceToggleFlow(toggle)
     val loader = FakeEssenceDataLoader(canonical)
+    val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    CompendiumDatabase.Schema.create(driver)
+    val essenceDatabase = EssenceDatabase(driver)
+    val characterBuildDatabase = CharacterBuildDatabase(driver)
     return DefaultEssenceRepository(
         dataLoader = loader,
         canonicalCache = canonicalCache,
         contributionsCache = contributionsCache,
+        essenceDatabase = essenceDatabase,
+        characterBuildDatabase = characterBuildDatabase,
         toggle = toggleSource,
         toggleFlow = toggleFlow,
     )

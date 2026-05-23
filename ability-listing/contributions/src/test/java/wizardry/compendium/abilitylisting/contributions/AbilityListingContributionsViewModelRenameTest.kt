@@ -201,8 +201,9 @@ private object RenameTestStubEssenceRepo : wizardry.compendium.repositories.Esse
     override suspend fun addCombinationToConfluence(target: wizardry.compendium.domain.model.Essence.Confluence, combination: wizardry.compendium.domain.model.ConfluenceSet) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateManifestationContribution(manifestation: wizardry.compendium.domain.model.Essence.Manifestation) = ContributionResult.Success
-    override suspend fun updateConfluenceContribution(confluence: wizardry.compendium.domain.model.Essence.Confluence) = ContributionResult.Success
+    override suspend fun updateManifestationContribution(originalName: String, manifestation: wizardry.compendium.domain.model.Essence.Manifestation) = ContributionResult.Success
+    override suspend fun updateConfluenceContribution(originalName: String, confluence: wizardry.compendium.domain.model.Essence.Confluence) = ContributionResult.Success
+    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private object RenameTestStubStoneRepo : wizardry.compendium.repositories.AwakeningStoneRepository {

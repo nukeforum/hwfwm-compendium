@@ -18,6 +18,7 @@ import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneConflict
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.StatusEffectConflict
@@ -92,11 +93,14 @@ private class TestStubEssenceRepository(initial: List<Essence>) : EssenceReposit
     override suspend fun deleteContribution(name: String): ContributionResult =
         error("not used in tests")
     override suspend fun updateManifestationContribution(
+        originalName: String,
         manifestation: Essence.Manifestation,
     ): ContributionResult = error("not used in tests")
     override suspend fun updateConfluenceContribution(
+        originalName: String,
         confluence: Essence.Confluence,
     ): ContributionResult = error("not used in tests")
+    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private class TestStubAwakeningStoneRepository(initial: List<AwakeningStone>) : AwakeningStoneRepository {

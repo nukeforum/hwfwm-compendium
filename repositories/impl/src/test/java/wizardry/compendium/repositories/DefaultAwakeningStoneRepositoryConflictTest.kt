@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
@@ -238,10 +239,11 @@ private class FakeEssenceRepository(private val data: List<Essence>) : EssenceRe
     ): ContributionResult = unsupported()
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult = unsupported()
-    override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation): ContributionResult =
+    override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation): ContributionResult =
         unsupported()
-    override suspend fun updateConfluenceContribution(confluence: Essence.Confluence): ContributionResult =
+    override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult =
         unsupported()
+    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 
     private fun unsupported(): ContributionResult =
         throw UnsupportedOperationException("not used in this test")

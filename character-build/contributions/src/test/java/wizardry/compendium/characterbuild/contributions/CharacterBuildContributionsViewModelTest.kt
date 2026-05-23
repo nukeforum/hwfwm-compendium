@@ -20,6 +20,7 @@ import wizardry.compendium.repositories.AbilityListingConflict
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.domain.model.AbsorbedEssence
@@ -1124,8 +1125,9 @@ class CharacterBuildContributionsViewModelTest {
         override suspend fun addCombinationToConfluence(target: Essence.Confluence, combination: ConfluenceSet) = ContributionResult.Success
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
-        override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
+        override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
+        override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
+        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class NoOpListingRepoForDecoder : AbilityListingRepository {
@@ -1215,8 +1217,9 @@ class CharacterBuildContributionsViewModelTest {
         override suspend fun addCombinationToConfluence(target: Essence.Confluence, combination: ConfluenceSet) = ContributionResult.Success
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
-        override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
+        override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
+        override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
+        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class RecordingEssenceRepo(private val data: List<Essence>) : EssenceRepository {
@@ -1234,8 +1237,9 @@ class CharacterBuildContributionsViewModelTest {
         }
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        override suspend fun updateManifestationContribution(manifestation: Essence.Manifestation) = ContributionResult.Success
-        override suspend fun updateConfluenceContribution(confluence: Essence.Confluence) = ContributionResult.Success
+        override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
+        override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
+        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class FakeAbilityListingRepo(private val data: List<Ability.Listing>) : AbilityListingRepository {
