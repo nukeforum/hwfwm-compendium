@@ -9,6 +9,7 @@ import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.EssenceRepository
+import wizardry.compendium.repositories.IntegritySweep
 import wizardry.compendium.repositories.StatusEffectRepository
 
 @Module
@@ -33,4 +34,8 @@ internal interface EssenceModule {
     @Singleton
     @Binds
     fun bindCharacterBuildRepository(impl: DefaultCharacterBuildRepository): CharacterBuildRepository
+
+    @Singleton
+    @Binds
+    fun bindIntegritySweep(impl: DefaultIntegritySweep): IntegritySweep
 }
