@@ -18,7 +18,6 @@ import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.DatabaseCharacterBuildCache
-import wizardry.compendium.persistence.DatabaseStatusEffectCache
 import wizardry.compendium.persistence.EssenceCache
 import wizardry.compendium.persistence.EssenceDatabase
 import wizardry.compendium.persistence.StatusEffectCache
@@ -81,20 +80,16 @@ abstract class DatabaseModule {
         @Singleton
         @Canonical
         fun provideCanonicalStatusEffectCache(@ApplicationContext context: Context): StatusEffectCache =
-            DatabaseStatusEffectCache(
-                StatusEffectDatabase(
-                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
-                )
+            StatusEffectDatabase(
+                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
             )
 
         @Provides
         @Singleton
         @Contributions
         fun provideContributionsStatusEffectCache(@ApplicationContext context: Context): StatusEffectCache =
-            DatabaseStatusEffectCache(
-                StatusEffectDatabase(
-                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-                )
+            StatusEffectDatabase(
+                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
             )
 
         @Provides

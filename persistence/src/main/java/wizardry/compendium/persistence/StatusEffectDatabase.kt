@@ -7,36 +7,64 @@ import wizardry.compendium.domain.model.StatusType
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
-class StatusEffectDatabase @Inject constructor(driver: SqlDriver) {
+class StatusEffectDatabase @Inject constructor(driver: SqlDriver) : StatusEffectCache {
     private val db = CompendiumDatabase(driver)
+    private val q get() = db.statusEffectsQueries
 
-    fun writeAll(effects: List<StatusEffect>) {
-        db.transaction {
-            db.statusEffectsQueries.deleteAllStatusEffects()
-            effects.forEach { effect ->
-                db.statusEffectsQueries.insertStatusEffect(
-                    name = effect.name,
-                    type = encodeType(effect.type),
-                    stackable = if (effect.stackable) 1L else 0L,
-                    description = effect.description,
-                    properties = effect.properties.joinToString(separator = "|") { it.toString() },
-                )
-            }
-        }
-    }
-
-    fun readAll(): List<StatusEffect> {
-        return db.statusEffectsQueries.selectAllStatusEffects().executeAsList()
-            .map { row ->
-                StatusEffect(
+    override val identified: List<IdentifiedStatusEffect>
+        get() = q.selectAllStatusEffects().executeAsList().map { row ->
+            IdentifiedStatusEffect(
+                id = row.id,
+                statusEffect = StatusEffect(
                     name = row.name,
                     type = decodeType(row.type),
                     properties = decodeProperties(row.properties),
                     stackable = row.stackable != 0L,
                     description = row.description,
-                )
-            }
-            .sortedBy { it.name }
+                ),
+            )
+        }.sortedBy { it.statusEffect.name }
+
+    override fun insert(statusEffect: StatusEffect): Long = db.transactionWithResult {
+        q.insertStatusEffect(
+            name = statusEffect.name,
+            type = encodeType(statusEffect.type),
+            stackable = if (statusEffect.stackable) 1L else 0L,
+            description = statusEffect.description,
+            properties = statusEffect.properties.joinToString("|") { it.toString() },
+        )
+        q.lastInsertRowId().executeAsOne()
+    }
+
+    override fun update(id: Long, statusEffect: StatusEffect) {
+        q.updateStatusEffectFully(
+            name = statusEffect.name,
+            type = encodeType(statusEffect.type),
+            stackable = if (statusEffect.stackable) 1L else 0L,
+            description = statusEffect.description,
+            properties = statusEffect.properties.joinToString("|") { it.toString() },
+            id = id,
+        )
+    }
+
+    override fun deleteById(id: Long) {
+        q.deleteStatusEffectById(id = id)
+    }
+
+    override fun findIdByName(name: String): Long? =
+        q.selectStatusEffectId(name = name).executeAsOneOrNull()
+
+    override fun replaceAll(statusEffects: List<StatusEffect>) = db.transaction {
+        q.deleteAllStatusEffects()
+        statusEffects.forEach { effect ->
+            q.insertStatusEffect(
+                name = effect.name,
+                type = encodeType(effect.type),
+                stackable = if (effect.stackable) 1L else 0L,
+                description = effect.description,
+                properties = effect.properties.joinToString("|") { it.toString() },
+            )
+        }
     }
 
     private fun decodeProperties(serialized: String): List<Property> {
