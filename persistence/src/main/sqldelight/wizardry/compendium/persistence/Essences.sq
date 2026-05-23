@@ -69,3 +69,6 @@ DELETE FROM confluence;
 
 deleteAllManifestations:
 DELETE FROM manifestation;
+
+lastInsertRowId:
+SELECT last_insert_rowid();

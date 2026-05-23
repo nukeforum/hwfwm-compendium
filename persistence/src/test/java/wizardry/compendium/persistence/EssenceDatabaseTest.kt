@@ -2,6 +2,9 @@ package wizardry.compendium.persistence
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.domain.model.ConfluenceSet
 import wizardry.compendium.domain.model.Essence
@@ -15,126 +18,158 @@ class EssenceDatabaseTest {
         return EssenceDatabase(driver)
     }
 
+    private fun fire() = Essence.of("Fire", "burns", Rarity.Common, false) as Essence.Manifestation
+    private fun water() = Essence.of("Water", "flows", Rarity.Common, false) as Essence.Manifestation
+    private fun earth() = Essence.of("Earth", "stable", Rarity.Common, false) as Essence.Manifestation
+
     @Test
-    fun `manifestation round trips`() {
+    fun `insertManifestation assigns positive id`() {
         val db = newDatabase()
-        val fire = Essence.of(
-            name = "Fire",
-            description = "burns things",
-            rarity = Rarity.Common,
-            restricted = false,
-        )
-
-        db.writeAll(listOf(fire))
-
-        assertEquals(listOf(fire), db.readAll())
+        val id = db.insertManifestation(fire())
+        assertTrue("id positive", id > 0)
+        assertEquals(listOf(IdentifiedManifestation(id, fire())), db.identifiedManifestations)
     }
 
     @Test
-    fun `restricted manifestation round trips`() {
+    fun `updateManifestation preserves id across rename`() {
         val db = newDatabase()
-        val doom = Essence.of(
-            name = "Doom",
-            description = "forbidden power",
-            rarity = Rarity.Legendary,
-            restricted = true,
-        )
-
-        db.writeAll(listOf(doom))
-
-        assertEquals(listOf(doom), db.readAll())
+        val id = db.insertManifestation(fire())
+        val renamed = Essence.of("Inferno", "burns", Rarity.Common, false) as Essence.Manifestation
+        db.updateManifestation(id, renamed)
+        assertEquals(id, db.findManifestationIdByName("Inferno"))
+        assertNull(db.findManifestationIdByName("Fire"))
     }
 
     @Test
-    fun `confluence with one set round trips`() {
+    fun `deleteManifestationById removes the row`() {
         val db = newDatabase()
-        val fire = Essence.of("Fire", "burns", Rarity.Common, false)
-        val water = Essence.of("Water", "flows", Rarity.Common, false)
-        val earth = Essence.of("Earth", "stable", Rarity.Common, false)
+        val id = db.insertManifestation(fire())
+        db.deleteManifestationById(id)
+        assertEquals(emptyList<IdentifiedManifestation>(), db.identifiedManifestations)
+    }
+
+    @Test
+    fun `insertConfluence with tagged essence refs round trips raw`() {
+        val db = newDatabase()
+        val fireId = db.insertManifestation(fire())
+        val waterId = db.insertManifestation(water())
+        val earthId = db.insertManifestation(earth())
+
+        val rawSet = RawConfluenceSet(
+            essence1Ref = "contr:$fireId",
+            essence2Ref = "contr:$waterId",
+            essence3Ref = "contr:$earthId",
+            isRestricted = false,
+        )
+        val confluenceId = db.insertConfluence("Steam", isRestricted = false, sets = listOf(rawSet))
+
+        val identified = db.identifiedConfluences
+        assertEquals(1, identified.size)
+        assertEquals(confluenceId, identified.single().id)
+        assertEquals("Steam", identified.single().name)
+        assertEquals(listOf(rawSet), identified.single().sets)
+    }
+
+    @Test
+    fun `insertConfluence preserves canon-tagged ref strings verbatim`() {
+        val db = newDatabase()
+        val rawSet = RawConfluenceSet(
+            essence1Ref = "canon:Fire",
+            essence2Ref = "canon:Water",
+            essence3Ref = "canon:Earth",
+            isRestricted = false,
+        )
+        db.insertConfluence("Steam", isRestricted = false, sets = listOf(rawSet))
+
+        assertEquals(listOf(rawSet), db.identifiedConfluences.single().sets)
+    }
+
+    @Test
+    fun `updateConfluence replaces sets but keeps id stable`() {
+        val db = newDatabase()
+        val fireId = db.insertManifestation(fire())
+        val waterId = db.insertManifestation(water())
+        val earthId = db.insertManifestation(earth())
+        val airName = "Air"  // canonical-only essence; encoded as canon:Air
+
+        val original = RawConfluenceSet(
+            essence1Ref = "contr:$fireId",
+            essence2Ref = "contr:$waterId",
+            essence3Ref = "contr:$earthId",
+            isRestricted = false,
+        )
+        val id = db.insertConfluence("Steam", false, listOf(original))
+
+        val replaced = RawConfluenceSet(
+            essence1Ref = "contr:$fireId",
+            essence2Ref = "contr:$waterId",
+            essence3Ref = "canon:$airName",
+            isRestricted = false,
+        )
+        db.updateConfluence(id, "Storm", isRestricted = true, sets = listOf(replaced))
+
+        val identified = db.identifiedConfluences.single()
+        assertEquals(id, identified.id)
+        assertEquals("Storm", identified.name)
+        assertEquals(true, identified.isRestricted)
+        assertEquals(listOf(replaced), identified.sets)
+    }
+
+    @Test
+    fun `deleteConfluenceById removes the confluence and its sets`() {
+        val db = newDatabase()
+        val rawSet = RawConfluenceSet("canon:A", "canon:B", "canon:C", false)
+        val id = db.insertConfluence("Doomed", false, listOf(rawSet))
+
+        db.deleteConfluenceById(id)
+
+        assertEquals(emptyList<IdentifiedConfluence>(), db.identifiedConfluences)
+    }
+
+    @Test
+    fun `findManifestationIdByName returns null when absent`() {
+        val db = newDatabase()
+        assertNull(db.findManifestationIdByName("Nope"))
+    }
+
+    @Test
+    fun `findConfluenceIdByName returns null when absent`() {
+        val db = newDatabase()
+        assertNull(db.findConfluenceIdByName("Nope"))
+    }
+
+    @Test
+    fun `replaceAll encodes contributed members as contr and unknown as canon`() {
+        val db = newDatabase()
         val steam = Essence.of(
             name = "Steam",
             restricted = false,
-            ConfluenceSet(setOf(fire, water, earth)),
+            ConfluenceSet(setOf(fire(), water(), earth())),
         )
 
-        db.writeAll(listOf(fire, water, earth, steam))
+        db.replaceAll(listOf(fire(), water(), earth(), steam))
 
-        val readBack = db.readAll()
-        assertEquals(listOf(earth, fire, steam, water), readBack)
-        val readConfluence = readBack.filterIsInstance<Essence.Confluence>().single()
-        assertEquals(steam, readConfluence)
+        val identifiedConf = db.identifiedConfluences.single()
+        assertEquals("Steam", identifiedConf.name)
+        // All three members were inserted as manifestations, so all three refs are contr:<id>.
+        identifiedConf.sets.single().let { set ->
+            assertTrue("essence1 should be contr-tagged: ${set.essence1Ref}", set.essence1Ref.startsWith("contr:"))
+            assertTrue("essence2 should be contr-tagged: ${set.essence2Ref}", set.essence2Ref.startsWith("contr:"))
+            assertTrue("essence3 should be contr-tagged: ${set.essence3Ref}", set.essence3Ref.startsWith("contr:"))
+        }
     }
 
     @Test
-    fun `confluence with multiple sets round trips`() {
+    fun `replaceAll wipes existing rows on each call`() {
         val db = newDatabase()
-        val fire = Essence.of("Fire", "burns", Rarity.Common, false)
-        val water = Essence.of("Water", "flows", Rarity.Common, false)
-        val earth = Essence.of("Earth", "stable", Rarity.Common, false)
-        val air = Essence.of("Air", "blows", Rarity.Common, false)
-        val multi = Essence.of(
-            name = "Multi",
-            restricted = false,
-            ConfluenceSet(setOf(fire, water, earth)),
-            ConfluenceSet(setOf(fire, water, air)),
-        )
+        val firstId = db.insertManifestation(fire())
 
-        db.writeAll(listOf(fire, water, earth, air, multi))
+        db.replaceAll(listOf(water()))
 
-        val readConfluence = db.readAll().filterIsInstance<Essence.Confluence>().single()
-        assertEquals(multi, readConfluence)
-        assertEquals(2, readConfluence.confluenceSets.size)
-    }
-
-    @Test
-    fun `restricted flags on confluence and individual sets round trip`() {
-        val db = newDatabase()
-        val fire = Essence.of("Fire", "burns", Rarity.Common, false)
-        val water = Essence.of("Water", "flows", Rarity.Common, false)
-        val earth = Essence.of("Earth", "stable", Rarity.Common, false)
-        val secret = Essence.of(
-            name = "Secret",
-            restricted = true,
-            ConfluenceSet(setOf(fire, water, earth), isRestricted = true),
-        )
-
-        db.writeAll(listOf(fire, water, earth, secret))
-
-        val readConfluence = db.readAll().filterIsInstance<Essence.Confluence>().single()
-        assertEquals(true, readConfluence.isRestricted)
-        assertEquals(true, readConfluence.confluenceSets.single().isRestricted)
-    }
-
-    @Test
-    fun `result is sorted by name interleaving manifestations and confluences`() {
-        val db = newDatabase()
-        val apple = Essence.of("Apple", "tart", Rarity.Common, false)
-        val beta = Essence.of("Beta", "second", Rarity.Common, false)
-        val charlie = Essence.of("Charlie", "third", Rarity.Common, false)
-        val zebra = Essence.of("Zebra", "striped", Rarity.Common, false)
-        val aardvark = Essence.of(
-            name = "Aardvark",
-            restricted = false,
-            ConfluenceSet(setOf(apple, beta, charlie)),
-        )
-
-        db.writeAll(listOf(apple, beta, charlie, zebra, aardvark))
-
-        assertEquals(
-            listOf("Aardvark", "Apple", "Beta", "Charlie", "Zebra"),
-            db.readAll().map { it.name },
-        )
-    }
-
-    @Test
-    fun `writeAll replaces previous contents`() {
-        val db = newDatabase()
-        val first = Essence.of("First", "one", Rarity.Common, false)
-        val second = Essence.of("Second", "two", Rarity.Rare, false)
-
-        db.writeAll(listOf(first))
-        db.writeAll(listOf(second))
-
-        assertEquals(listOf(second), db.readAll())
+        assertNull(db.findManifestationIdByName("Fire"))
+        val identified = db.identifiedManifestations
+        assertEquals(1, identified.size)
+        assertEquals("Water", identified.single().manifestation.name)
+        assertNotEquals(firstId, identified.single().id)
     }
 }

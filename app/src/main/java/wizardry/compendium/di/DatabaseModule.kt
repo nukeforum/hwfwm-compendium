@@ -19,7 +19,6 @@ import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.DatabaseAwakeningStoneCache
 import wizardry.compendium.persistence.DatabaseCharacterBuildCache
-import wizardry.compendium.persistence.DatabaseEssenceCache
 import wizardry.compendium.persistence.DatabaseStatusEffectCache
 import wizardry.compendium.persistence.EssenceCache
 import wizardry.compendium.persistence.EssenceDatabase
@@ -35,20 +34,16 @@ abstract class DatabaseModule {
         @Singleton
         @Canonical
         fun provideCanonicalEssenceCache(@ApplicationContext context: Context): EssenceCache =
-            DatabaseEssenceCache(
-                EssenceDatabase(
-                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
-                )
+            EssenceDatabase(
+                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
             )
 
         @Provides
         @Singleton
         @Contributions
         fun provideContributionsEssenceCache(@ApplicationContext context: Context): EssenceCache =
-            DatabaseEssenceCache(
-                EssenceDatabase(
-                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-                )
+            EssenceDatabase(
+                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
             )
 
         @Provides
