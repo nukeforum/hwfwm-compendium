@@ -9,6 +9,7 @@ import org.junit.Test
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.persistence.AbilityListingCache
+import wizardry.compendium.persistence.IdentifiedListing
 import wizardry.compendium.preferences.AbilityListingContributionsToggle
 import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
 
@@ -71,7 +72,22 @@ private fun repository(
 }
 
 private class FakeAbilityListingCache(initial: List<Ability.Listing>) : AbilityListingCache {
-    override var contents: List<Ability.Listing> = initial
+    private val rows = initial.mapIndexed { i, l -> IdentifiedListing(i.toLong(), l) }.toMutableList()
+    private var nextId = initial.size.toLong()
+    override val identified: List<IdentifiedListing> get() = rows.toList()
+    override fun insert(listing: Ability.Listing): Long {
+        val id = nextId++; rows.add(IdentifiedListing(id, listing)); return id
+    }
+    override fun update(id: Long, listing: Ability.Listing) {
+        val idx = rows.indexOfFirst { it.id == id }; if (idx >= 0) rows[idx] = IdentifiedListing(id, listing)
+    }
+    override fun deleteById(id: Long) { rows.removeAll { it.id == id } }
+    override fun findIdByName(name: String): Long? = rows.firstOrNull { it.listing.name == name }?.id
+    override fun replaceAll(listings: List<Ability.Listing>) {
+        rows.clear(); nextId = 0; listings.forEach { rows.add(IdentifiedListing(nextId++, it)) }
+    }
+    override fun selectEffectsWithStatusTokens(): List<Pair<Long, String>> = emptyList()
+    override fun updateEffectDescription(effectId: Long, description: String) {}
 }
 
 private class FakeAbilityListingToggle(override val isAbilityListingContributionsEnabled: Boolean) :

@@ -74,7 +74,7 @@ internal class DefaultStatusEffectRepository @Inject constructor(
                 "A status effect named \"${effect.name}\" already exists"
             )
         }
-        contributionsCache.contents = existing + effect
+        contributionsCache.insert(effect)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -87,12 +87,13 @@ internal class DefaultStatusEffectRepository @Inject constructor(
     override suspend fun deleteContribution(name: String): ContributionResult = writeMutex.withLock {
         val key = name.normalized()
         val existing = contributionsCache.contents
-        if (existing.none { it.name.normalized() == key }) {
-            return@withLock ContributionResult.Failure(
+        val target = existing.firstOrNull { it.name.normalized() == key }
+            ?: return@withLock ContributionResult.Failure(
                 "No contribution exists for \"$name\""
             )
-        }
-        contributionsCache.contents = existing.filterNot { it.name.normalized() == key }
+        val id = contributionsCache.findIdByName(target.name)
+            ?: return@withLock ContributionResult.Failure("No contribution exists for \"$name\"")
+        contributionsCache.deleteById(id)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -107,9 +108,11 @@ internal class DefaultStatusEffectRepository @Inject constructor(
                 "No contributed status effect named \"${effect.name}\""
             )
         }
-        contributionsCache.contents = existing.map {
-            if (it.name.normalized() == key) effect else it
-        }
+        val id = contributionsCache.findIdByName(effect.name)
+            ?: return@withLock ContributionResult.Failure(
+                "No contributed status effect named \"${effect.name}\""
+            )
+        contributionsCache.update(id, effect)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -118,7 +121,7 @@ internal class DefaultStatusEffectRepository @Inject constructor(
         val current = canonicalCache.contents
         if (current.isNotEmpty()) return current
         val loaded = dataLoader.loadStatusEffectData()
-        canonicalCache.contents = loaded
+        canonicalCache.replaceAll(loaded)
         return loaded
     }
 

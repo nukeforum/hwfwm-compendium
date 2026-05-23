@@ -15,6 +15,7 @@ import wizardry.compendium.domain.model.ConfluenceSet
 import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.domain.model.Rarity
 import wizardry.compendium.persistence.AwakeningStoneCache
+import wizardry.compendium.persistence.IdentifiedAwakeningStone
 import wizardry.compendium.preferences.AwakeningStoneContributionsToggle
 import wizardry.compendium.preferences.AwakeningStoneContributionsToggleFlow
 import wizardry.compendium.preferences.EssencesAsAwakeningStonesToggle
@@ -180,7 +181,20 @@ private fun repository(
 }
 
 private class FakeAwakeningStoneCache(initial: List<AwakeningStone>) : AwakeningStoneCache {
-    override var contents: List<AwakeningStone> = initial
+    private val rows = initial.mapIndexed { i, s -> IdentifiedAwakeningStone(i.toLong(), s) }.toMutableList()
+    private var nextId = initial.size.toLong()
+    override val identified: List<IdentifiedAwakeningStone> get() = rows.toList()
+    override fun insert(stone: AwakeningStone): Long {
+        val id = nextId++; rows.add(IdentifiedAwakeningStone(id, stone)); return id
+    }
+    override fun update(id: Long, stone: AwakeningStone) {
+        val idx = rows.indexOfFirst { it.id == id }; if (idx >= 0) rows[idx] = IdentifiedAwakeningStone(id, stone)
+    }
+    override fun deleteById(id: Long) { rows.removeAll { it.id == id } }
+    override fun findIdByName(name: String): Long? = rows.firstOrNull { it.stone.name == name }?.id
+    override fun replaceAll(stones: List<AwakeningStone>) {
+        rows.clear(); nextId = 0; stones.forEach { rows.add(IdentifiedAwakeningStone(nextId++, it)) }
+    }
 }
 
 private class FakeAwakeningStoneToggle(override val isAwakeningStoneContributionsEnabled: Boolean) :

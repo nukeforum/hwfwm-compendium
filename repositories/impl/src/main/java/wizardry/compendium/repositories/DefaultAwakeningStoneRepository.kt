@@ -97,7 +97,7 @@ internal class DefaultAwakeningStoneRepository @Inject constructor(
                 "An awakening stone named \"${stone.name}\" already exists"
             )
         }
-        contributionsCache.contents = existing + stone
+        contributionsCache.insert(stone)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -110,12 +110,13 @@ internal class DefaultAwakeningStoneRepository @Inject constructor(
     override suspend fun deleteContribution(name: String): ContributionResult = writeMutex.withLock {
         val key = name.normalized()
         val existing = contributionsCache.contents
-        if (existing.none { it.name.normalized() == key }) {
-            return@withLock ContributionResult.Failure(
+        val target = existing.firstOrNull { it.name.normalized() == key }
+            ?: return@withLock ContributionResult.Failure(
                 "No contribution exists for \"$name\""
             )
-        }
-        contributionsCache.contents = existing.filterNot { it.name.normalized() == key }
+        val id = contributionsCache.findIdByName(target.name)
+            ?: return@withLock ContributionResult.Failure("No contribution exists for \"$name\"")
+        contributionsCache.deleteById(id)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -130,9 +131,11 @@ internal class DefaultAwakeningStoneRepository @Inject constructor(
                 "No contributed awakening stone named \"${stone.name}\""
             )
         }
-        contributionsCache.contents = existing.map {
-            if (it.name.normalized() == key) stone else it
-        }
+        val id = contributionsCache.findIdByName(stone.name)
+            ?: return@withLock ContributionResult.Failure(
+                "No contributed awakening stone named \"${stone.name}\""
+            )
+        contributionsCache.update(id, stone)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -141,7 +144,7 @@ internal class DefaultAwakeningStoneRepository @Inject constructor(
         val current = canonicalCache.contents
         if (current.isNotEmpty()) return current
         val loaded = dataLoader.loadAwakeningStoneData()
-        canonicalCache.contents = loaded
+        canonicalCache.replaceAll(loaded)
         return loaded
     }
 

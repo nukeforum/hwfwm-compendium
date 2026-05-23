@@ -9,6 +9,7 @@ import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.essences.dataloader.StatusEffectDataLoader
 import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.domain.model.StatusType
+import wizardry.compendium.persistence.IdentifiedStatusEffect
 import wizardry.compendium.persistence.StatusEffectCache
 import wizardry.compendium.preferences.StatusEffectContributionsToggle
 import wizardry.compendium.preferences.StatusEffectContributionsToggleFlow
@@ -24,7 +25,20 @@ class DefaultStatusEffectRepositoryTest {
     )
 
     private class FakeCache(initial: List<StatusEffect> = emptyList()) : StatusEffectCache {
-        override var contents: List<StatusEffect> = initial
+        private val rows = initial.mapIndexed { i, e -> IdentifiedStatusEffect(i.toLong(), e) }.toMutableList()
+        private var nextId = initial.size.toLong()
+        override val identified: List<IdentifiedStatusEffect> get() = rows.toList()
+        override fun insert(statusEffect: StatusEffect): Long {
+            val id = nextId++; rows.add(IdentifiedStatusEffect(id, statusEffect)); return id
+        }
+        override fun update(id: Long, statusEffect: StatusEffect) {
+            val idx = rows.indexOfFirst { it.id == id }; if (idx >= 0) rows[idx] = IdentifiedStatusEffect(id, statusEffect)
+        }
+        override fun deleteById(id: Long) { rows.removeAll { it.id == id } }
+        override fun findIdByName(name: String): Long? = rows.firstOrNull { it.statusEffect.name == name }?.id
+        override fun replaceAll(statusEffects: List<StatusEffect>) {
+            rows.clear(); nextId = 0; statusEffects.forEach { rows.add(IdentifiedStatusEffect(nextId++, it)) }
+        }
     }
 
     private class FakeLoader(private val data: List<StatusEffect>) : StatusEffectDataLoader {

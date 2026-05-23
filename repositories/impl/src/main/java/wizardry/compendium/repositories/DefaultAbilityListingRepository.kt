@@ -74,7 +74,7 @@ internal class DefaultAbilityListingRepository @Inject constructor(
                 "An ability named \"${listing.name}\" already exists"
             )
         }
-        contributionsCache.contents = existing + listing
+        contributionsCache.insert(listing)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -87,12 +87,13 @@ internal class DefaultAbilityListingRepository @Inject constructor(
     override suspend fun deleteContribution(name: String): ContributionResult = writeMutex.withLock {
         val key = name.normalized()
         val existing = contributionsCache.contents
-        if (existing.none { it.name.normalized() == key }) {
-            return@withLock ContributionResult.Failure(
+        val target = existing.firstOrNull { it.name.normalized() == key }
+            ?: return@withLock ContributionResult.Failure(
                 "No contribution exists for \"$name\""
             )
-        }
-        contributionsCache.contents = existing.filterNot { it.name.normalized() == key }
+        val id = contributionsCache.findIdByName(target.name)
+            ?: return@withLock ContributionResult.Failure("No contribution exists for \"$name\"")
+        contributionsCache.deleteById(id)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -107,9 +108,11 @@ internal class DefaultAbilityListingRepository @Inject constructor(
                 "No contributed ability named \"${listing.name}\""
             )
         }
-        contributionsCache.contents = existing.map {
-            if (it.name.normalized() == key) listing else it
-        }
+        val id = contributionsCache.findIdByName(listing.name)
+            ?: return@withLock ContributionResult.Failure(
+                "No contributed ability named \"${listing.name}\""
+            )
+        contributionsCache.update(id, listing)
         invalidations.update { it + 1 }
         ContributionResult.Success
     }
@@ -118,7 +121,7 @@ internal class DefaultAbilityListingRepository @Inject constructor(
         val current = canonicalCache.contents
         if (current.isNotEmpty()) return current
         val loaded = dataLoader.loadAbilityListingData()
-        canonicalCache.contents = loaded
+        canonicalCache.replaceAll(loaded)
         return loaded
     }
 
