@@ -7,10 +7,12 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.domain.model.Property
 import wizardry.compendium.domain.model.StatusEffect
@@ -33,6 +35,9 @@ class StatusEffectContributionsViewModel @Inject constructor(
 
     private val _mode = MutableStateFlow<Mode>(if (editName == null) Mode.Create else Mode.Edit.Loading)
     val mode = _mode.asStateFlow()
+
+    private val _deleteImpact = MutableStateFlow<DeleteImpact?>(null)
+    val deleteImpact: StateFlow<DeleteImpact?> = _deleteImpact.asStateFlow()
 
     private val _importEvents = MutableSharedFlow<ImportEvent>(extraBufferCapacity = 1)
     val importEvents: SharedFlow<ImportEvent> = _importEvents.asSharedFlow()
@@ -71,7 +76,10 @@ class StatusEffectContributionsViewModel @Inject constructor(
                 description = description,
             )
             val result = if (editName != null) {
-                repository.updateStatusEffectContribution(effect)
+                repository.updateStatusEffectContribution(
+                    originalName = editName,
+                    effect = effect,
+                )
             } else {
                 repository.saveStatusEffectContribution(effect)
             }
@@ -80,6 +88,22 @@ class StatusEffectContributionsViewModel @Inject constructor(
                 is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
             }
         }
+    }
+
+    fun requestDelete() {
+        val target = (mode.value as? Mode.Edit.Ready)?.effect ?: return
+        viewModelScope.launch {
+            _deleteImpact.value = repository.checkDeleteImpact(target.name)
+        }
+    }
+
+    fun cancelDelete() {
+        _deleteImpact.value = null
+    }
+
+    fun confirmDelete() {
+        _deleteImpact.value = null
+        deleteContribution()
     }
 
     fun deleteContribution() {

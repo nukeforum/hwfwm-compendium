@@ -155,6 +155,8 @@ private class TestStubStatusEffectRepository(initial: List<ModelStatusEffect>) :
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult =
         error("not used in tests")
-    override suspend fun updateStatusEffectContribution(effect: ModelStatusEffect): ContributionResult =
+    override suspend fun updateStatusEffectContribution(originalName: String, effect: ModelStatusEffect): ContributionResult =
         error("not used in tests")
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact =
+        wizardry.compendium.repositories.DeleteImpact()
 }

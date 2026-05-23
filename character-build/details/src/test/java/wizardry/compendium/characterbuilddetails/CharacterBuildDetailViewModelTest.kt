@@ -182,6 +182,7 @@ class CharacterBuildDetailViewModelTest {
         override suspend fun saveStatusEffectContribution(effect: StatusEffect): ContributionResult = ContributionResult.Success
         override suspend fun isContribution(name: String): Boolean = false
         override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
-        override suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult = ContributionResult.Success
+        override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect): ContributionResult = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
     }
 }

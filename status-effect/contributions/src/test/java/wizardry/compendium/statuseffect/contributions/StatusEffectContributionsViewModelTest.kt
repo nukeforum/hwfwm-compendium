@@ -62,9 +62,10 @@ class StatusEffectContributionsViewModelTest {
         override suspend fun deleteContribution(name: String): ContributionResult {
             lastDeleted = name; return saveResult
         }
-        override suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult {
+        override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect): ContributionResult {
             lastUpdated = effect; return saveResult
         }
+        override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
     }
 
     @Test
@@ -169,5 +170,6 @@ private object VmStubEffectRepo : StatusEffectRepository {
     override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
 }

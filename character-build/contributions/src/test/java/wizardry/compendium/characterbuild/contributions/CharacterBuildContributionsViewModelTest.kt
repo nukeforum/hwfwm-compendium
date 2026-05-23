@@ -1112,7 +1112,8 @@ class CharacterBuildContributionsViewModelTest {
         override suspend fun saveStatusEffectContribution(effect: wizardry.compendium.domain.model.StatusEffect) = ContributionResult.Success
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
-        override suspend fun updateStatusEffectContribution(effect: wizardry.compendium.domain.model.StatusEffect) = ContributionResult.Success
+        override suspend fun updateStatusEffectContribution(originalName: String, effect: wizardry.compendium.domain.model.StatusEffect) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
     }
 
     private class NoOpEssenceRepoForDecoder : EssenceRepository {

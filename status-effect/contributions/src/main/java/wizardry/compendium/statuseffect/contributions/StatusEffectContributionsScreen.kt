@@ -38,6 +38,7 @@ import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.domain.model.StatusType
 import wizardry.compendium.ui.ContributionErrorFeedback
 import wizardry.compendium.ui.DeleteContributionButton
+import wizardry.compendium.ui.DeleteWithReferencesDialog
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.preferences.ThemeMode
@@ -96,6 +97,7 @@ fun StatusEffectContributionsScreen(
 ) {
     val saveState by viewModel.saveState.collectAsState()
     val mode by viewModel.mode.collectAsState()
+    val deleteImpact by viewModel.deleteImpact.collectAsState()
 
     LaunchedEffect(saveState) {
         when (saveState) {
@@ -150,9 +152,23 @@ fun StatusEffectContributionsScreen(
                 onSave = { name, type, properties, stackable, description ->
                     viewModel.save(name, type, properties, stackable, description)
                 },
-                onDelete = viewModel::deleteContribution,
+                onDelete = viewModel::requestDelete,
                 onImportClick = null,
             )
+            deleteImpact?.let { impact ->
+                if (impact.isEmpty) {
+                    LaunchedEffect(impact) { viewModel.confirmDelete() }
+                } else {
+                    DeleteWithReferencesDialog(
+                        contributionName = current.effect.name,
+                        impact = impact,
+                        explanatoryNote = "Deleting will leave the {status:${current.effect.name}} " +
+                            "tokens in these abilities unresolved. They cannot be auto-restored.",
+                        onCancel = viewModel::cancelDelete,
+                        onConfirm = viewModel::confirmDelete,
+                    )
+                }
+            }
         }
     }
 
@@ -265,7 +281,6 @@ private fun StatusEffectForm(
             label = { Text("Name *") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            readOnly = isEdit,
         )
 
         TypePicker(

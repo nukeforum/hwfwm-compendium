@@ -96,7 +96,8 @@ private class ImportFakeRepo : StatusEffectRepository {
     override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private fun stubWireIo(): WireIoRepository = WireIoRepository(

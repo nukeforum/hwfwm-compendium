@@ -160,7 +160,8 @@ private object StubEffectRepo : StatusEffectRepository {
     override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
 }
 
 private class FakeListingRepo(
@@ -187,5 +188,6 @@ private class FakeEffectRepo : StatusEffectRepository {
     override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
 }

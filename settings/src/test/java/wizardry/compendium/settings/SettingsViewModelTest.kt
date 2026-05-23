@@ -331,8 +331,10 @@ private class StubStatusEffectRepository(
         ContributionResult.Success
     override suspend fun isContribution(name: String): Boolean = false
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
-    override suspend fun updateStatusEffectContribution(effect: ModelStatusEffect): ContributionResult =
+    override suspend fun updateStatusEffectContribution(originalName: String, effect: ModelStatusEffect): ContributionResult =
         ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact =
+        wizardry.compendium.repositories.DeleteImpact()
 }
 
 private class FakeSettingsBackupCoordinator : BackupCoordinatorApi {

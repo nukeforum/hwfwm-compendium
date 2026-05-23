@@ -21,5 +21,20 @@ interface StatusEffectRepository {
 
     suspend fun deleteContribution(name: String): ContributionResult
 
-    suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult
+    /**
+     * Update a contributed status effect. When [effect.name] differs from
+     * [originalName] (case-insensitive), the repository performs a cascade
+     * rewrite of all `{status:ORIGINALNAME}` tokens found in contributed
+     * ability descriptions, atomically within the same write-mutex block.
+     */
+    suspend fun updateStatusEffectContribution(
+        originalName: String,
+        effect: StatusEffect,
+    ): ContributionResult
+
+    /**
+     * Scan contributed ability descriptions for `{status:NAME}` tokens that
+     * reference this status effect. Returns the names of any abilities found.
+     */
+    suspend fun checkDeleteImpact(name: String): DeleteImpact
 }

@@ -345,6 +345,7 @@ class DefaultIntegritySweepTest {
         override suspend fun saveStatusEffectContribution(effect: StatusEffect): ContributionResult = error("not used")
         override suspend fun isContribution(name: String) = false
         override suspend fun deleteContribution(name: String): ContributionResult = error("not used")
-        override suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult = error("not used")
+        override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect): ContributionResult = error("not used")
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 }

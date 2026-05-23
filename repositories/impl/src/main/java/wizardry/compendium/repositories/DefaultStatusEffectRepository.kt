@@ -9,11 +9,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import wizardry.compendium.repositories.ContributionResult
+import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.essences.dataloader.StatusEffectDataLoader
 import wizardry.compendium.repositories.detectStatusEffectConflicts
 import wizardry.compendium.domain.model.StatusEffect
+import wizardry.compendium.persistence.AbilityListingCache
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.StatusEffectCache
@@ -25,6 +27,7 @@ internal class DefaultStatusEffectRepository @Inject constructor(
     private val dataLoader: StatusEffectDataLoader,
     @param:Canonical private val canonicalCache: StatusEffectCache,
     @param:Contributions private val contributionsCache: StatusEffectCache,
+    @param:Contributions private val abilityListingContributionsCache: AbilityListingCache,
     private val toggle: StatusEffectContributionsToggle,
     toggleFlow: StatusEffectContributionsToggleFlow,
 ) : StatusEffectRepository {
@@ -99,22 +102,76 @@ internal class DefaultStatusEffectRepository @Inject constructor(
     }
 
     override suspend fun updateStatusEffectContribution(
+        originalName: String,
         effect: StatusEffect,
     ): ContributionResult = writeMutex.withLock {
-        val key = effect.name.normalized()
-        val existing = contributionsCache.contents
-        if (existing.none { it.name.normalized() == key }) {
-            return@withLock ContributionResult.Failure(
-                "No contributed status effect named \"${effect.name}\""
-            )
-        }
-        val id = contributionsCache.findIdByName(effect.name)
+        val id = contributionsCache.findIdByName(originalName)
             ?: return@withLock ContributionResult.Failure(
-                "No contributed status effect named \"${effect.name}\""
+                "No contributed status effect named \"$originalName\""
             )
+        val nameChanged = !effect.name.equals(originalName, ignoreCase = true)
+        if (nameChanged) {
+            val canonical = ensureCanonicalLoaded()
+            val key = effect.name.normalized()
+            val canonicalNames = canonical.map { it.name.normalized() }.toSet()
+            val contributedNames = contributionsCache.identified
+                .map { it.statusEffect.name.normalized() }
+                .toSet() - originalName.normalized()
+            if (key in canonicalNames || key in contributedNames) {
+                return@withLock ContributionResult.Failure(
+                    "A status effect named \"${effect.name}\" already exists"
+                )
+            }
+        }
         contributionsCache.update(id, effect)
+        if (nameChanged) {
+            rewriteStatusTokens(originalName = originalName, newName = effect.name)
+        }
         invalidations.update { it + 1 }
         ContributionResult.Success
+    }
+
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact {
+        val tokenRegex = Regex("""\{status:([^}]+)\}""", RegexOption.IGNORE_CASE)
+        val target = name.normalized()
+        val abilityNames = abilityListingContributionsCache.identified
+            .filter { (_, listing) ->
+                listing.effects.any { effect ->
+                    tokenRegex.findAll(effect.description).any { match ->
+                        match.groupValues[1].normalized() == target
+                    }
+                }
+            }
+            .map { it.listing.name }
+            .distinct()
+            .sorted()
+        return DeleteImpact(referencingAbilityListings = abilityNames)
+    }
+
+    /**
+     * Rewrite `{status:ORIGINALNAME}` tokens in contributed ability descriptions
+     * to `{status:NEWNAME}`. Prefix-safe: only exact (case-insensitive) inner-name
+     * matches are rewritten. E.g., renaming "Burn" does NOT affect "{status:Burning}".
+     * Called inside writeMutex; no additional locking needed.
+     */
+    private fun rewriteStatusTokens(originalName: String, newName: String) {
+        val tokenRegex = Regex("""\{status:([^}]+)\}""", RegexOption.IGNORE_CASE)
+        val effectsWithTokens = abilityListingContributionsCache.selectEffectsWithStatusTokens()
+        for ((effectId, description) in effectsWithTokens) {
+            var changed = false
+            val rewritten = tokenRegex.replace(description) { match ->
+                val captured = match.groupValues[1]
+                if (captured.equals(originalName, ignoreCase = true)) {
+                    changed = true
+                    "{status:$newName}"
+                } else {
+                    match.value
+                }
+            }
+            if (changed) {
+                abilityListingContributionsCache.updateEffectDescription(effectId, rewritten)
+            }
+        }
     }
 
     private suspend fun ensureCanonicalLoaded(): List<StatusEffect> {

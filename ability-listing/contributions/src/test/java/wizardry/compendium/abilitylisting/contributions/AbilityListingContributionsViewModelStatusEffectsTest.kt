@@ -86,8 +86,10 @@ class AbilityListingContributionsViewModelStatusEffectsTest {
         override suspend fun isContribution(name: String): Boolean = false
         override suspend fun deleteContribution(name: String): ContributionResult =
             ContributionResult.Failure("not used")
-        override suspend fun updateStatusEffectContribution(effect: StatusEffect): ContributionResult =
+        override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect): ContributionResult =
             ContributionResult.Failure("not used")
+        override suspend fun checkDeleteImpact(name: String): wizardry.compendium.repositories.DeleteImpact =
+            wizardry.compendium.repositories.DeleteImpact()
     }
 
     private object NoopAbilityListingRepository : AbilityListingRepository {
@@ -173,5 +175,6 @@ private object VmStubEffectRepo : StatusEffectRepository {
     override suspend fun saveStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
     override suspend fun isContribution(name: String) = false
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
-    override suspend fun updateStatusEffectContribution(effect: StatusEffect) = ContributionResult.Success
+    override suspend fun updateStatusEffectContribution(originalName: String, effect: StatusEffect) = ContributionResult.Success
+    override suspend fun checkDeleteImpact(name: String) = wizardry.compendium.repositories.DeleteImpact()
 }
