@@ -5,7 +5,6 @@ import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
-import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.domain.model.AwakeningStone
 import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.domain.model.Property
@@ -73,16 +72,6 @@ class DatabaseCacheTest {
         val cache = DatabaseAwakeningStoneCache(AwakeningStoneDatabase(driver))
 
         assertEquals(listOf(stone), cache.contents)
-    }
-
-    @Test
-    fun `ability listing cache reads from database`() {
-        val driver = newDriver()
-        val listing = Ability.Listing(name = "Bare", effects = emptyList())
-        AbilityListingDatabase(driver).writeAll(listOf(listing))
-        val cache = DatabaseAbilityListingCache(AbilityListingDatabase(driver))
-
-        assertEquals(listOf(listing), cache.contents)
     }
 
     @Test

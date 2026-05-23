@@ -17,7 +17,6 @@ import wizardry.compendium.persistence.CharacterBuildCache
 import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.Contributions
-import wizardry.compendium.persistence.DatabaseAbilityListingCache
 import wizardry.compendium.persistence.DatabaseAwakeningStoneCache
 import wizardry.compendium.persistence.DatabaseCharacterBuildCache
 import wizardry.compendium.persistence.DatabaseEssenceCache
@@ -76,20 +75,16 @@ abstract class DatabaseModule {
         @Singleton
         @Canonical
         fun provideCanonicalAbilityListingCache(@ApplicationContext context: Context): AbilityListingCache =
-            DatabaseAbilityListingCache(
-                AbilityListingDatabase(
-                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
-                )
+            AbilityListingDatabase(
+                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
             )
 
         @Provides
         @Singleton
         @Contributions
         fun provideContributionsAbilityListingCache(@ApplicationContext context: Context): AbilityListingCache =
-            DatabaseAbilityListingCache(
-                AbilityListingDatabase(
-                    AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-                )
+            AbilityListingDatabase(
+                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
             )
 
         @Provides

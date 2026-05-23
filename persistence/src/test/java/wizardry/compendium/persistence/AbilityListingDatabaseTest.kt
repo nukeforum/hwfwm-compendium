@@ -2,6 +2,9 @@ package wizardry.compendium.persistence
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.domain.model.AbilityType
@@ -22,109 +25,95 @@ class AbilityListingDatabaseTest {
     }
 
     @Test
-    fun `name only listing round trips`() {
+    fun `insert assigns a positive id and identified reads it back`() {
         val db = newDatabase()
-        val listing = Ability.Listing(name = "Bare", effects = emptyList())
+        val listing = Ability.Listing(name = "Inferno Ring", effects = listOf(richEffect()))
 
-        db.writeAll(listOf(listing))
+        val id = db.insert(listing)
 
-        assertEquals(listOf(listing), db.readAll())
+        assertTrue("id must be positive", id > 0)
+        assertEquals(listOf(IdentifiedListing(id, listing)), db.identified)
     }
 
     @Test
-    fun `listing with full effect round trips`() {
+    fun `consecutive inserts allocate distinct ids`() {
         val db = newDatabase()
-        val effect = Effect.AbilityEffect(
-            rank = Rank.Bronze,
-            type = AbilityType.Spell,
-            properties = listOf(Property.Fire, Property.Magic, Property.Zone),
-            cost = listOf(
-                Cost.Upfront(Amount.Low, Resource.Mana),
-                Cost.Ongoing(Amount.VeryLow, Resource.Stamina),
-            ),
-            cooldown = 30.seconds,
-            description = "A scorching ring of flame.",
-            replacementKey = "fireball-v2",
-        )
-        val listing = Ability.Listing(name = "Inferno Ring", effects = listOf(effect))
-
-        db.writeAll(listOf(listing))
-
-        assertEquals(listOf(listing), db.readAll())
+        val id1 = db.insert(Ability.Listing(name = "A", effects = emptyList()))
+        val id2 = db.insert(Ability.Listing(name = "B", effects = emptyList()))
+        assertNotEquals(id1, id2)
     }
 
     @Test
-    fun `multiple effects preserve order`() {
+    fun `update preserves id across name change`() {
         val db = newDatabase()
-        val ironEffect = baseEffect(Rank.Iron, "Iron tier description")
-        val bronzeEffect = baseEffect(Rank.Bronze, "Bronze tier description")
-        val silverEffect = baseEffect(Rank.Silver, "Silver tier description")
-        val listing = Ability.Listing(
-            name = "Tiered Ability",
-            effects = listOf(ironEffect, bronzeEffect, silverEffect),
+        val original = Ability.Listing(name = "Original", effects = listOf(simpleEffect("first")))
+        val id = db.insert(original)
+
+        val renamed = Ability.Listing(name = "Renamed", effects = listOf(simpleEffect("first")))
+        db.update(id, renamed)
+
+        assertEquals(listOf(IdentifiedListing(id, renamed)), db.identified)
+        assertEquals(id, db.findIdByName("Renamed"))
+        assertNull(db.findIdByName("Original"))
+    }
+
+    @Test
+    fun `update replaces effects but keeps listing id stable`() {
+        val db = newDatabase()
+        val id = db.insert(
+            Ability.Listing(name = "Tiered", effects = listOf(simpleEffect("iron"), simpleEffect("bronze")))
         )
 
-        db.writeAll(listOf(listing))
+        val replaced = Ability.Listing(name = "Tiered", effects = listOf(simpleEffect("only")))
+        db.update(id, replaced)
 
-        assertEquals(listOf(listing), db.readAll())
+        assertEquals(listOf(IdentifiedListing(id, replaced)), db.identified)
     }
 
     @Test
-    fun `cost none round trips`() {
+    fun `deleteById removes the listing and its effects`() {
         val db = newDatabase()
-        val effect = baseEffect(Rank.Iron, "passive").copy(cost = listOf(Cost.None))
-        val listing = Ability.Listing(name = "Passive", effects = listOf(effect))
+        val id = db.insert(Ability.Listing(name = "Doomed", effects = listOf(richEffect())))
 
-        db.writeAll(listOf(listing))
+        db.deleteById(id)
 
-        assertEquals(listOf(listing), db.readAll())
+        assertEquals(emptyList<IdentifiedListing>(), db.identified)
     }
 
     @Test
-    fun `null replacement key round trips`() {
+    fun `findIdByName returns null when not found`() {
         val db = newDatabase()
-        val effect = baseEffect(Rank.Iron, "no replacement").copy(replacementKey = null)
-        val listing = Ability.Listing(name = "Plain", effects = listOf(effect))
-
-        db.writeAll(listOf(listing))
-
-        assertEquals(listOf(listing), db.readAll())
+        assertNull(db.findIdByName("Ghost"))
     }
 
     @Test
-    fun `multiple listings round trip sorted by name`() {
+    fun `replaceAll wipes existing rows and re-inserts`() {
         val db = newDatabase()
-        val zebra = Ability.Listing(name = "Zebra", effects = emptyList())
-        val apple = Ability.Listing(
-            name = "Apple",
-            effects = listOf(baseEffect(Rank.Iron, "apple desc")),
-        )
+        val firstId = db.insert(Ability.Listing(name = "First", effects = emptyList()))
+        val replacement = Ability.Listing(name = "Replacement", effects = listOf(richEffect()))
 
-        db.writeAll(listOf(zebra, apple))
+        db.replaceAll(listOf(replacement))
 
-        assertEquals(listOf(apple, zebra), db.readAll())
+        // First listing is gone (its id is no longer valid).
+        assertNull(db.findIdByName("First"))
+        val identified = db.identified
+        assertEquals(1, identified.size)
+        assertEquals(replacement, identified.single().listing)
+        assertNotEquals(firstId, identified.single().id)
     }
 
-    @Test
-    fun `writeAll replaces previous contents`() {
-        val db = newDatabase()
-        val first = Ability.Listing(
-            name = "First",
-            effects = listOf(baseEffect(Rank.Iron, "first desc")),
-        )
-        val second = Ability.Listing(
-            name = "Second",
-            effects = listOf(baseEffect(Rank.Bronze, "second desc")),
-        )
+    private fun richEffect() = Effect.AbilityEffect(
+        rank = Rank.Bronze,
+        type = AbilityType.Spell,
+        properties = listOf(Property.Fire, Property.Magic),
+        cost = listOf(Cost.Upfront(Amount.Low, Resource.Mana)),
+        cooldown = 30.seconds,
+        description = "Hot.",
+        replacementKey = "fb",
+    )
 
-        db.writeAll(listOf(first))
-        db.writeAll(listOf(second))
-
-        assertEquals(listOf(second), db.readAll())
-    }
-
-    private fun baseEffect(rank: Rank, description: String) = Effect.AbilityEffect(
-        rank = rank,
+    private fun simpleEffect(description: String) = Effect.AbilityEffect(
+        rank = Rank.Iron,
         type = AbilityType.SpecialAttack,
         properties = listOf(Property.Melee),
         cost = listOf(Cost.Upfront(Amount.Moderate, Resource.Stamina)),
