@@ -21,6 +21,8 @@ import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
+import wizardry.compendium.repositories.IntegrityIssue
+import wizardry.compendium.repositories.IntegritySweep
 import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.domain.model.Ability
@@ -65,7 +67,7 @@ class ConflictsViewModelTest {
                 AbilityListingConflict.NameCollision(listing("Fireball"), listing("Fireball")),
             ),
         )
-        val vm = ConflictsViewModel(essenceRepo, stoneRepo, abilityRepo, FakeStatusEffectRepo(), dispatcher)
+        val vm = ConflictsViewModel(essenceRepo, stoneRepo, abilityRepo, FakeStatusEffectRepo(), FakeIntegritySweep(), dispatcher)
 
         // Subscribe so stateIn starts collecting
         val collector = launch { vm.state.collect {} }
@@ -83,7 +85,7 @@ class ConflictsViewModelTest {
     @Test
     fun `delete essence contribution dispatches to repository`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), dispatcher)
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), FakeIntegritySweep(), dispatcher)
 
         vm.deleteEssenceContribution("Wind")
         advanceUntilIdle()
@@ -94,7 +96,7 @@ class ConflictsViewModelTest {
     @Test
     fun `remove single combination keeps remaining combinations on contribution`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), dispatcher)
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), FakeIntegritySweep(), dispatcher)
 
         val original = confluence(
             "Doom",
@@ -111,7 +113,7 @@ class ConflictsViewModelTest {
     @Test
     fun `remove last combination deletes the contribution entirely`() = runTest {
         val essenceRepo = FakeEssenceRepo()
-        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), dispatcher)
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), FakeIntegritySweep(), dispatcher)
 
         val original = confluence("Doom", setOf(set("A", "B", "C")))
         vm.removeCombinationFromContribution(original, set("A", "B", "C"))
@@ -120,6 +122,69 @@ class ConflictsViewModelTest {
         assertEquals(emptyList<Essence.Confluence>(), essenceRepo.confluenceUpdates)
         assertEquals(listOf("Doom"), essenceRepo.deleted)
     }
+
+    @Test
+    fun `integrity issues from sweep populate state integrityIssues`() = runTest {
+        val issues = listOf(
+            IntegrityIssue.MalformedRef(location = "ability.ref", raw = "bad:123"),
+            IntegrityIssue.OrphanedStatusToken(
+                abilityName = "Fireball",
+                effectOrdinal = 1L,
+                missingStatusName = "Burn",
+            ),
+        )
+        val sweep = FakeIntegritySweep(issues)
+        val vm = ConflictsViewModel(FakeEssenceRepo(), FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), sweep, dispatcher)
+
+        val collector = launch { vm.state.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(issues, vm.state.value.integrityIssues)
+
+        collector.cancel()
+    }
+
+    @Test
+    fun `state total includes integrity issue count`() = runTest {
+        val essenceRepo = FakeEssenceRepo(
+            initialConflicts = listOf(
+                EssenceConflict.NameCollision(manifestation("Fire"), manifestation("Fire")),
+            ),
+        )
+        val sweep = FakeIntegritySweep(
+            listOf(
+                IntegrityIssue.MalformedRef(location = "loc", raw = "???"),
+                IntegrityIssue.MalformedRef(location = "loc2", raw = "???"),
+            ),
+        )
+        val vm = ConflictsViewModel(essenceRepo, FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), sweep, dispatcher)
+
+        val collector = launch { vm.state.collect {} }
+        advanceUntilIdle()
+
+        // 1 essence conflict + 2 integrity issues = 3
+        assertEquals(3, vm.state.value.total)
+
+        collector.cancel()
+    }
+
+    @Test
+    fun `empty sweep yields empty integrity issues`() = runTest {
+        val vm = ConflictsViewModel(FakeEssenceRepo(), FakeStoneRepo(), FakeAbilityRepo(), FakeStatusEffectRepo(), FakeIntegritySweep(), dispatcher)
+
+        val collector = launch { vm.state.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(emptyList<IntegrityIssue>(), vm.state.value.integrityIssues)
+
+        collector.cancel()
+    }
+}
+
+private class FakeIntegritySweep(
+    private val issues: List<IntegrityIssue> = emptyList(),
+) : IntegritySweep {
+    override suspend fun run(): List<IntegrityIssue> = issues
 }
 
 private class FakeEssenceRepo(

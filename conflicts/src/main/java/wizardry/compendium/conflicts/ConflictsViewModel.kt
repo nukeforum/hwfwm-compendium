@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -15,6 +16,8 @@ import wizardry.compendium.repositories.AwakeningStoneConflict
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.EssenceConflict
 import wizardry.compendium.repositories.EssenceRepository
+import wizardry.compendium.repositories.IntegrityIssue
+import wizardry.compendium.repositories.IntegritySweep
 import wizardry.compendium.repositories.StatusEffectConflict
 import wizardry.compendium.repositories.StatusEffectRepository
 import wizardry.compendium.domain.model.ConfluenceSet
@@ -27,8 +30,9 @@ data class ConflictsState(
     val awakeningStone: List<AwakeningStoneConflict> = emptyList(),
     val abilityListing: List<AbilityListingConflict> = emptyList(),
     val statusEffect: List<StatusEffectConflict> = emptyList(),
+    val integrityIssues: List<IntegrityIssue> = emptyList(),
 ) {
-    val total: Int = essence.size + awakeningStone.size + abilityListing.size + statusEffect.size
+    val total: Int = essence.size + awakeningStone.size + abilityListing.size + statusEffect.size + integrityIssues.size
 }
 
 @HiltViewModel
@@ -37,16 +41,32 @@ class ConflictsViewModel @Inject constructor(
     private val awakeningStoneRepository: AwakeningStoneRepository,
     private val abilityListingRepository: AbilityListingRepository,
     private val statusEffectRepository: StatusEffectRepository,
+    private val integritySweep: IntegritySweep,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
+
+    private val integrityIssuesFlow = MutableStateFlow<List<IntegrityIssue>>(emptyList())
+
+    init {
+        viewModelScope.launch(ioDispatcher) {
+            integrityIssuesFlow.value = integritySweep.run()
+        }
+    }
 
     val state: StateFlow<ConflictsState> = combine(
         essenceRepository.conflicts,
         awakeningStoneRepository.conflicts,
         abilityListingRepository.conflicts,
         statusEffectRepository.conflicts,
-    ) { e, a, ab, s ->
-        ConflictsState(essence = e, awakeningStone = a, abilityListing = ab, statusEffect = s)
+        integrityIssuesFlow,
+    ) { e, a, ab, s, integrity ->
+        ConflictsState(
+            essence = e,
+            awakeningStone = a,
+            abilityListing = ab,
+            statusEffect = s,
+            integrityIssues = integrity,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ConflictsState())
 
     fun deleteEssenceContribution(name: String) {
@@ -86,6 +106,12 @@ class ConflictsViewModel @Inject constructor(
                     contribution.copy(confluenceSets = remaining),
                 )
             }
+        }
+    }
+
+    fun rerunIntegritySweep() {
+        viewModelScope.launch(ioDispatcher) {
+            integrityIssuesFlow.value = integritySweep.run()
         }
     }
 }

@@ -30,6 +30,7 @@ import wizardry.compendium.repositories.AbilityListingConflict
 import wizardry.compendium.repositories.AwakeningStoneConflict
 import wizardry.compendium.repositories.Conflict
 import wizardry.compendium.repositories.EssenceConflict
+import wizardry.compendium.repositories.IntegrityIssue
 import wizardry.compendium.repositories.StatusEffectConflict
 
 @Composable
@@ -71,6 +72,10 @@ fun ConflictsScreen(
         if (state.statusEffect.isNotEmpty()) {
             item { GroupHeader("Status Effects") }
             items(state.statusEffect) { ConflictRow(it) { selected = it } }
+        }
+        if (state.integrityIssues.isNotEmpty()) {
+            item { GroupHeader("Integrity Issues") }
+            items(state.integrityIssues) { issue -> IntegrityIssueCard(issue) }
         }
     }
 
@@ -132,6 +137,36 @@ private fun ConflictRow(conflict: Conflict, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+private fun IntegrityIssueCard(issue: IntegrityIssue) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            val (typeLabel, body) = when (issue) {
+                is IntegrityIssue.MalformedRef ->
+                    "Malformed reference" to "${issue.location}: \"${issue.raw}\""
+                is IntegrityIssue.OrphanedContributedRef -> {
+                    val kindLabel = when (issue.kind) {
+                        IntegrityIssue.OrphanedContributedRef.Kind.Ability -> "ability"
+                        IntegrityIssue.OrphanedContributedRef.Kind.Essence -> "essence"
+                    }
+                    "Missing contributed $kindLabel" to "${issue.location} references missing contributed $kindLabel id ${issue.id}"
+                }
+                is IntegrityIssue.OrphanedCanonicalRef -> {
+                    val kindLabel = when (issue.kind) {
+                        IntegrityIssue.OrphanedCanonicalRef.Kind.Ability -> "ability"
+                        IntegrityIssue.OrphanedCanonicalRef.Kind.Essence -> "essence"
+                    }
+                    "Missing canonical $kindLabel" to "${issue.location} references missing canonical $kindLabel \"${issue.name}\""
+                }
+                is IntegrityIssue.OrphanedStatusToken ->
+                    "Missing status reference" to "Ability \"${issue.abilityName}\" effect #${issue.effectOrdinal} references missing status effect \"${issue.missingStatusName}\""
+            }
+            Text(typeLabel, style = MaterialTheme.typography.titleSmall)
+            Text(body, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
