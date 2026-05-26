@@ -5,6 +5,28 @@ All notable changes to this project are recorded here. Dates are in `YYYY-MM-DD`
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-05-26
+
+### Added
+- **Rename your contributions**: editing the name of a contributed essence, ability, awakening stone, status effect, or character build cascades through every other contribution that referenced the old name.
+- **Delete safety**: deleting a contributed entity that is referenced elsewhere now shows a dialog listing exactly which other entries will be affected before you confirm.
+- **Conflicts screen integrity sweep**: the Conflicts screen now surfaces dangling references across your contributions, walking every cross-entity reference and embedded `{status:…}` token.
+
+### Changed
+- Contributions database migrated to schema v6 — entities are keyed by stable surrogate ids with tagged string refs internally, so renames are safe and references stay intact.
+- Ability cost summaries report variants more accurately (e.g., "X mana or Y stamina").
+- Ability contribution cost picker no longer offers the meaningless "None" amount.
+
+### Fixed
+- Canonical names with empty values are rejected at the ref-codec layer rather than silently accepted.
+- Integrity sweep resolves `confluence_set` canonical refs against the canonical cache and correctly escapes status tokens with a closing brace.
+
+### Accessibility
+- TalkBack semantic grouping on detail screens — Build header + slots, Status Effect details, Awakening Stone bordered reports, Essence combination rows, and Ability Preview reports now read as logical units.
+
+### Tests
+- Row-preserving migration tests for v5 → v6.
+
 ## [1.1.0] — 2026-05-21
 
 ### Added
