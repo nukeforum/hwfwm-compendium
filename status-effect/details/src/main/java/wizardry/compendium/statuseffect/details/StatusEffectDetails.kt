@@ -35,6 +35,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.domain.model.Property
@@ -117,35 +118,40 @@ private fun Details(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(text = effect.name, style = MaterialTheme.typography.titleLarge)
+            Column(
+                modifier = Modifier.semantics(mergeDescendants = true) {},
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(text = effect.name, style = MaterialTheme.typography.titleLarge)
 
-            Text(
-                text = typeText(effect.type),
-                style = MaterialTheme.typography.labelMedium,
-            )
-
-            if (effect.stackable) {
-                SuggestionChip(
-                    onClick = {},
-                    label = { Text("Stackable") },
+                Text(
+                    text = typeText(effect.type),
+                    style = MaterialTheme.typography.labelMedium,
                 )
-            }
 
-            Text(
-                text = effect.description,
-                style = MaterialTheme.typography.bodyMedium,
-            )
+                if (effect.stackable) {
+                    SuggestionChip(
+                        onClick = {},
+                        label = { Text("Stackable") },
+                    )
+                }
 
-            if (effect.properties.isNotEmpty()) {
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    effect.properties.forEach { property ->
-                        AssistChip(
-                            onClick = {},
-                            label = { Text(property.toString()) },
-                        )
+                Text(
+                    text = effect.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+
+                if (effect.properties.isNotEmpty()) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        effect.properties.forEach { property ->
+                            AssistChip(
+                                onClick = {},
+                                label = { Text(property.toString()) },
+                            )
+                        }
                     }
                 }
             }
