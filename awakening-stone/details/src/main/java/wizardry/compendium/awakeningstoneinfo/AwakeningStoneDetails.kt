@@ -13,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.IosShare
@@ -130,10 +132,24 @@ private fun Details(
                     .border(1.dp, Color.DarkGray)
                     .padding(8.dp)
             ) {
-                Text(
-                    modifier = Modifier.align(Alignment.Center),
-                    text = state.stone.report()
-                )
+                Column {
+                    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                        Text(text = "Item: [${state.stone.name} Awakening Stone]")
+                        Text(text = "(${state.stone.rank.toString().lowercase()}, ${state.stone.rarity.toString().lowercase()})")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                        Text(text = "${state.stone.description} (${state.stone.properties.joinToString(", ")}).")
+                    }
+                    if (state.stone.effects.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        state.stone.effects.forEach { effect ->
+                            Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+                                Text(text = "Effect: ${effect.description}")
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -149,17 +165,6 @@ private fun Details(
             }
         }
     }
-}
-
-private fun AwakeningStone.report(): String {
-    return """
-        Item: [$name Awakening Stone]
-        (${rank.toString().lowercase()}, ${rarity.toString().lowercase()})
-
-        $description (${properties.joinToString(", ")}).
-
-        ${effects.joinToString { "Effect: ${it.description}" }}
-    """.trimIndent()
 }
 
 private fun fireShareIntent(context: Context, text: String, title: String) {
