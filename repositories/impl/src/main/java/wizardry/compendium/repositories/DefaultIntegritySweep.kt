@@ -118,7 +118,7 @@ internal class DefaultIntegritySweep @Inject constructor(
     private suspend fun sweepStatusTokens(out: MutableList<IntegrityIssue>) {
         val knownStatusNames = statusEffectRepository.getStatusEffects()
             .map { it.name.lowercase() }.toSet()
-        val tokenRegex = Regex("""\{status:([^}]+)}""")
+        val tokenRegex = Regex("""\{status:([^}]+)\}""")
         abilityListingContributionsCache.identified.forEach { identified ->
             identified.listing.effects.forEachIndexed { ordinal, effect ->
                 tokenRegex.findAll(effect.description).forEach { match ->
