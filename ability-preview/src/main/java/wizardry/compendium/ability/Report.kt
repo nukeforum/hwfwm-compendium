@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -82,13 +83,15 @@ private fun Ability.Report(
     effectsSlot: @Composable () -> Unit = {},
 ) {
     Column {
-        titleSlot()
+        Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+            titleSlot()
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(text = "${visibleEffects.reportType()} (${visibleEffects.reportProperties()})")
+            Text(text = "Cost: ${visibleEffects.reportCost()}.")
+            Text(text = "Cooldown: ${visibleEffects.reportCooldown()}.")
+            progressSlot()
+        }
         Spacer(modifier = Modifier.height(12.dp))
-        Text(text = "${visibleEffects.reportType()} (${visibleEffects.reportProperties()})")
-        Text(text = "Cost: ${visibleEffects.reportCost()}.")
-        Text(text = "Cooldown: ${visibleEffects.reportCooldown()}.")
-        Spacer(modifier = Modifier.height(12.dp))
-        progressSlot()
         effectsSlot()
         LinkedStatusEffectsSection(visibleEffects)
     }
@@ -113,7 +116,9 @@ private fun List<Effect.AbilityEffect>.reportCooldown(): String =
 @Composable
 private fun List<RankedEffectLine>.RenderRankLines() {
     for (line in this) {
-        Text(text = line.effects.annotatedRankLine(line.rank))
+        Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+            Text(text = line.effects.annotatedRankLine(line.rank))
+        }
     }
 }
 
@@ -143,7 +148,9 @@ private fun LinkedStatusEffectsSection(effects: List<Effect.AbilityEffect>) {
     if (linked.isEmpty()) return
     Spacer(modifier = Modifier.height(12.dp))
     for (statusEffect in linked) {
-        Text(text = statusEffect.annotatedLinkedBlock(statusEffects))
+        Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+            Text(text = statusEffect.annotatedLinkedBlock(statusEffects))
+        }
     }
 }
 
