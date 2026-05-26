@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.ability.preview.AbilityPreview
@@ -208,21 +209,22 @@ private fun Details(
 @Composable
 private fun BuildHeader(build: CharacterBuild) {
     val pct = (build.progression * 100).roundToInt()
-    Text(text = build.name, style = MaterialTheme.typography.headlineSmall)
-    Text(text = build.race, style = MaterialTheme.typography.bodyMedium)
-    Spacer(Modifier.height(4.dp))
-    Text(text = "Rank: ${build.rank}     Progression: $pct%")
+    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+        Text(text = build.name, style = MaterialTheme.typography.headlineSmall)
+        Text(text = build.race, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(4.dp))
+        Text(text = "Rank: ${build.rank}     Progression: $pct%")
+    }
 }
 
 @Composable
 private fun AttributeSection(label: String, essence: AbsorbedEssence?) {
     Spacer(Modifier.height(16.dp))
-    Text(text = label, style = MaterialTheme.typography.titleMedium)
-    if (essence == null) {
-        Text(text = "Essence: (none)")
-        return
+    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+        Text(text = label, style = MaterialTheme.typography.titleMedium)
+        Text(text = essence?.let { "Essence: ${it.essence.name}" } ?: "Essence: (none)")
     }
-    Text(text = "Essence: ${essence.essence.name}")
+    if (essence == null) return
     essence.abilities.forEach { acquired ->
         Spacer(Modifier.height(8.dp))
         AbilityCard(ability = acquired, rankCeiling = acquired.rank)
@@ -232,11 +234,13 @@ private fun AttributeSection(label: String, essence: AbsorbedEssence?) {
 @Composable
 private fun RacialAbilitiesSection(abilities: List<Ability.Listing>) {
     Spacer(Modifier.height(16.dp))
-    if (abilities.isEmpty()) {
-        Text(text = "Racial Abilities: (none)", style = MaterialTheme.typography.titleMedium)
-        return
+    Column(modifier = Modifier.semantics(mergeDescendants = true) {}) {
+        Text(
+            text = if (abilities.isEmpty()) "Racial Abilities: (none)" else "Racial Abilities",
+            style = MaterialTheme.typography.titleMedium,
+        )
     }
-    Text(text = "Racial Abilities", style = MaterialTheme.typography.titleMedium)
+    if (abilities.isEmpty()) return
     abilities.forEach { listing ->
         Spacer(Modifier.height(8.dp))
         AbilityCard(ability = listing, rankCeiling = null)
