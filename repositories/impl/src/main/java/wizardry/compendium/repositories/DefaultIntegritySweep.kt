@@ -72,9 +72,9 @@ internal class DefaultIntegritySweep @Inject constructor(
         }
     }
 
-    private fun sweepConfluenceSetRefs(out: MutableList<IntegrityIssue>) {
-        val canonicalEssenceNames = essenceContributionsCache.identifiedManifestations
-            .map { it.manifestation.name }.toSet()
+    private suspend fun sweepConfluenceSetRefs(out: MutableList<IntegrityIssue>) {
+        val canonicalEssenceNames = essenceRepository.getEssences()
+            .map { it.name }.toSet()
         val contributedManifestationIds = essenceContributionsCache.identifiedManifestations
             .map { it.id }.toSet()
 
