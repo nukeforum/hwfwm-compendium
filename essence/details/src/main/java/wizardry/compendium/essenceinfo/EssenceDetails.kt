@@ -25,6 +25,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -189,7 +191,10 @@ private fun ConfluenceDetails(
     state: EssenceDetailUiState.Success.ConfluenceUiState,
     onEssenceClick: (Essence) -> Unit,
 ) {
-    Text("Known confluence combinations:")
+    Text(
+        text = "Known confluence combinations:",
+        modifier = Modifier.semantics { heading() },
+    )
     ConfluenceCombinationsDisplay(
         selectedEssence = state.essence,
         previousEssence = state.previousEssence,
@@ -203,7 +208,10 @@ private fun ManifestationDetails(
     onEssenceClick: (Essence) -> Unit,
 ) {
     val producedConfluences = state.knownConfluences
-    Text("Known to produce the following confluence essences:")
+    Text(
+        text = "Known to produce the following confluence essences:",
+        modifier = Modifier.semantics { heading() },
+    )
     FlowRow(
         modifier = Modifier
             .padding(vertical = 8.dp)
@@ -264,7 +272,8 @@ private fun ConfluenceCombinationsDisplay(
             Row(
                 modifier = Modifier
                     .background(if (confluenceSet.isRestricted) Color.Red.copy(alpha = 0.5f) else Color.Unspecified)
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .semantics(mergeDescendants = true) {},
                 horizontalArrangement = Arrangement.Center,
             ) {
                 confluenceSet.set.forEach {
