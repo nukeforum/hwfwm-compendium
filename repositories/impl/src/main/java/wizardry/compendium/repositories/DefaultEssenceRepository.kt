@@ -2,12 +2,15 @@ package wizardry.compendium.repositories
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import wizardry.compendium.domain.model.ConfluenceSet
 import wizardry.compendium.domain.model.Essence
 import wizardry.compendium.domain.model.EssenceRef
@@ -42,29 +45,29 @@ internal class DefaultEssenceRepository @Inject constructor(
     override val essences: Flow<List<Essence>> = combine(
         toggleFlow.essenceContributionsEnabled,
         invalidations,
-    ) { _, _ -> getEssences() }
+    ) { _, _ -> getEssences() }.flowOn(Dispatchers.IO)
 
     override val conflicts: Flow<List<EssenceConflict>> = combine(
         toggleFlow.essenceContributionsEnabled,
         invalidations,
-    ) { _, _ -> getConflicts() }
+    ) { _, _ -> getConflicts() }.flowOn(Dispatchers.IO)
 
-    override suspend fun getEssences(): List<Essence> {
+    override suspend fun getEssences(): List<Essence> = withContext(Dispatchers.IO) {
         val canonical = readCanonical()
-        if (!toggle.isEssenceContributionsEnabled) return canonical
+        if (!toggle.isEssenceContributionsEnabled) return@withContext canonical
         val contributions = readContributions(canonical)
-        if (detectEssenceConflicts(canonical, contributions).isNotEmpty()) return canonical
-        return merge(canonical, contributions)
+        if (detectEssenceConflicts(canonical, contributions).isNotEmpty()) return@withContext canonical
+        merge(canonical, contributions)
     }
 
-    override suspend fun getConflicts(): List<EssenceConflict> {
+    override suspend fun getConflicts(): List<EssenceConflict> = withContext(Dispatchers.IO) {
         val canonical = readCanonical()
-        return detectEssenceConflicts(canonical, readContributions(canonical))
+        detectEssenceConflicts(canonical, readContributions(canonical))
     }
 
-    override suspend fun getContributions(): List<Essence> {
+    override suspend fun getContributions(): List<Essence> = withContext(Dispatchers.IO) {
         val canonical = readCanonical()
-        return readContributions(canonical)
+        readContributions(canonical)
     }
 
     override suspend fun saveManifestationContribution(
@@ -306,24 +309,26 @@ internal class DefaultEssenceRepository @Inject constructor(
         return null
     }
 
-    override suspend fun checkDeleteImpact(name: String): DeleteImpact {
-        val manifestationId = contributionsCache.findManifestationIdByName(name)
-        if (manifestationId != null) {
-            val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId))
-            val builds = characterBuildDatabase.buildsReferencingEssenceRef(ref)
-            val confluences = essenceDatabase.confluenceNamesReferencingEssenceRef(ref)
-            return DeleteImpact(
-                referencingBuilds = builds,
-                referencingConfluenceSets = confluences,
-            )
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = withContext(Dispatchers.IO) {
+        writeMutex.withLock {
+            val manifestationId = contributionsCache.findManifestationIdByName(name)
+            if (manifestationId != null) {
+                val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId))
+                val builds = characterBuildDatabase.buildsReferencingEssenceRef(ref)
+                val confluences = essenceDatabase.confluenceNamesReferencingEssenceRef(ref)
+                return@withLock DeleteImpact(
+                    referencingBuilds = builds,
+                    referencingConfluenceSets = confluences,
+                )
+            }
+            val confluenceId = contributionsCache.findConfluenceIdByName(name)
+            if (confluenceId != null) {
+                val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(confluenceId))
+                val builds = characterBuildDatabase.buildsReferencingEssenceRef(ref)
+                return@withLock DeleteImpact(referencingBuilds = builds)
+            }
+            DeleteImpact()
         }
-        val confluenceId = contributionsCache.findConfluenceIdByName(name)
-        if (confluenceId != null) {
-            val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(confluenceId))
-            val builds = characterBuildDatabase.buildsReferencingEssenceRef(ref)
-            return DeleteImpact(referencingBuilds = builds)
-        }
-        return DeleteImpact()
     }
 
     private fun invalidate() {

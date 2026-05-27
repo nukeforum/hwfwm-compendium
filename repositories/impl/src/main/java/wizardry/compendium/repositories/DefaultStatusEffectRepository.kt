@@ -2,12 +2,15 @@ package wizardry.compendium.repositories
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.repositories.DeleteImpact
 import wizardry.compendium.repositories.StatusEffectConflict
@@ -38,31 +41,32 @@ internal class DefaultStatusEffectRepository @Inject constructor(
     override val statusEffects: Flow<List<StatusEffect>> = combine(
         toggleFlow.statusEffectContributionsEnabled,
         invalidations,
-    ) { _, _ -> getStatusEffects() }
+    ) { _, _ -> getStatusEffects() }.flowOn(Dispatchers.IO)
 
     override val conflicts: Flow<List<StatusEffectConflict>> = combine(
         toggleFlow.statusEffectContributionsEnabled,
         invalidations,
-    ) { _, _ -> getConflicts() }
+    ) { _, _ -> getConflicts() }.flowOn(Dispatchers.IO)
 
-    override suspend fun getStatusEffects(): List<StatusEffect> {
+    override suspend fun getStatusEffects(): List<StatusEffect> = withContext(Dispatchers.IO) {
         val canonical = ensureCanonicalLoaded()
-        if (!toggle.isStatusEffectContributionsEnabled) return canonical
+        if (!toggle.isStatusEffectContributionsEnabled) return@withContext canonical
         val contributions = contributionsCache.contents
-        if (contributions.isEmpty()) return canonical
-        if (detectStatusEffectConflicts(canonical, contributions).isNotEmpty()) return canonical
+        if (contributions.isEmpty()) return@withContext canonical
+        if (detectStatusEffectConflicts(canonical, contributions).isNotEmpty()) return@withContext canonical
         val byName = contributions.associateBy { it.name }
         val merged = canonical.map { byName[it.name] ?: it }
         val newOnes = contributions.filter { c -> canonical.none { it.name == c.name } }
-        return (merged + newOnes).sortedBy { it.name }
+        (merged + newOnes).sortedBy { it.name }
     }
 
-    override suspend fun getConflicts(): List<StatusEffectConflict> {
+    override suspend fun getConflicts(): List<StatusEffectConflict> = withContext(Dispatchers.IO) {
         val canonical = ensureCanonicalLoaded()
-        return detectStatusEffectConflicts(canonical, contributionsCache.contents)
+        detectStatusEffectConflicts(canonical, contributionsCache.contents)
     }
 
-    override suspend fun getContributions(): List<StatusEffect> = contributionsCache.contents
+    override suspend fun getContributions(): List<StatusEffect> =
+        withContext(Dispatchers.IO) { contributionsCache.contents }
 
     override suspend fun saveStatusEffectContribution(
         effect: StatusEffect,
@@ -131,21 +135,23 @@ internal class DefaultStatusEffectRepository @Inject constructor(
         ContributionResult.Success
     }
 
-    override suspend fun checkDeleteImpact(name: String): DeleteImpact {
-        val tokenRegex = Regex("""\{status:([^}]+)\}""", RegexOption.IGNORE_CASE)
-        val target = name.normalized()
-        val abilityNames = abilityListingContributionsCache.identified
-            .filter { (_, listing) ->
-                listing.effects.any { effect ->
-                    tokenRegex.findAll(effect.description).any { match ->
-                        match.groupValues[1].normalized() == target
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = withContext(Dispatchers.IO) {
+        writeMutex.withLock {
+            val tokenRegex = Regex("""\{status:([^}]+)\}""", RegexOption.IGNORE_CASE)
+            val target = name.normalized()
+            val abilityNames = abilityListingContributionsCache.identified
+                .filter { (_, listing) ->
+                    listing.effects.any { effect ->
+                        tokenRegex.findAll(effect.description).any { match ->
+                            match.groupValues[1].normalized() == target
+                        }
                     }
                 }
-            }
-            .map { it.listing.name }
-            .distinct()
-            .sorted()
-        return DeleteImpact(referencingAbilityListings = abilityNames)
+                .map { it.listing.name }
+                .distinct()
+                .sorted()
+            DeleteImpact(referencingAbilityListings = abilityNames)
+        }
     }
 
     /**

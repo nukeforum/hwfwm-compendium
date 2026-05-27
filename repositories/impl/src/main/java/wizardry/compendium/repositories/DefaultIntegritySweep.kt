@@ -2,6 +2,8 @@ package wizardry.compendium.repositories
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import wizardry.compendium.domain.model.AbilityRef
 import wizardry.compendium.domain.model.EssenceRef
 import wizardry.compendium.domain.model.MalformedRefException
@@ -11,6 +13,8 @@ import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.EssenceCache
 import wizardry.compendium.persistence.IdentifiedConfluence
+import wizardry.compendium.persistence.IdentifiedListing
+import wizardry.compendium.persistence.RawBuildSnapshot
 
 @Singleton
 internal class DefaultIntegritySweep @Inject constructor(
@@ -22,27 +26,62 @@ internal class DefaultIntegritySweep @Inject constructor(
     private val statusEffectRepository: StatusEffectRepository,
 ) : IntegritySweep {
 
-    override suspend fun run(): List<IntegrityIssue> {
-        val issues = mutableListOf<IntegrityIssue>()
-        sweepBuildRefs(issues)
-        sweepConfluenceSetRefs(issues)
-        sweepStatusTokens(issues)
-        return issues
-    }
-
-    private suspend fun sweepBuildRefs(out: MutableList<IntegrityIssue>) {
+    override suspend fun run(): List<IntegrityIssue> = withContext(Dispatchers.IO) {
+        // Snapshot every cache exactly once. CharacterBuildDatabase.readSnapshot
+        // is itself transactional (see CharacterBuildDatabase), so the four
+        // build tables are internally consistent. The essence/listing/status
+        // reads are each individually transactional (per their respective
+        // *Database.identified accessors) — cross-cache snapshots are still
+        // eventually-consistent, but we no longer re-issue each read 2-3 times
+        // across the sweep helpers.
         val canonicalListingNames = abilityListingRepository.getAbilityListings()
             .map { it.name }.toSet()
         val canonicalEssenceNames = essenceRepository.getEssences()
             .map { it.name }.toSet()
-        val contributedListingIds = abilityListingContributionsCache.identified
-            .map { it.id }.toSet()
+        val knownStatusNames = statusEffectRepository.getStatusEffects()
+            .map { it.name.lowercase() }.toSet()
+        val contributedListings = abilityListingContributionsCache.identified
+        val contributedListingIds = contributedListings.map { it.id }.toSet()
         val contributedManifestationIds = essenceContributionsCache.identifiedManifestations
             .map { it.id }.toSet()
-        val contributedConfluenceIds = essenceContributionsCache.identifiedConfluences
-            .map { it.id }.toSet()
+        val contributedConfluences = essenceContributionsCache.identifiedConfluences
+        val contributedConfluenceIds = contributedConfluences.map { it.id }.toSet()
+        val buildSnapshot = characterBuildDatabase.readSnapshot()
 
-        characterBuildDatabase.readAllRacialAbilities().forEach { row ->
+        val issues = mutableListOf<IntegrityIssue>()
+        sweepBuildRefs(
+            snapshot = buildSnapshot,
+            canonicalListingNames = canonicalListingNames,
+            canonicalEssenceNames = canonicalEssenceNames,
+            contributedListingIds = contributedListingIds,
+            contributedManifestationIds = contributedManifestationIds,
+            contributedConfluenceIds = contributedConfluenceIds,
+            out = issues,
+        )
+        sweepConfluenceSetRefs(
+            contributedConfluences = contributedConfluences,
+            canonicalEssenceNames = canonicalEssenceNames,
+            contributedManifestationIds = contributedManifestationIds,
+            out = issues,
+        )
+        sweepStatusTokens(
+            contributedListings = contributedListings,
+            knownStatusNames = knownStatusNames,
+            out = issues,
+        )
+        issues
+    }
+
+    private fun sweepBuildRefs(
+        snapshot: RawBuildSnapshot,
+        canonicalListingNames: Set<String>,
+        canonicalEssenceNames: Set<String>,
+        contributedListingIds: Set<Long>,
+        contributedManifestationIds: Set<Long>,
+        contributedConfluenceIds: Set<Long>,
+        out: MutableList<IntegrityIssue>,
+    ) {
+        snapshot.racialAbilities.forEach { row ->
             checkAbilityRef(
                 raw = row.listingRef,
                 location = "build '${row.buildName}' racial slot #${row.ordinal}",
@@ -51,7 +90,7 @@ internal class DefaultIntegritySweep @Inject constructor(
                 out = out,
             )
         }
-        characterBuildDatabase.readAllAcquiredAbilities().forEach { row ->
+        snapshot.acquiredAbilities.forEach { row ->
             checkAbilityRef(
                 raw = row.listingRef,
                 location = "build '${row.buildName}' ${row.attributeKind} ability #${row.ordinal}",
@@ -60,7 +99,7 @@ internal class DefaultIntegritySweep @Inject constructor(
                 out = out,
             )
         }
-        characterBuildDatabase.readAllAttributes().forEach { row ->
+        snapshot.attributes.forEach { row ->
             checkEssenceRef(
                 raw = row.essenceRef,
                 location = "build '${row.buildName}' ${row.kind} slot",
@@ -72,13 +111,13 @@ internal class DefaultIntegritySweep @Inject constructor(
         }
     }
 
-    private suspend fun sweepConfluenceSetRefs(out: MutableList<IntegrityIssue>) {
-        val canonicalEssenceNames = essenceRepository.getEssences()
-            .map { it.name }.toSet()
-        val contributedManifestationIds = essenceContributionsCache.identifiedManifestations
-            .map { it.id }.toSet()
-
-        essenceContributionsCache.identifiedConfluences.forEach { conf: IdentifiedConfluence ->
+    private fun sweepConfluenceSetRefs(
+        contributedConfluences: List<IdentifiedConfluence>,
+        canonicalEssenceNames: Set<String>,
+        contributedManifestationIds: Set<Long>,
+        out: MutableList<IntegrityIssue>,
+    ) {
+        contributedConfluences.forEach { conf ->
             conf.sets.forEachIndexed { idx, set ->
                 listOf(
                     "essence1" to set.essence1Ref,
@@ -115,11 +154,13 @@ internal class DefaultIntegritySweep @Inject constructor(
         }
     }
 
-    private suspend fun sweepStatusTokens(out: MutableList<IntegrityIssue>) {
-        val knownStatusNames = statusEffectRepository.getStatusEffects()
-            .map { it.name.lowercase() }.toSet()
+    private fun sweepStatusTokens(
+        contributedListings: List<IdentifiedListing>,
+        knownStatusNames: Set<String>,
+        out: MutableList<IntegrityIssue>,
+    ) {
         val tokenRegex = Regex("""\{status:([^}]+)\}""")
-        abilityListingContributionsCache.identified.forEach { identified ->
+        contributedListings.forEach { identified ->
             identified.listing.effects.forEachIndexed { ordinal, effect ->
                 tokenRegex.findAll(effect.description).forEach { match ->
                     val statusName = match.groupValues[1]

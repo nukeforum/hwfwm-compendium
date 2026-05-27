@@ -3,12 +3,15 @@ package wizardry.compendium.repositories
 import android.util.Log
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import wizardry.compendium.domain.model.AbilityRef
 import wizardry.compendium.domain.model.AbsorbedEssence
 import wizardry.compendium.domain.model.Ability
@@ -44,12 +47,13 @@ internal class DefaultCharacterBuildRepository @Inject constructor(
         invalidations,
         essenceRepository.essences,
         abilityListingRepository.abilityListings,
-    ) { _, _, _ -> getBuilds() }
+    ) { _, _, _ -> getBuilds() }.flowOn(Dispatchers.IO)
 
-    override suspend fun getBuilds(): List<CharacterBuild> = readAllResolved()
+    override suspend fun getBuilds(): List<CharacterBuild> =
+        withContext(Dispatchers.IO) { readAllResolved() }
 
     override suspend fun getBuild(name: String): CharacterBuild? =
-        readAllResolved().firstOrNull { it.name == name }
+        withContext(Dispatchers.IO) { readAllResolved().firstOrNull { it.name == name } }
 
     override suspend fun saveBuildContribution(build: CharacterBuild): ContributionResult =
         writeMutex.withLock {

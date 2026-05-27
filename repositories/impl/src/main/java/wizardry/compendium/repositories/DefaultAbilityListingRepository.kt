@@ -2,12 +2,15 @@ package wizardry.compendium.repositories
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import wizardry.compendium.repositories.AbilityListingConflict
 import wizardry.compendium.repositories.AbilityListingRepository
 import wizardry.compendium.repositories.ContributionResult
@@ -40,31 +43,32 @@ internal class DefaultAbilityListingRepository @Inject constructor(
     override val abilityListings: Flow<List<Ability.Listing>> = combine(
         toggleFlow.abilityListingContributionsEnabled,
         invalidations,
-    ) { _, _ -> getAbilityListings() }
+    ) { _, _ -> getAbilityListings() }.flowOn(Dispatchers.IO)
 
     override val conflicts: Flow<List<AbilityListingConflict>> = combine(
         toggleFlow.abilityListingContributionsEnabled,
         invalidations,
-    ) { _, _ -> getConflicts() }
+    ) { _, _ -> getConflicts() }.flowOn(Dispatchers.IO)
 
-    override suspend fun getAbilityListings(): List<Ability.Listing> {
+    override suspend fun getAbilityListings(): List<Ability.Listing> = withContext(Dispatchers.IO) {
         val canonical = ensureCanonicalLoaded()
-        if (!toggle.isAbilityListingContributionsEnabled) return canonical
+        if (!toggle.isAbilityListingContributionsEnabled) return@withContext canonical
         val contributions = contributionsCache.contents
-        if (contributions.isEmpty()) return canonical
-        if (detectAbilityListingConflicts(canonical, contributions).isNotEmpty()) return canonical
+        if (contributions.isEmpty()) return@withContext canonical
+        if (detectAbilityListingConflicts(canonical, contributions).isNotEmpty()) return@withContext canonical
         val byName = contributions.associateBy { it.name }
         val merged = canonical.map { byName[it.name] ?: it }
         val newOnes = contributions.filter { c -> canonical.none { it.name == c.name } }
-        return (merged + newOnes).sortedBy { it.name }
+        (merged + newOnes).sortedBy { it.name }
     }
 
-    override suspend fun getConflicts(): List<AbilityListingConflict> {
+    override suspend fun getConflicts(): List<AbilityListingConflict> = withContext(Dispatchers.IO) {
         val canonical = ensureCanonicalLoaded()
-        return detectAbilityListingConflicts(canonical, contributionsCache.contents)
+        detectAbilityListingConflicts(canonical, contributionsCache.contents)
     }
 
-    override suspend fun getContributions(): List<Ability.Listing> = contributionsCache.contents
+    override suspend fun getContributions(): List<Ability.Listing> =
+        withContext(Dispatchers.IO) { contributionsCache.contents }
 
     override suspend fun saveAbilityListingContribution(
         listing: Ability.Listing,
@@ -129,11 +133,13 @@ internal class DefaultAbilityListingRepository @Inject constructor(
         ContributionResult.Success
     }
 
-    override suspend fun checkDeleteImpact(name: String): DeleteImpact {
-        val id = contributionsCache.findIdByName(name) ?: return DeleteImpact()
-        val ref = RefCodec.encodeAbilityRef(AbilityRef.Contributed(id))
-        val builds = characterBuildDatabase.buildsReferencingListingRef(ref)
-        return DeleteImpact(referencingBuilds = builds)
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = withContext(Dispatchers.IO) {
+        writeMutex.withLock {
+            val id = contributionsCache.findIdByName(name) ?: return@withLock DeleteImpact()
+            val ref = RefCodec.encodeAbilityRef(AbilityRef.Contributed(id))
+            val builds = characterBuildDatabase.buildsReferencingListingRef(ref)
+            DeleteImpact(referencingBuilds = builds)
+        }
     }
 
     private suspend fun ensureCanonicalLoaded(): List<Ability.Listing> {

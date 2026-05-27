@@ -2,12 +2,15 @@ package wizardry.compendium.repositories
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import wizardry.compendium.repositories.AwakeningStoneConflict
 import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.ContributionResult
@@ -47,24 +50,24 @@ internal class DefaultAwakeningStoneRepository @Inject constructor(
         essencesAsStonesToggleFlow.essencesAsAwakeningStonesEnabled,
         essenceRepository.essences,
         invalidations,
-    ) { _, _, _, _ -> getAwakeningStones() }
+    ) { _, _, _, _ -> getAwakeningStones() }.flowOn(Dispatchers.IO)
 
     override val conflicts: Flow<List<AwakeningStoneConflict>> = combine(
         toggleFlow.awakeningStoneContributionsEnabled,
         invalidations,
-    ) { _, _ -> getConflicts() }
+    ) { _, _ -> getConflicts() }.flowOn(Dispatchers.IO)
 
-    override suspend fun getAwakeningStones(): List<AwakeningStone> {
+    override suspend fun getAwakeningStones(): List<AwakeningStone> = withContext(Dispatchers.IO) {
         val canonical = ensureCanonicalLoaded()
         val baseStones = mergedStones(canonical)
-        if (!essencesAsStonesToggle.isEssencesAsAwakeningStonesEnabled) return baseStones
+        if (!essencesAsStonesToggle.isEssencesAsAwakeningStonesEnabled) return@withContext baseStones
 
         val manifestations = essenceRepository.getEssences()
             .filterIsInstance<Essence.Manifestation>()
         val newcomers = manifestationsNotMatchingStones(manifestations, baseStones)
-        if (newcomers.isEmpty()) return baseStones
+        if (newcomers.isEmpty()) return@withContext baseStones
 
-        return (baseStones + newcomers.map { it.toAwakeningStone() }).sortedBy { it.name }
+        (baseStones + newcomers.map { it.toAwakeningStone() }).sortedBy { it.name }
     }
 
     private fun mergedStones(canonical: List<AwakeningStone>): List<AwakeningStone> {
@@ -78,12 +81,13 @@ internal class DefaultAwakeningStoneRepository @Inject constructor(
         return (merged + newOnes).sortedBy { it.name }
     }
 
-    override suspend fun getConflicts(): List<AwakeningStoneConflict> {
+    override suspend fun getConflicts(): List<AwakeningStoneConflict> = withContext(Dispatchers.IO) {
         val canonical = ensureCanonicalLoaded()
-        return detectAwakeningStoneConflicts(canonical, contributionsCache.contents)
+        detectAwakeningStoneConflicts(canonical, contributionsCache.contents)
     }
 
-    override suspend fun getContributions(): List<AwakeningStone> = contributionsCache.contents
+    override suspend fun getContributions(): List<AwakeningStone> =
+        withContext(Dispatchers.IO) { contributionsCache.contents }
 
     override suspend fun saveAwakeningStoneContribution(
         stone: AwakeningStone,
