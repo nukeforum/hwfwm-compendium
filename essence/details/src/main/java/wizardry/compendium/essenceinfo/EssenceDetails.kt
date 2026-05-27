@@ -272,8 +272,7 @@ private fun ConfluenceCombinationsDisplay(
             Row(
                 modifier = Modifier
                     .background(if (confluenceSet.isRestricted) Color.Red.copy(alpha = 0.5f) else Color.Unspecified)
-                    .padding(8.dp)
-                    .semantics(mergeDescendants = true) {},
+                    .padding(8.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
                 confluenceSet.set.forEach {

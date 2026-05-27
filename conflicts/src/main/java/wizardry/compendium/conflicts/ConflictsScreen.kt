@@ -24,6 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import wizardry.compendium.repositories.AbilityListingConflict
@@ -119,7 +121,9 @@ private fun GroupHeader(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier
+            .padding(top = 8.dp)
+            .semantics { heading() },
     )
 }
 
@@ -144,7 +148,11 @@ private fun ConflictRow(conflict: Conflict, onClick: () -> Unit) {
 @Composable
 private fun IntegrityIssueCard(issue: IntegrityIssue) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .semantics(mergeDescendants = true) {},
+        ) {
             val (typeLabel, body) = when (issue) {
                 is IntegrityIssue.MalformedRef ->
                     "Malformed reference" to "${issue.location}: \"${issue.raw}\""

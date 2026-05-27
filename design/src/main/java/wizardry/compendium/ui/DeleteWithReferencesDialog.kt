@@ -8,6 +8,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import wizardry.compendium.preferences.ThemeMode
 import wizardry.compendium.repositories.DeleteImpact
@@ -39,29 +41,37 @@ fun DeleteWithReferencesDialog(
         dismissButton = {
             TextButton(onClick = onCancel) { Text("Cancel") }
         },
-        title = { Text("Delete \"$contributionName\"?") },
+        title = {
+            Text(
+                text = "Delete \"$contributionName\"?",
+                modifier = Modifier.semantics { heading() },
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (impact.referencingBuilds.isNotEmpty()) {
                     Text(
                         text = "Builds that reference this:",
                         style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.semantics { heading() },
                     )
-                    impact.referencingBuilds.forEach { Text(text = "• $it") }
+                    impact.referencingBuilds.forEach { Text(text = it) }
                 }
                 if (impact.referencingConfluenceSets.isNotEmpty()) {
                     Text(
                         text = "Confluence sets that include this:",
                         style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.semantics { heading() },
                     )
-                    impact.referencingConfluenceSets.forEach { Text(text = "• $it") }
+                    impact.referencingConfluenceSets.forEach { Text(text = it) }
                 }
                 if (impact.referencingAbilityListings.isNotEmpty()) {
                     Text(
                         text = "Abilities whose descriptions reference this:",
                         style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.semantics { heading() },
                     )
-                    impact.referencingAbilityListings.forEach { Text(text = "• $it") }
+                    impact.referencingAbilityListings.forEach { Text(text = it) }
                 }
                 if (explanatoryNote != null) {
                     Text(
