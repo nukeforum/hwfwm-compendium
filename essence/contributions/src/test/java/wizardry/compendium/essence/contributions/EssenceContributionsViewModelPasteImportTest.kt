@@ -230,7 +230,7 @@ private object StubEssenceRepoForShare : EssenceRepository {
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
     override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
     override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private object StubStoneRepoForShare : AwakeningStoneRepository {
@@ -322,7 +322,7 @@ private class FakeEssenceRepository(
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
     override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation): ContributionResult = ContributionResult.Success
     override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult = ContributionResult.Success
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private class ThrowingFakeEssenceRepository : EssenceRepository {
@@ -349,7 +349,7 @@ private class ThrowingFakeEssenceRepository : EssenceRepository {
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
     override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation): ContributionResult = ContributionResult.Success
     override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult = ContributionResult.Success
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private class FakeAwakeningStoneRepository : AwakeningStoneRepository {

@@ -145,7 +145,7 @@ private class RenameTestFakeEssenceRepository : EssenceRepository {
     override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
     override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation): ContributionResult = ContributionResult.Success
     override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult = ContributionResult.Success
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private fun stone(name: String): AwakeningStone = AwakeningStone.of(name, Rarity.Common)

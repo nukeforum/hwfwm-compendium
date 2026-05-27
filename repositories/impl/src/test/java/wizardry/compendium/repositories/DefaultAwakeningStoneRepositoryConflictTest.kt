@@ -243,7 +243,7 @@ private class FakeEssenceRepository(private val data: List<Essence>) : EssenceRe
         unsupported()
     override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult =
         unsupported()
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 
     private fun unsupported(): ContributionResult =
         throw UnsupportedOperationException("not used in this test")

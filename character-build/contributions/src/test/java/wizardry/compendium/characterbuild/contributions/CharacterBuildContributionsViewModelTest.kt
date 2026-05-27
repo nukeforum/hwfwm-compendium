@@ -1129,7 +1129,7 @@ class CharacterBuildContributionsViewModelTest {
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
         override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
         override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
-        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class NoOpListingRepoForDecoder : AbilityListingRepository {
@@ -1221,7 +1221,7 @@ class CharacterBuildContributionsViewModelTest {
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
         override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
         override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
-        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class RecordingEssenceRepo(private val data: List<Essence>) : EssenceRepository {
@@ -1241,7 +1241,7 @@ class CharacterBuildContributionsViewModelTest {
         override suspend fun deleteContribution(name: String) = ContributionResult.Success
         override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
         override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
-        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class FakeAbilityListingRepo(private val data: List<Ability.Listing>) : AbilityListingRepository {

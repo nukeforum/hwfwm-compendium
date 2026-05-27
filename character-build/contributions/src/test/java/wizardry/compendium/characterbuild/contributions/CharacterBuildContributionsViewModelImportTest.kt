@@ -299,7 +299,7 @@ class CharacterBuildContributionsViewModelImportTest {
         override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
         override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation): ContributionResult = ContributionResult.Success
         override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult = ContributionResult.Success
-        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class FakeAbilityListingRepo : AbilityListingRepository {

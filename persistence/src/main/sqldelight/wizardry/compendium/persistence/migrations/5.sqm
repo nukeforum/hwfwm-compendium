@@ -6,9 +6,7 @@
 -- Strategy: create-new-table copy-rename within the implicit migration
 -- transaction. Every step is non-destructive until the final RENAME pass; if
 -- any statement fails the whole transaction rolls back and the device stays
--- on v5 with its data intact. PRAGMA foreign_keys is set defensively even
--- though SQLDelight runs migrations with FK enforcement off by default --
--- inside a transaction the pragma is a no-op, but it documents intent.
+-- on v5 with its data intact.
 --
 -- New tables reference the *_new parent names in their FK constraints so the
 -- SQLDelight static analyzer (which doesn't yet know we're about to rename
@@ -25,8 +23,6 @@
 -- are dropped during the copy. This is the lesser of two evils: keeping them
 -- would violate the new NOT NULL integer FK; failing the migration would
 -- leave the device unrecoverable.
-
-PRAGMA foreign_keys = 0;
 
 -- 0. Re-declare the v5 shape of the Essences tables so SQLDelight's static
 --    migration analyzer can see them. The Essences family (manifestation,
@@ -294,5 +290,3 @@ CREATE INDEX IF NOT EXISTS idx_racial_ability_listing_ref ON character_build_rac
 CREATE INDEX IF NOT EXISTS idx_acquired_ability_listing_ref ON character_build_acquired_ability(listing_ref);
 
 CREATE INDEX IF NOT EXISTS idx_attribute_essence_ref ON character_build_attribute(essence_ref);
-
-PRAGMA foreign_keys = 1;

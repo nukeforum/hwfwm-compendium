@@ -171,7 +171,7 @@ private object RenameStubEssenceRepo : wizardry.compendium.repositories.EssenceR
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
     override suspend fun updateManifestationContribution(originalName: String, manifestation: wizardry.compendium.domain.model.Essence.Manifestation) = ContributionResult.Success
     override suspend fun updateConfluenceContribution(originalName: String, confluence: wizardry.compendium.domain.model.Essence.Confluence) = ContributionResult.Success
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private object RenameStubStoneRepo : AwakeningStoneRepository {

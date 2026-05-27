@@ -121,21 +121,21 @@ class DefaultEssenceRepositoryRenameTest {
     // ------------------------------------------------------------------ delete impact tests
 
     @Test
-    fun `checkEssenceDeleteImpact returns empty when no references exist`() = runTest {
+    fun `checkDeleteImpact returns empty when no references exist`() = runTest {
         val repo = repository(canonical = emptyList(), contributions = listOf(manifestation("Wind")), toggle = true)
-        val impact = repo.checkEssenceDeleteImpact("Wind")
+        val impact = repo.checkDeleteImpact("Wind")
         assertTrue(impact.isEmpty)
     }
 
     @Test
-    fun `checkEssenceDeleteImpact for unknown name returns empty`() = runTest {
+    fun `checkDeleteImpact for unknown name returns empty`() = runTest {
         val repo = repository(canonical = emptyList(), contributions = emptyList(), toggle = true)
-        val impact = repo.checkEssenceDeleteImpact("DoesNotExist")
+        val impact = repo.checkDeleteImpact("DoesNotExist")
         assertTrue(impact.isEmpty)
     }
 
     @Test
-    fun `checkEssenceDeleteImpact returns referencingConfluenceSets when essence is in a confluence set`() = runTest {
+    fun `checkDeleteImpact returns referencingConfluenceSets when essence is in a confluence set`() = runTest {
         // Use in-memory databases for this test to actually exercise SQL
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         CompendiumDatabase.Schema.create(driver)

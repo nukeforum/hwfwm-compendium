@@ -14,7 +14,7 @@ import wizardry.compendium.repositories.StatusEffectRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
-internal interface EssenceModule {
+internal interface RepositoryModule {
     @Singleton
     @Binds
     fun bindEssenceRepository(impl: DefaultEssenceRepository): EssenceRepository

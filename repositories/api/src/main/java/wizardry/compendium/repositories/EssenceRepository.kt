@@ -47,5 +47,5 @@ interface EssenceRepository {
         confluence: Essence.Confluence,
     ): ContributionResult
 
-    suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact
+    suspend fun checkDeleteImpact(name: String): DeleteImpact
 }

@@ -251,7 +251,7 @@ class EssenceContributionsViewModel @Inject constructor(
             else -> return
         }
         viewModelScope.launch(ioDispatcher) {
-            _deleteImpact.value = essenceRepository.checkEssenceDeleteImpact(name)
+            _deleteImpact.value = essenceRepository.checkDeleteImpact(name)
         }
     }
 

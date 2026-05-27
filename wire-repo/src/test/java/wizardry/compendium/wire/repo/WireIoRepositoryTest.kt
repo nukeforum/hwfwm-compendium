@@ -160,7 +160,7 @@ class WireIoRepositoryTest {
             originalName: String,
             confluence: Essence.Confluence,
         ): ContributionResult = error("not used in tests")
-        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class StubStoneRepo(initial: List<AwakeningStone>) : AwakeningStoneRepository {

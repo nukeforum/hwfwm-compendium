@@ -333,7 +333,7 @@ class DefaultIntegritySweepTest {
         override suspend fun deleteContribution(name: String): ContributionResult = error("not used")
         override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation): ContributionResult = error("not used")
         override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult = error("not used")
-        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private class StubStatusEffectRepo(private val canonical: List<StatusEffect>) : StatusEffectRepository {

@@ -133,7 +133,7 @@ private class FakeEssenceRepo(initial: List<Essence>) : EssenceRepository {
         ContributionResult.Success
     override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) =
         ContributionResult.Success
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private object StubAwakeningStoneRepo : AwakeningStoneRepository {

@@ -72,7 +72,7 @@ private class BuildTestStubEssenceRepository : EssenceRepository {
         originalName: String,
         confluence: Essence.Confluence,
     ): ContributionResult = ContributionResult.Success
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private class BuildTestStubAwakeningStoneRepository : AwakeningStoneRepository {

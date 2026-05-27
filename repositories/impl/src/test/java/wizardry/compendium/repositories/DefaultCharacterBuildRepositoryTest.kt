@@ -465,7 +465,7 @@ private class FakeBuildEssenceRepository(private val data: List<Essence>) : Esse
         error("not used")
     override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult =
         error("not used")
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private class FakeBuildListingRepository(private val data: List<Ability.Listing>) :

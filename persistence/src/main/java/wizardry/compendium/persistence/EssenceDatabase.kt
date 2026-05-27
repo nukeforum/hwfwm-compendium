@@ -105,7 +105,7 @@ class EssenceDatabase @Inject constructor(driver: SqlDriver) : EssenceCache {
     /**
      * Returns the names of confluences whose confluence_sets include the given
      * essence ref (encoded as `canon:<name>` or `contr:<id>` by the caller).
-     * Used by checkEssenceDeleteImpact to find dependent confluence sets.
+     * Used by checkDeleteImpact to find dependent confluence sets.
      */
     fun confluenceNamesReferencingEssenceRef(ref: String): List<String> =
         q.selectConfluenceSetsReferencingEssenceRef(

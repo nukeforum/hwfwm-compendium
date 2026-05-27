@@ -306,7 +306,7 @@ internal class DefaultEssenceRepository @Inject constructor(
         return null
     }
 
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact {
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact {
         val manifestationId = contributionsCache.findManifestationIdByName(name)
         if (manifestationId != null) {
             val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId))

@@ -134,7 +134,7 @@ class EssenceContributionsViewModelRenameTest {
         val repo = object : SpyEssenceRepo() {
             override suspend fun getEssences() = listOf<Essence>(essence)
             override suspend fun isContribution(name: String) = true
-            override suspend fun checkEssenceDeleteImpact(name: String) =
+            override suspend fun checkDeleteImpact(name: String) =
                 DeleteImpact(referencingBuilds = listOf("MyBuild"))
         }
         val vm = makeVm("Wind", repo)
@@ -152,7 +152,7 @@ class EssenceContributionsViewModelRenameTest {
         val repo = object : SpyEssenceRepo() {
             override suspend fun getEssences() = listOf<Essence>(essence)
             override suspend fun isContribution(name: String) = true
-            override suspend fun checkEssenceDeleteImpact(name: String) =
+            override suspend fun checkDeleteImpact(name: String) =
                 DeleteImpact(referencingConfluenceSets = listOf("Storm", "Tempest"))
         }
         val vm = makeVm("Wind", repo)
@@ -169,7 +169,7 @@ class EssenceContributionsViewModelRenameTest {
         val repo = object : SpyEssenceRepo() {
             override suspend fun getEssences() = listOf<Essence>(essence)
             override suspend fun isContribution(name: String) = true
-            override suspend fun checkEssenceDeleteImpact(name: String) =
+            override suspend fun checkDeleteImpact(name: String) =
                 DeleteImpact(referencingBuilds = listOf("MyBuild"))
             override suspend fun deleteContribution(name: String) = ContributionResult.Success
         }
@@ -189,7 +189,7 @@ class EssenceContributionsViewModelRenameTest {
         val repo = object : SpyEssenceRepo() {
             override suspend fun getEssences() = listOf<Essence>(essence)
             override suspend fun isContribution(name: String) = true
-            override suspend fun checkEssenceDeleteImpact(name: String) =
+            override suspend fun checkDeleteImpact(name: String) =
                 DeleteImpact(referencingBuilds = listOf("MyBuild"))
             override suspend fun deleteContribution(name: String): ContributionResult {
                 deletedNames += name
@@ -220,7 +220,7 @@ class EssenceContributionsViewModelRenameTest {
         override suspend fun deleteContribution(name: String): ContributionResult = ContributionResult.Success
         override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation): ContributionResult = ContributionResult.Success
         override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence): ContributionResult = ContributionResult.Success
-        override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+        override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
     }
 
     private object NoopStoneRepo : AwakeningStoneRepository {
@@ -289,7 +289,7 @@ private object VmTestStubEssenceRepo : EssenceRepository {
     override suspend fun deleteContribution(name: String) = ContributionResult.Success
     override suspend fun updateManifestationContribution(originalName: String, manifestation: Essence.Manifestation) = ContributionResult.Success
     override suspend fun updateConfluenceContribution(originalName: String, confluence: Essence.Confluence) = ContributionResult.Success
-    override suspend fun checkEssenceDeleteImpact(name: String): DeleteImpact = DeleteImpact()
+    override suspend fun checkDeleteImpact(name: String): DeleteImpact = DeleteImpact()
 }
 
 private object VmTestStubStoneRepo : AwakeningStoneRepository {
