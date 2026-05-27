@@ -139,8 +139,9 @@ private class FakeAbilityListingCache(initial: List<Ability.Listing>) : AbilityL
     override fun replaceAll(listings: List<Ability.Listing>) {
         rows.clear(); nextId = 0; listings.forEach { rows.add(IdentifiedListing(nextId++, it)) }
     }
-    override fun selectEffectsWithStatusTokens(): List<Pair<Long, String>> = emptyList()
-    override fun updateEffectDescription(effectId: Long, description: String) {}
+    override fun bulkRewriteStatusTokens(
+        rewrite: (effectId: Long, description: String) -> String?,
+    ): Int = 0
 }
 
 private class FakeAbilityListingToggle(override val isAbilityListingContributionsEnabled: Boolean) :

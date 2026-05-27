@@ -73,8 +73,8 @@ class DefaultStatusEffectRepositoryTest {
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Fake AbilityListingCache — supports effect-level id tracking and
-    // selectEffectsWithStatusTokens / updateEffectDescription.
+    // Fake AbilityListingCache — supports effect-level id tracking so the
+    // bulkRewriteStatusTokens cascade can be exercised end-to-end.
     // ──────────────────────────────────────────────────────────────────────────
 
     private class FakeAbilityListingCache : AbilityListingCache {
@@ -134,14 +134,18 @@ class DefaultStatusEffectRepositoryTest {
             listings.forEach { insert(it) }
         }
 
-        override fun selectEffectsWithStatusTokens(): List<Pair<Long, String>> =
-            effectRows.entries
-                .filter { (_, v) -> Regex("""\{status:[^}]+\}""", RegexOption.IGNORE_CASE).containsMatchIn(v.second) }
-                .map { (id, v) -> id to v.second }
-
-        override fun updateEffectDescription(effectId: Long, description: String) {
-            val entry = effectRows[effectId] ?: return
-            effectRows[effectId] = entry.first to description
+        override fun bulkRewriteStatusTokens(
+            rewrite: (effectId: Long, description: String) -> String?,
+        ): Int {
+            val tokenRegex = Regex("""\{status:[^}]+\}""", RegexOption.IGNORE_CASE)
+            var updated = 0
+            for ((effectId, entry) in effectRows.toMap()) {
+                if (!tokenRegex.containsMatchIn(entry.second)) continue
+                val rewritten = rewrite(effectId, entry.second) ?: continue
+                effectRows[effectId] = entry.first to rewritten
+                updated++
+            }
+            return updated
         }
 
         /** Get the current description for an effect by its id — test helper. */

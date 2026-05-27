@@ -74,8 +74,8 @@ internal class DefaultCharacterBuildRepository @Inject constructor(
     // --- Read path: decode raw rows and resolve refs --------------------
 
     private suspend fun readAllResolved(): List<CharacterBuild> {
-        val rawBuilds = database.readAllBuilds()
-        if (rawBuilds.isEmpty()) return emptyList()
+        val snapshot = database.readSnapshot()
+        if (snapshot.builds.isEmpty()) return emptyList()
 
         val canonicalListingsByName = abilityListingRepository.getAbilityListings().associateBy { it.name }
         val canonicalEssencesByName = essenceRepository.getEssences().associateBy { it.name }
@@ -85,12 +85,12 @@ internal class DefaultCharacterBuildRepository @Inject constructor(
         val contributedConfluencesById = essenceContributionsCache.identifiedConfluences
             .associate { it.id to it }
 
-        val rawRacial = database.readAllRacialAbilities().groupBy { it.buildName }
-        val rawAttrs = database.readAllAttributes().groupBy { it.buildName }
-        val rawAcquired = database.readAllAcquiredAbilities()
+        val rawRacial = snapshot.racialAbilities.groupBy { it.buildName }
+        val rawAttrs = snapshot.attributes.groupBy { it.buildName }
+        val rawAcquired = snapshot.acquiredAbilities
             .groupBy { it.buildName to it.attributeKind }
 
-        return rawBuilds.map { rawBuild ->
+        return snapshot.builds.map { rawBuild ->
             val racialAbilities = rawRacial[rawBuild.name].orEmpty()
                 .sortedBy { it.ordinal }
                 .mapNotNull { row ->

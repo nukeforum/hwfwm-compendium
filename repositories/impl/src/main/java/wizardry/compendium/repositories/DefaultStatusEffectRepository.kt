@@ -152,12 +152,15 @@ internal class DefaultStatusEffectRepository @Inject constructor(
      * Rewrite `{status:ORIGINALNAME}` tokens in contributed ability descriptions
      * to `{status:NEWNAME}`. Prefix-safe: only exact (case-insensitive) inner-name
      * matches are rewritten. E.g., renaming "Burn" does NOT affect "{status:Burning}".
-     * Called inside writeMutex; no additional locking needed.
+     *
+     * The scan + per-row updates run inside a single SQLite transaction (see
+     * [AbilityListingCache.bulkRewriteStatusTokens]) so a crash between the
+     * status-row rename and the dependent description rewrites cannot leave
+     * orphan `{status:OldName}` tokens — either both commit or neither does.
      */
     private fun rewriteStatusTokens(originalName: String, newName: String) {
         val tokenRegex = Regex("""\{status:([^}]+)\}""", RegexOption.IGNORE_CASE)
-        val effectsWithTokens = abilityListingContributionsCache.selectEffectsWithStatusTokens()
-        for ((effectId, description) in effectsWithTokens) {
+        abilityListingContributionsCache.bulkRewriteStatusTokens { _, description ->
             var changed = false
             val rewritten = tokenRegex.replace(description) { match ->
                 val captured = match.groupValues[1]
@@ -168,9 +171,7 @@ internal class DefaultStatusEffectRepository @Inject constructor(
                     match.value
                 }
             }
-            if (changed) {
-                abilityListingContributionsCache.updateEffectDescription(effectId, rewritten)
-            }
+            if (changed) rewritten else null
         }
     }
 

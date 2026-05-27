@@ -29,6 +29,19 @@ data class RawAcquiredAbilityRow(
 )
 
 /**
+ * Snapshot of all build-related rows read inside a single SQLite transaction.
+ * Use this when the caller needs to assemble whole builds across the four
+ * tables — repository hydration would otherwise see a torn view if a writer
+ * commits between the four separate reads.
+ */
+data class RawBuildSnapshot(
+    val builds: List<RawBuildRow>,
+    val racialAbilities: List<RawRacialAbilityRow>,
+    val attributes: List<RawAttributeRow>,
+    val acquiredAbilities: List<RawAcquiredAbilityRow>,
+)
+
+/**
  * Strategy provided by the repository layer to encode `Ability.Listing` /
  * `Essence` references into tagged-string form at write time.
  *
@@ -71,6 +84,21 @@ class CharacterBuildDatabase @Inject constructor(driver: SqlDriver) {
                     ordinal = it.ordinal,
                 )
             }
+
+    /**
+     * Read all four build-related tables inside a single SQLite transaction so
+     * the assembled snapshot is internally consistent. Prefer this over
+     * chaining the four `readAll*` accessors at a call site that builds whole
+     * domain `CharacterBuild` values.
+     */
+    fun readSnapshot(): RawBuildSnapshot = db.transactionWithResult {
+        RawBuildSnapshot(
+            builds = readAllBuilds(),
+            racialAbilities = readAllRacialAbilities(),
+            attributes = readAllAttributes(),
+            acquiredAbilities = readAllAcquiredAbilities(),
+        )
+    }
 
     /**
      * Returns the names of builds that reference the given listing ref string

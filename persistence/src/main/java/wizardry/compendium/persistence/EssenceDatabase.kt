@@ -23,10 +23,10 @@ class EssenceDatabase @Inject constructor(driver: SqlDriver) : EssenceCache {
         }.sortedBy { it.manifestation.name }
 
     override val identifiedConfluences: List<IdentifiedConfluence>
-        get() {
+        get() = db.transactionWithResult {
             val setsByConfluenceId = q.selectAllConfluenceSets().executeAsList()
                 .groupBy { it.confluence_id }
-            return q.selectAllConfluences().executeAsList().map { row ->
+            q.selectAllConfluences().executeAsList().map { row ->
                 val sets = setsByConfluenceId[row.id].orEmpty().map { setRow ->
                     RawConfluenceSet(
                         essence1Ref = setRow.essence1_ref,
@@ -54,8 +54,14 @@ class EssenceDatabase @Inject constructor(driver: SqlDriver) : EssenceCache {
         q.lastInsertRowId().executeAsOne()
     }
 
-    override fun updateManifestation(id: Long, manifestation: Essence.Manifestation) = db.transaction {
-        q.updateManifestationName(name = manifestation.name, id = id)
+    override fun updateManifestation(id: Long, manifestation: Essence.Manifestation) {
+        q.updateManifestationFully(
+            name = manifestation.name,
+            rarity = manifestation.rarity.name,
+            description = manifestation.description,
+            is_restricted = if (manifestation.isRestricted) 1L else 0L,
+            id = id,
+        )
     }
 
     override fun deleteManifestationById(id: Long) {

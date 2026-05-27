@@ -26,7 +26,7 @@ class AwakeningStoneDatabase @Inject constructor(driver: SqlDriver) : AwakeningS
     }
 
     override fun update(id: Long, stone: AwakeningStone) {
-        q.updateAwakeningStoneName(name = stone.name, id = id)
+        q.updateAwakeningStoneFully(name = stone.name, rarity = stone.rarity.name, id = id)
     }
 
     override fun deleteById(id: Long) {

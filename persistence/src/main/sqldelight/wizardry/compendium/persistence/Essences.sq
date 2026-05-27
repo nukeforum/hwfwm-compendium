@@ -30,6 +30,9 @@ SELECT id FROM manifestation WHERE name = ?;
 updateManifestationName:
 UPDATE manifestation SET name = ? WHERE id = ?;
 
+updateManifestationFully:
+UPDATE manifestation SET name = ?, rarity = ?, description = ?, is_restricted = ? WHERE id = ?;
+
 deleteManifestationById:
 DELETE FROM manifestation WHERE id = ?;
 

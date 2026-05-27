@@ -13,6 +13,9 @@ SELECT id FROM awakening_stone WHERE name = ?;
 updateAwakeningStoneName:
 UPDATE awakening_stone SET name = ? WHERE id = ?;
 
+updateAwakeningStoneFully:
+UPDATE awakening_stone SET name = ?, rarity = ? WHERE id = ?;
+
 deleteAwakeningStoneById:
 DELETE FROM awakening_stone WHERE id = ?;
 

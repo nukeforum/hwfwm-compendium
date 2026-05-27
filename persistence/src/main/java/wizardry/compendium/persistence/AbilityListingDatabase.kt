@@ -18,7 +18,7 @@ class AbilityListingDatabase @Inject constructor(driver: SqlDriver) : AbilityLis
     private val q get() = db.abilityListingsQueries
 
     override val identified: List<IdentifiedListing>
-        get() {
+        get() = db.transactionWithResult {
             val effectsByListingId = q.selectAllAbilityEffects().executeAsList()
                 .groupBy { it.listing_id }
             val propertiesByEffect = q.selectAllEffectProperties().executeAsList()
@@ -26,7 +26,7 @@ class AbilityListingDatabase @Inject constructor(driver: SqlDriver) : AbilityLis
             val costsByEffect = q.selectAllEffectCosts().executeAsList()
                 .groupBy { it.effect_id }
 
-            return q.selectAllAbilityListings().executeAsList()
+            q.selectAllAbilityListings().executeAsList()
                 .map { row ->
                     val effects = effectsByListingId[row.id].orEmpty().map { effectRow ->
                         Effect.AbilityEffect(
@@ -89,11 +89,17 @@ class AbilityListingDatabase @Inject constructor(driver: SqlDriver) : AbilityLis
         }
     }
 
-    override fun selectEffectsWithStatusTokens(): List<Pair<Long, String>> =
-        q.selectEffectsWithStatusTokens().executeAsList().map { it.id to it.description }
-
-    override fun updateEffectDescription(effectId: Long, description: String) {
-        q.updateEffectDescription(description = description, id = effectId)
+    override fun bulkRewriteStatusTokens(
+        rewrite: (effectId: Long, description: String) -> String?,
+    ): Int = db.transactionWithResult {
+        val effects = q.selectEffectsWithStatusTokens().executeAsList()
+        var updated = 0
+        for (row in effects) {
+            val newDescription = rewrite(row.id, row.description) ?: continue
+            q.updateEffectDescription(description = newDescription, id = row.id)
+            updated++
+        }
+        updated
     }
 
     private fun writeEffects(effects: List<Effect.AbilityEffect>, listingId: Long) {

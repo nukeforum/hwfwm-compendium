@@ -33,9 +33,18 @@ interface AbilityListingCache {
     /** Replace all rows with the given listings, assigning fresh ids. Used by data loader / wire import. */
     fun replaceAll(listings: List<Ability.Listing>)
 
-    /** Effect rows whose description contains a {status:...} token. Pair: (effectId, description). */
-    fun selectEffectsWithStatusTokens(): List<Pair<Long, String>>
-
-    /** Update a single effect's description by effect id. */
-    fun updateEffectDescription(effectId: Long, description: String)
+    /**
+     * Scan every effect description that contains a `{status:...}` token, pass
+     * each to [rewrite], and persist any non-null returned value back to the
+     * effect. The scan and the per-row updates run inside a single SQLite
+     * transaction so the cascade is atomic — partial rewrites are not visible
+     * to other readers, and a crash mid-cascade rolls the whole rewrite back.
+     *
+     * [rewrite] receives `(effectId, currentDescription)` and returns the new
+     * description to write, or `null` to leave the row untouched. Returns the
+     * number of rows actually updated.
+     */
+    fun bulkRewriteStatusTokens(
+        rewrite: (effectId: Long, description: String) -> String?,
+    ): Int
 }
