@@ -1,6 +1,7 @@
 package wizardry.compendium.di
 
 import android.content.Context
+import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import dagger.Module
 import dagger.Provides
@@ -21,89 +22,96 @@ import wizardry.compendium.persistence.EssenceDatabase
 import wizardry.compendium.persistence.StatusEffectCache
 import wizardry.compendium.persistence.StatusEffectDatabase
 
+/**
+ * Single SQLite driver per database file. Every per-entity *Database is built
+ * on top of the shared @Canonical / @Contributions [SqlDriver] so writes
+ * through one cache are immediately visible to reads on any other cache that
+ * shares the same file. Previously each cache constructed its own
+ * AndroidSqliteDriver against the same physical file, which fragmented the
+ * connection pool, lost intra-process snapshot-after-commit guarantees, and
+ * risked SQLITE_BUSY contention under cross-cache write/read interleavings.
+ *
+ * EssenceDatabase is provided once per file and exposed both as the
+ * [EssenceCache] interface (read-only callers) and as the concrete
+ * [EssenceDatabase] (callers that need the richer
+ * confluenceNamesReferencingEssenceRef etc. surface).
+ */
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class DatabaseModule {
+object DatabaseModule {
 
-    companion object {
-        @Provides
-        @Singleton
-        @Canonical
-        fun provideCanonicalEssenceCache(@ApplicationContext context: Context): EssenceCache =
-            EssenceDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
-            )
+    @Provides
+    @Singleton
+    @Canonical
+    fun provideCanonicalDriver(@ApplicationContext context: Context): SqlDriver =
+        AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
 
-        @Provides
-        @Singleton
-        @Contributions
-        fun provideContributionsEssenceCache(@ApplicationContext context: Context): EssenceCache =
-            EssenceDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-            )
+    @Provides
+    @Singleton
+    @Contributions
+    fun provideContributionsDriver(@ApplicationContext context: Context): SqlDriver =
+        AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
 
-        @Provides
-        @Singleton
-        @Canonical
-        fun provideCanonicalAwakeningStoneCache(@ApplicationContext context: Context): AwakeningStoneCache =
-            AwakeningStoneDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
-            )
+    // ── Canonical ────────────────────────────────────────────────────────
 
-        @Provides
-        @Singleton
-        @Contributions
-        fun provideContributionsAwakeningStoneCache(@ApplicationContext context: Context): AwakeningStoneCache =
-            AwakeningStoneDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-            )
+    @Provides
+    @Singleton
+    @Canonical
+    fun provideCanonicalEssenceCache(@Canonical driver: SqlDriver): EssenceCache =
+        EssenceDatabase(driver)
 
-        @Provides
-        @Singleton
-        @Canonical
-        fun provideCanonicalAbilityListingCache(@ApplicationContext context: Context): AbilityListingCache =
-            AbilityListingDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
-            )
+    @Provides
+    @Singleton
+    @Canonical
+    fun provideCanonicalAwakeningStoneCache(@Canonical driver: SqlDriver): AwakeningStoneCache =
+        AwakeningStoneDatabase(driver)
 
-        @Provides
-        @Singleton
-        @Contributions
-        fun provideContributionsAbilityListingCache(@ApplicationContext context: Context): AbilityListingCache =
-            AbilityListingDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-            )
+    @Provides
+    @Singleton
+    @Canonical
+    fun provideCanonicalAbilityListingCache(@Canonical driver: SqlDriver): AbilityListingCache =
+        AbilityListingDatabase(driver)
 
-        @Provides
-        @Singleton
-        @Canonical
-        fun provideCanonicalStatusEffectCache(@ApplicationContext context: Context): StatusEffectCache =
-            StatusEffectDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "compendium.db")
-            )
+    @Provides
+    @Singleton
+    @Canonical
+    fun provideCanonicalStatusEffectCache(@Canonical driver: SqlDriver): StatusEffectCache =
+        StatusEffectDatabase(driver)
 
-        @Provides
-        @Singleton
-        @Contributions
-        fun provideContributionsStatusEffectCache(@ApplicationContext context: Context): StatusEffectCache =
-            StatusEffectDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-            )
+    // ── Contributions ────────────────────────────────────────────────────
 
-        @Provides
-        @Singleton
-        @Contributions
-        fun provideContributionsCharacterBuildDatabase(@ApplicationContext context: Context): CharacterBuildDatabase =
-            CharacterBuildDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-            )
+    @Provides
+    @Singleton
+    @Contributions
+    fun provideContributionsEssenceDatabase(@Contributions driver: SqlDriver): EssenceDatabase =
+        EssenceDatabase(driver)
 
-        @Provides
-        @Singleton
-        @Contributions
-        fun provideContributionsEssenceDatabase(@ApplicationContext context: Context): EssenceDatabase =
-            EssenceDatabase(
-                AndroidSqliteDriver(CompendiumDatabase.Schema, context, "contributions.db")
-            )
-    }
+    @Provides
+    @Singleton
+    @Contributions
+    fun provideContributionsEssenceCache(@Contributions db: EssenceDatabase): EssenceCache = db
+
+    @Provides
+    @Singleton
+    @Contributions
+    fun provideContributionsAwakeningStoneCache(@Contributions driver: SqlDriver): AwakeningStoneCache =
+        AwakeningStoneDatabase(driver)
+
+    @Provides
+    @Singleton
+    @Contributions
+    fun provideContributionsAbilityListingCache(@Contributions driver: SqlDriver): AbilityListingCache =
+        AbilityListingDatabase(driver)
+
+    @Provides
+    @Singleton
+    @Contributions
+    fun provideContributionsStatusEffectCache(@Contributions driver: SqlDriver): StatusEffectCache =
+        StatusEffectDatabase(driver)
+
+    @Provides
+    @Singleton
+    @Contributions
+    fun provideContributionsCharacterBuildDatabase(@Contributions driver: SqlDriver): CharacterBuildDatabase =
+        CharacterBuildDatabase(driver)
 }
