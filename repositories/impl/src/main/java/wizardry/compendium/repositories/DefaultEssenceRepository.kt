@@ -374,15 +374,9 @@ internal class DefaultEssenceRepository @Inject constructor(
         val selfManifestationsByName = manifestations.associateBy { it.name }
 
         val confluences = cache.identifiedConfluences.mapNotNull { raw ->
-            val sets = raw.sets.mapNotNull { setRow ->
-                val members = listOf(setRow.essence1Ref, setRow.essence2Ref, setRow.essence3Ref).mapNotNull { ref ->
-                    resolveMember(ref, manifestationsById, canonicalManifestationsByName, selfManifestationsByName)
-                }
-                if (members.size != 3) null
-                else ConfluenceSet(set = members.toSet(), isRestricted = setRow.isRestricted)
+            hydrateConfluence(raw) { ref ->
+                resolveMember(ref, manifestationsById, canonicalManifestationsByName, selfManifestationsByName)
             }
-            if (sets.isEmpty()) null
-            else Essence.of(name = raw.name, restricted = raw.isRestricted, confluences = sets.toTypedArray())
         }
 
         return (manifestations + confluences).sortedBy { it.name }

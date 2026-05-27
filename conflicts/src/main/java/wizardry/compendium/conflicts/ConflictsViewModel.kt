@@ -48,8 +48,20 @@ class ConflictsViewModel @Inject constructor(
     private val integrityIssuesFlow = MutableStateFlow<List<IntegrityIssue>>(emptyList())
 
     init {
+        // Re-run the IntegritySweep any time any of the four repository conflict
+        // Flows emit. The combined Flow fires once on subscription so the initial
+        // sweep runs at startup, and then again on every contribution write that
+        // bumps a repository's invalidations counter -- keeping the integrity
+        // issues surface in sync with the rest of the conflicts screen.
         viewModelScope.launch(ioDispatcher) {
-            integrityIssuesFlow.value = integritySweep.run()
+            combine(
+                essenceRepository.conflicts,
+                awakeningStoneRepository.conflicts,
+                abilityListingRepository.conflicts,
+                statusEffectRepository.conflicts,
+            ) { _, _, _, _ -> Unit }.collect {
+                integrityIssuesFlow.value = integritySweep.run()
+            }
         }
     }
 

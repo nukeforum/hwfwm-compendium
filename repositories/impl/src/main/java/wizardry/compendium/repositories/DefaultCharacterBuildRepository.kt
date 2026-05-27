@@ -193,9 +193,10 @@ internal class DefaultCharacterBuildRepository @Inject constructor(
     }
 
     /**
-     * Hydrate a contributed confluence from its raw identified form. The contributed
-     * confluence's confluence_sets reference essences via tagged ref strings (canon:
-     * or contr:); resolve each set member.
+     * Hydrate a contributed confluence from its raw identified form by ref id.
+     * Delegates the set-walking/dropping policy to the shared [hydrateConfluence]
+     * helper so this and [DefaultEssenceRepository.readCacheAsEssences] cannot
+     * drift in how unresolvable members are handled.
      */
     private fun hydrateContributedConfluence(
         id: Long,
@@ -205,33 +206,16 @@ internal class DefaultCharacterBuildRepository @Inject constructor(
         contextName: String,
     ): Essence.Confluence? {
         val raw = confluences[id] ?: return null
-        val sets = raw.sets.mapNotNull { setRow ->
-            val members = listOf(setRow.essence1Ref, setRow.essence2Ref, setRow.essence3Ref).mapNotNull { memberRef ->
-                try {
-                    when (val decoded = RefCodec.decodeEssenceRef(memberRef)) {
-                        is EssenceRef.Canonical -> canonicalEssencesByName[decoded.name] as? Essence.Manifestation
-                        is EssenceRef.Contributed -> contributedManifestationsById[decoded.id]
-                    }
-                } catch (e: MalformedRefException) {
-                    Log.w(TAG, "confluence '${raw.name}' has malformed essence ref '${e.raw}' — dropping set")
-                    null
-                }
-            }
-            if (members.size != 3) {
-                Log.w(TAG, "confluence '${raw.name}' set has unresolvable members — dropping set")
-                null
-            } else {
-                ConfluenceSet(
-                    set = members.toSet(),
-                    isRestricted = setRow.isRestricted,
-                )
+        val confluence = hydrateConfluence(raw) { memberRef ->
+            when (val decoded = RefCodec.decodeEssenceRef(memberRef)) {
+                is EssenceRef.Canonical -> canonicalEssencesByName[decoded.name] as? Essence.Manifestation
+                is EssenceRef.Contributed -> contributedManifestationsById[decoded.id]
             }
         }
-        if (sets.isEmpty()) {
-            Log.w(TAG, "build '$contextName' references contributed confluence '${raw.name}' but no sets resolve — dropping slot")
-            return null
+        if (confluence == null) {
+            Log.w(TAG, "build '$contextName' references contributed confluence '${raw.name}' with no resolvable sets — dropping slot")
         }
-        return Essence.of(name = raw.name, restricted = raw.isRestricted, confluences = sets.toTypedArray()) as Essence.Confluence
+        return confluence
     }
 
     // --- Write path: BuildRefResolverImpl -------------------------------
