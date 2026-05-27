@@ -12,9 +12,13 @@ CREATE TABLE confluence (
     is_restricted INTEGER NOT NULL DEFAULT 0
 );
 
+-- confluence_id is a soft ref: see the note in AbilityListings.sq above. FK
+-- enforcement is off on this driver, so the declared REFERENCES never bit;
+-- dropped at v7 to stop misleading readers. Kotlin-side cascade lives in
+-- EssenceDatabase.deleteConfluenceById.
 CREATE TABLE confluence_set (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    confluence_id INTEGER NOT NULL REFERENCES confluence(id),
+    confluence_id INTEGER NOT NULL,
     essence1_ref TEXT NOT NULL,
     essence2_ref TEXT NOT NULL,
     essence3_ref TEXT NOT NULL,

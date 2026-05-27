@@ -3,15 +3,21 @@ CREATE TABLE character_build (
     race TEXT NOT NULL
 );
 
+-- build_name / (build_name, attribute_kind) columns are soft refs: see the
+-- note in AbilityListings.sq above. FK enforcement is off on this driver, so
+-- the declared REFERENCES / FOREIGN KEY never bit; dropped at v7 to stop
+-- misleading readers. Kotlin-side cascade lives in CharacterBuildDatabase's
+-- deleteByName / upsert / writeAll which deletes children before parents
+-- inside a single transaction.
 CREATE TABLE character_build_racial_ability (
-    build_name TEXT NOT NULL REFERENCES character_build(name),
+    build_name TEXT NOT NULL,
     listing_ref TEXT NOT NULL,
     ordinal INTEGER NOT NULL,
     PRIMARY KEY (build_name, ordinal)
 );
 
 CREATE TABLE character_build_attribute (
-    build_name TEXT NOT NULL REFERENCES character_build(name),
+    build_name TEXT NOT NULL,
     kind TEXT NOT NULL,
     essence_ref TEXT NOT NULL,
     PRIMARY KEY (build_name, kind)
@@ -25,9 +31,7 @@ CREATE TABLE character_build_acquired_ability (
     tier INTEGER NOT NULL,
     progress REAL NOT NULL,
     ordinal INTEGER NOT NULL,
-    PRIMARY KEY (build_name, attribute_kind, ordinal),
-    FOREIGN KEY (build_name, attribute_kind)
-        REFERENCES character_build_attribute(build_name, kind)
+    PRIMARY KEY (build_name, attribute_kind, ordinal)
 );
 
 CREATE INDEX idx_racial_ability_listing_ref ON character_build_racial_ability(listing_ref);

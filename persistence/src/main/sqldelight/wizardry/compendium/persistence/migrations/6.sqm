@@ -1,6 +1,7 @@
 -- v6 -> v7: discriminate contributed essence refs by kind, sweep orphan
--- effect_property/effect_cost rows the v5->v6 migration left behind, and add
--- the three confluence_set ref indexes declared by Essences.sq.
+-- effect_property/effect_cost rows the v5->v6 migration left behind, and
+-- drop seven unenforced REFERENCES clauses (rebuilding the affected tables
+-- with their v7 indexes).
 --
 -- 1. Essence-ref discriminator. v6 encoded both contributed manifestations
 --    and contributed confluences as 'contr:<id>', but manifestation and
@@ -17,10 +18,21 @@
 --    but did NOT cascade-clean effect_property and effect_cost. Those orphan
 --    rows are dangling garbage in every v6 device; delete them now.
 --
--- 3. confluence_set ref indexes. Essences.sq declares three indexes on the
---    new ref columns; the migration must add them to existing v6 databases.
---    Fresh installs go through Essences.sq directly, so plain CREATE INDEX
---    is correct here (this migration runs once per device).
+-- 3. Drop unenforced REFERENCES clauses from seven tables. FK enforcement is
+--    OFF on AndroidSqliteDriver (no PRAGMA foreign_keys = ON per connection),
+--    so the declared REFERENCES never actually bit -- but they mislead future
+--    readers about the soft-ref design. SQLite has no ALTER TABLE DROP
+--    CONSTRAINT, so we use the standard create-new-copy-rename pattern for
+--    each table. Ids are preserved via INSERT INTO ... SELECT * so dependent
+--    soft refs (effect_property.effect_id, effect_cost.effect_id) keep
+--    pointing at the right rows after their parent (ability_effect) is
+--    rebuilt. The three new confluence_set ref indexes (declared in
+--    Essences.sq at v7) plus the three character_build_* indexes from 5.sqm
+--    are (re)created after the corresponding tables' final RENAME -- indexes
+--    are dropped with their table by SQLite. CREATE INDEX uses IF NOT EXISTS
+--    to keep the static schema analyzer happy when an index name also exists
+--    in an earlier migration; SQLite ignores it because the indexes were just
+--    dropped along with the parent table.
 
 -- 1. Rewrite essence refs ------------------------------------------------
 
@@ -78,8 +90,123 @@ DELETE FROM effect_property WHERE effect_id NOT IN (SELECT id FROM ability_effec
 
 DELETE FROM effect_cost WHERE effect_id NOT IN (SELECT id FROM ability_effect);
 
--- 3. Add confluence_set ref indexes --------------------------------------
+-- 3. Rebuild seven tables to drop their unenforced REFERENCES clauses -----
+-- The three new confluence_set indexes (declared at v7 in Essences.sq) are
+-- created after the confluence_set rebuild rather than as a separate step,
+-- since rebuilding the table would drop them anyway.
 
-CREATE INDEX idx_confluence_set_essence1_ref ON confluence_set(essence1_ref);
-CREATE INDEX idx_confluence_set_essence2_ref ON confluence_set(essence2_ref);
-CREATE INDEX idx_confluence_set_essence3_ref ON confluence_set(essence3_ref);
+-- Recreate ability_effect without REFERENCES ability_listing(id). Ids are
+-- preserved so effect_property.effect_id / effect_cost.effect_id still
+-- resolve. ability_effect must be rebuilt before effect_property and
+-- effect_cost so the sub-rebuilds below see a stable parent.
+CREATE TABLE ability_effect_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    listing_id INTEGER NOT NULL,
+    rank TEXT NOT NULL,
+    type TEXT NOT NULL,
+    cooldown_seconds INTEGER NOT NULL,
+    description TEXT NOT NULL,
+    replacement_key TEXT,
+    ordinal INTEGER NOT NULL
+);
+
+INSERT INTO ability_effect_new SELECT * FROM ability_effect;
+DROP TABLE ability_effect;
+ALTER TABLE ability_effect_new RENAME TO ability_effect;
+
+-- Recreate effect_property without REFERENCES ability_effect(id).
+CREATE TABLE effect_property_new (
+    effect_id INTEGER NOT NULL,
+    property TEXT NOT NULL,
+    ordinal INTEGER NOT NULL
+);
+
+INSERT INTO effect_property_new SELECT * FROM effect_property;
+DROP TABLE effect_property;
+ALTER TABLE effect_property_new RENAME TO effect_property;
+
+-- Recreate effect_cost without REFERENCES ability_effect(id).
+CREATE TABLE effect_cost_new (
+    effect_id INTEGER NOT NULL,
+    kind TEXT NOT NULL,
+    amount TEXT NOT NULL,
+    resource TEXT NOT NULL,
+    ordinal INTEGER NOT NULL
+);
+
+INSERT INTO effect_cost_new SELECT * FROM effect_cost;
+DROP TABLE effect_cost;
+ALTER TABLE effect_cost_new RENAME TO effect_cost;
+
+-- Recreate confluence_set without REFERENCES confluence(id). The three
+-- idx_confluence_set_essence{1,2,3}_ref indexes created in section 3 above
+-- were dropped along with the old table, so we re-create them after the
+-- rename.
+CREATE TABLE confluence_set_new (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    confluence_id INTEGER NOT NULL,
+    essence1_ref TEXT NOT NULL,
+    essence2_ref TEXT NOT NULL,
+    essence3_ref TEXT NOT NULL,
+    is_restricted INTEGER NOT NULL DEFAULT 0
+);
+
+INSERT INTO confluence_set_new SELECT * FROM confluence_set;
+DROP TABLE confluence_set;
+ALTER TABLE confluence_set_new RENAME TO confluence_set;
+
+CREATE INDEX IF NOT EXISTS idx_confluence_set_essence1_ref ON confluence_set(essence1_ref);
+CREATE INDEX IF NOT EXISTS idx_confluence_set_essence2_ref ON confluence_set(essence2_ref);
+CREATE INDEX IF NOT EXISTS idx_confluence_set_essence3_ref ON confluence_set(essence3_ref);
+
+-- Recreate character_build_racial_ability without REFERENCES
+-- character_build(name). idx_racial_ability_listing_ref was created by 5.sqm
+-- and dropped along with the old table here; re-create after the rename.
+CREATE TABLE character_build_racial_ability_new (
+    build_name TEXT NOT NULL,
+    listing_ref TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (build_name, ordinal)
+);
+
+INSERT INTO character_build_racial_ability_new SELECT * FROM character_build_racial_ability;
+DROP TABLE character_build_racial_ability;
+ALTER TABLE character_build_racial_ability_new RENAME TO character_build_racial_ability;
+
+CREATE INDEX IF NOT EXISTS idx_racial_ability_listing_ref ON character_build_racial_ability(listing_ref);
+
+-- Recreate character_build_attribute without REFERENCES character_build(name).
+-- idx_attribute_essence_ref dropped with the old table; re-create after.
+CREATE TABLE character_build_attribute_new (
+    build_name TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    essence_ref TEXT NOT NULL,
+    PRIMARY KEY (build_name, kind)
+);
+
+INSERT INTO character_build_attribute_new SELECT * FROM character_build_attribute;
+DROP TABLE character_build_attribute;
+ALTER TABLE character_build_attribute_new RENAME TO character_build_attribute;
+
+CREATE INDEX IF NOT EXISTS idx_attribute_essence_ref ON character_build_attribute(essence_ref);
+
+-- Recreate character_build_acquired_ability without the composite
+-- FOREIGN KEY (build_name, attribute_kind) REFERENCES
+-- character_build_attribute(build_name, kind) clause. idx_acquired_ability_listing_ref
+-- dropped with the old table; re-create after.
+CREATE TABLE character_build_acquired_ability_new (
+    build_name TEXT NOT NULL,
+    attribute_kind TEXT NOT NULL,
+    listing_ref TEXT NOT NULL,
+    rank TEXT NOT NULL,
+    tier INTEGER NOT NULL,
+    progress REAL NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (build_name, attribute_kind, ordinal)
+);
+
+INSERT INTO character_build_acquired_ability_new SELECT * FROM character_build_acquired_ability;
+DROP TABLE character_build_acquired_ability;
+ALTER TABLE character_build_acquired_ability_new RENAME TO character_build_acquired_ability;
+
+CREATE INDEX IF NOT EXISTS idx_acquired_ability_listing_ref ON character_build_acquired_ability(listing_ref);

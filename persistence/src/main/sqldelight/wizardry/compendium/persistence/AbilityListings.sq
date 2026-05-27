@@ -3,9 +3,17 @@ CREATE TABLE ability_listing (
     name TEXT NOT NULL UNIQUE
 );
 
+-- listing_id / effect_id columns are soft refs: their lifecycle is managed in
+-- Kotlin by Default*Repository (cascade on delete/upsert) and audited at
+-- runtime by IntegritySweep. Declared REFERENCES would not have been enforced
+-- anyway -- SQLite requires PRAGMA foreign_keys = ON per connection and the
+-- AndroidSqliteDriver doesn't set it -- so we dropped them at v7 (migration
+-- 6.sqm) to stop misleading future readers. Re-enabling real FK enforcement
+-- is tracked in TODO.md (Engineering section) and requires a pre-migration
+-- orphan scrub before flipping the pragma.
 CREATE TABLE ability_effect (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    listing_id INTEGER NOT NULL REFERENCES ability_listing(id),
+    listing_id INTEGER NOT NULL,
     rank TEXT NOT NULL,
     type TEXT NOT NULL,
     cooldown_seconds INTEGER NOT NULL,
@@ -15,13 +23,13 @@ CREATE TABLE ability_effect (
 );
 
 CREATE TABLE effect_property (
-    effect_id INTEGER NOT NULL REFERENCES ability_effect(id),
+    effect_id INTEGER NOT NULL,
     property TEXT NOT NULL,
     ordinal INTEGER NOT NULL
 );
 
 CREATE TABLE effect_cost (
-    effect_id INTEGER NOT NULL REFERENCES ability_effect(id),
+    effect_id INTEGER NOT NULL,
     kind TEXT NOT NULL,
     amount TEXT NOT NULL,
     resource TEXT NOT NULL,
