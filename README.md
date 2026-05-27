@@ -14,15 +14,22 @@ This is an unofficial fan project. It is not affiliated with, endorsed by, or li
 - **Essence search & details** — browse the canonical list of essences and the abilities they grant.
 - **Ability search & details** — find abilities by name, type, or effect.
 - **Awakening stone search & details** — look up awakening stones and the abilities they confer.
+- **Status effect search & details** — look up status effects, including ones referenced by abilities.
+- **Character build search & details** — browse builds composed of an essence loadout plus chosen abilities.
 - **Randomizer** — roll randomized essence/confluence combinations.
-- **Contributions** — add or edit user-supplied data for essences, abilities, and awakening stones, kept separate from the canonical dataset so canonical updates don't clobber your additions.
+- **Contributions** — add or edit user-supplied entries for essences, abilities, awakening stones, status effects, and character builds, kept in a separate database so canonical updates don't clobber your additions. Renaming a contributed entity cascades through every other contribution that referenced the old name.
+- **Conflicts screen** — surfaces collisions and dangling references across your contributions, walking every cross-entity reference and embedded status token.
+- **Share / Export** — share a plain-text summary of any entity, or export the Wire-format bundle for re-import in another install.
+- **Google Drive backup** — opt-in OAuth-backed periodic backup and restore of the contributions database and preferences via the user's own Drive app-folder.
 
 ## Tech
 
 - Kotlin, Jetpack Compose, Material 3
 - Hilt for DI, Navigation Compose for screens
 - SQLDelight over two SQLite databases (canonical + contributions), with a DataStore-backed toggle for which one is in use
-- Multi-module Gradle build (one module per feature; shared `model-core`, `persistence`, `design`)
+- Multi-module Gradle build (one module per feature; shared `model-core`, `persistence`, `design`, `wire`)
+- KSP-generated wire codec for import/export and Drive backup
+- WorkManager-driven `:drive-backup` module using Credential Manager + Drive REST v3
 
 ## Building
 
