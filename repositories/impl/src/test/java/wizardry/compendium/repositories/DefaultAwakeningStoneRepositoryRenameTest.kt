@@ -68,10 +68,20 @@ class DefaultAwakeningStoneRepositoryRenameTest {
     }
 
     @Test
-    fun `checkDeleteImpact returns empty for any name`() = runTest {
-        val repo = repository(canonical = listOf(stone("Granite")), contributions = emptyList(), toggle = false)
-        val impact = repo.checkDeleteImpact("Granite")
-        assertTrue(impact.isEmpty)
+    fun `checkDeleteImpact is structurally empty -- awakening stones have no referencing entities`() = runTest {
+        // No table in the v6 schema references awakening_stone, so the repository's
+        // checkDeleteImpact is hardcoded to DeleteImpact(). Locking in that
+        // structural invariant: if a future schema change adds a referencing
+        // table (e.g. a build slot that holds a stone), this test must be
+        // rewritten to actually drive that lookup.
+        val canonical = repository(canonical = listOf(stone("Granite")), contributions = emptyList(), toggle = false)
+        assertTrue(canonical.checkDeleteImpact("Granite").isEmpty)
+
+        val contributed = repository(canonical = emptyList(), contributions = listOf(stone("Hand-Carved")), toggle = true)
+        assertTrue(contributed.checkDeleteImpact("Hand-Carved").isEmpty)
+
+        val absent = repository(canonical = emptyList(), contributions = emptyList(), toggle = true)
+        assertTrue(absent.checkDeleteImpact("DoesNotExist").isEmpty)
     }
 }
 

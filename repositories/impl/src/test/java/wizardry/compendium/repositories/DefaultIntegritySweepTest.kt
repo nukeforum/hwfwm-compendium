@@ -26,6 +26,7 @@ import wizardry.compendium.persistence.BuildRefResolver
 import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.EssenceDatabase
+import wizardry.compendium.persistence.RawConfluenceSet
 import kotlin.time.Duration
 
 class DefaultIntegritySweepTest {
@@ -237,6 +238,194 @@ class DefaultIntegritySweepTest {
 
         val issues = env.sweep.run()
         assertEquals(0, issues.filterIsInstance<IntegrityIssue.OrphanedStatusToken>().size)
+    }
+
+    @Test
+    fun `racial ability ref pointing at unknown canonical name produces OrphanedCanonicalRef Ability`() = runBlocking {
+        val env = newEnv(
+            canonicalEssences = listOf(manifestation("Fire")),
+            // "MissingRacial" intentionally NOT in canonicalListings
+        )
+        env.cbd.writeAll(
+            listOf(
+                buildWith(
+                    name = "Goblin",
+                    racial = listOf(Ability.Listing.of("MissingRacial")),
+                    powerEssence = manifestation("Fire"),
+                ),
+            ),
+            CanonOnlyResolver,
+        )
+
+        val issues = env.sweep.run()
+        val orphans = issues.filterIsInstance<IntegrityIssue.OrphanedCanonicalRef>()
+        assertTrue(
+            "expected racial-slot orphan in $orphans",
+            orphans.any {
+                it.name == "MissingRacial" &&
+                    it.kind == IntegrityIssue.OrphanedCanonicalRef.Kind.Ability &&
+                    it.location.contains("racial")
+            },
+        )
+    }
+
+    @Test
+    fun `canonical essence ref pointing at unknown name produces OrphanedCanonicalRef Essence`() = runBlocking {
+        val env = newEnv(
+            canonicalListings = listOf(Ability.Listing.of("FireBolt")),
+            // "MissingEssence" intentionally NOT in canonicalEssences
+        )
+        env.cbd.writeAll(
+            listOf(
+                buildWith(
+                    name = "Lost",
+                    powerEssence = manifestation("MissingEssence"),
+                    powerAbilities = listOf(Ability.Listing.of("FireBolt")),
+                ),
+            ),
+            CanonOnlyResolver,
+        )
+
+        val issues = env.sweep.run()
+        val orphans = issues.filterIsInstance<IntegrityIssue.OrphanedCanonicalRef>()
+        assertTrue(
+            "expected essence-slot orphan in $orphans",
+            orphans.any {
+                it.name == "MissingEssence" &&
+                    it.kind == IntegrityIssue.OrphanedCanonicalRef.Kind.Essence
+            },
+        )
+    }
+
+    @Test
+    fun `malformed ability ref in racial slot produces MalformedRef`() = runBlocking {
+        val env = newEnv(canonicalEssences = listOf(manifestation("Fire")))
+        env.cbd.writeAll(
+            listOf(
+                buildWith(
+                    name = "Garbage",
+                    racial = listOf(Ability.Listing.of("X")),
+                    powerEssence = manifestation("Fire"),
+                ),
+            ),
+            object : BuildRefResolver {
+                override fun encodeListing(listing: Ability.Listing) = "garbage:nope"
+                override fun encodeEssence(essence: Essence) = "canon:${essence.name}"
+            },
+        )
+
+        val issues = env.sweep.run()
+        val malformed = issues.filterIsInstance<IntegrityIssue.MalformedRef>()
+        assertTrue(
+            "expected malformed in $malformed",
+            malformed.any { it.raw == "garbage:nope" && it.location.contains("racial") },
+        )
+    }
+
+    @Test
+    fun `malformed essence ref in attribute slot produces MalformedRef`() = runBlocking {
+        val env = newEnv()
+        env.cbd.writeAll(
+            listOf(buildWith(name = "Garbage", powerEssence = manifestation("Fire"))),
+            object : BuildRefResolver {
+                override fun encodeListing(listing: Ability.Listing) = "canon:${listing.name}"
+                override fun encodeEssence(essence: Essence) = "garbage:essence"
+            },
+        )
+
+        val issues = env.sweep.run()
+        val malformed = issues.filterIsInstance<IntegrityIssue.MalformedRef>()
+        assertTrue(
+            "expected malformed in $malformed",
+            malformed.any { it.raw == "garbage:essence" },
+        )
+    }
+
+    @Test
+    fun `confluence_set with orphaned canonical essence ref produces OrphanedCanonicalRef Essence`() = runBlocking {
+        val env = newEnv(canonicalEssences = listOf(manifestation("Fire"), manifestation("Water")))
+        // Confluence references three canonical essences, one of which ("Earth") is NOT in canonical.
+        env.ed.insertConfluence(
+            name = "Mud",
+            isRestricted = false,
+            sets = listOf(
+                RawConfluenceSet(
+                    essence1Ref = "canon:Fire",
+                    essence2Ref = "canon:Water",
+                    essence3Ref = "canon:Earth",
+                    isRestricted = false,
+                ),
+            ),
+        )
+
+        val issues = env.sweep.run()
+        val orphans = issues.filterIsInstance<IntegrityIssue.OrphanedCanonicalRef>()
+        assertTrue(
+            "expected confluence-set canonical orphan in $orphans",
+            orphans.any {
+                it.name == "Earth" &&
+                    it.kind == IntegrityIssue.OrphanedCanonicalRef.Kind.Essence &&
+                    it.location.contains("confluence")
+            },
+        )
+    }
+
+    @Test
+    fun `confluence_set with orphaned contributed manifestation ref produces OrphanedContributedRef Essence`() = runBlocking {
+        val env = newEnv()
+        // Insert two manifestations, capture one's id, then delete it so the
+        // confluence_set's contr:<id> ref becomes dangling.
+        val keepId = env.ed.insertManifestation(manifestation("Keeper"))
+        val danglingId = env.ed.insertManifestation(manifestation("Doomed"))
+        val otherId = env.ed.insertManifestation(manifestation("Other"))
+        env.ed.insertConfluence(
+            name = "Trio",
+            isRestricted = false,
+            sets = listOf(
+                RawConfluenceSet(
+                    essence1Ref = "contr:$keepId",
+                    essence2Ref = "contr:$danglingId",
+                    essence3Ref = "contr:$otherId",
+                    isRestricted = false,
+                ),
+            ),
+        )
+        env.ed.deleteManifestationById(danglingId)
+
+        val issues = env.sweep.run()
+        val orphans = issues.filterIsInstance<IntegrityIssue.OrphanedContributedRef>()
+        assertTrue(
+            "expected confluence-set contributed orphan id=$danglingId in $orphans",
+            orphans.any {
+                it.id == danglingId &&
+                    it.kind == IntegrityIssue.OrphanedContributedRef.Kind.Essence &&
+                    it.location.contains("confluence")
+            },
+        )
+    }
+
+    @Test
+    fun `malformed essence ref in confluence_set produces MalformedRef`() = runBlocking {
+        val env = newEnv()
+        env.ed.insertConfluence(
+            name = "Garbage",
+            isRestricted = false,
+            sets = listOf(
+                RawConfluenceSet(
+                    essence1Ref = "garbage:bad",
+                    essence2Ref = "canon:Fire",
+                    essence3Ref = "canon:Water",
+                    isRestricted = false,
+                ),
+            ),
+        )
+
+        val issues = env.sweep.run()
+        val malformed = issues.filterIsInstance<IntegrityIssue.MalformedRef>()
+        assertTrue(
+            "expected confluence-set malformed in $malformed",
+            malformed.any { it.raw == "garbage:bad" && it.location.contains("confluence") },
+        )
     }
 
     @Test

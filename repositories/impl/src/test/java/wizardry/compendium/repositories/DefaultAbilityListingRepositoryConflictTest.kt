@@ -11,6 +11,7 @@ import wizardry.compendium.repositories.ContributionResult
 import wizardry.compendium.essences.dataloader.AbilityListingDataLoader
 import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.persistence.AbilityListingCache
+import wizardry.compendium.persistence.AbilityListingDatabase
 import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.IdentifiedListing
@@ -96,6 +97,57 @@ class DefaultAbilityListingRepositoryConflictTest {
         val repo = repository(canonical = emptyList(), contributions = listOf(listing("Frost")), toggle = true)
         val impact = repo.checkDeleteImpact("Frost")
         assertTrue(impact.isEmpty)
+    }
+
+    @Test
+    fun `checkDeleteImpact returns referencingBuilds when a build references this listing`() = runTest {
+        // Drive the real CharacterBuildDatabase + AbilityListingDatabase through
+        // the repository so the buildsReferencingListingRef query is the one
+        // under test.
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        CompendiumDatabase.Schema.create(driver)
+        val buildDb = CharacterBuildDatabase(driver)
+        val contributionsCache = AbilityListingDatabase(driver)
+        val listing = listing("Frost")
+        val listingId = contributionsCache.insert(listing)
+
+        // Write a build whose racial slot references the contributed listing.
+        buildDb.writeAll(
+            listOf(
+                wizardry.compendium.domain.model.CharacterBuild(
+                    name = "FrostMage",
+                    race = "Human",
+                    racialAbilities = listOf(listing),
+                    attributes = setOf(
+                        wizardry.compendium.domain.model.Attribute.Power(),
+                        wizardry.compendium.domain.model.Attribute.Speed(),
+                        wizardry.compendium.domain.model.Attribute.Spirit(),
+                        wizardry.compendium.domain.model.Attribute.Recovery(),
+                    ),
+                ),
+            ),
+            object : wizardry.compendium.persistence.BuildRefResolver {
+                override fun encodeListing(l: Ability.Listing) =
+                    wizardry.compendium.domain.model.RefCodec.encodeAbilityRef(
+                        wizardry.compendium.domain.model.AbilityRef.Contributed(listingId),
+                    )
+                override fun encodeEssence(essence: wizardry.compendium.domain.model.Essence) =
+                    wizardry.compendium.domain.model.RefCodec.encodeEssenceRef(
+                        wizardry.compendium.domain.model.EssenceRef.Canonical(essence.name),
+                    )
+            },
+        )
+
+        val repo = DefaultAbilityListingRepository(
+            dataLoader = FakeAbilityListingDataLoader(emptyList()),
+            canonicalCache = FakeAbilityListingCache(emptyList()),
+            contributionsCache = contributionsCache,
+            characterBuildDatabase = buildDb,
+            toggle = FakeAbilityListingToggle(true),
+            toggleFlow = FakeAbilityListingToggleFlow(true),
+        )
+        val impact = repo.checkDeleteImpact("Frost")
+        assertEquals(listOf("FrostMage"), impact.referencingBuilds)
     }
 
     @Test

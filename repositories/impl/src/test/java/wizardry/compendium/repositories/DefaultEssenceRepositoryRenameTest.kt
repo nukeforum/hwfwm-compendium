@@ -136,34 +136,141 @@ class DefaultEssenceRepositoryRenameTest {
 
     @Test
     fun `checkDeleteImpact returns referencingConfluenceSets when essence is in a confluence set`() = runTest {
-        // Use in-memory databases for this test to actually exercise SQL
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
-        CompendiumDatabase.Schema.create(driver)
-        val essenceDb = EssenceDatabase(driver)
-        val buildDb = CharacterBuildDatabase(driver)
+        // Drive the real EssenceDatabase end-to-end through the repository so
+        // the impact-aggregation logic is the one under test (not the raw DAO).
+        val repo = repositoryWithRealDb { essenceDb, _ ->
+            val manifestationId = essenceDb.insertManifestation(manifestation("Wind"))
+            essenceDb.insertConfluence(
+                name = "Storm",
+                isRestricted = false,
+                sets = listOf(
+                    wizardry.compendium.persistence.RawConfluenceSet(
+                        essence1Ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId)),
+                        essence2Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Rain")),
+                        essence3Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Frost")),
+                        isRestricted = false,
+                    ),
+                ),
+            )
+        }
 
-        // Insert a contributed manifestation and record its id
-        val manifestationId = essenceDb.insertManifestation(manifestation("Wind"))
-
-        // Insert a confluence that references Wind as one of its essence_set members
-        essenceDb.insertConfluence(
-            name = "Storm",
-            isRestricted = false,
-            sets = listOf(
-                wizardry.compendium.persistence.RawConfluenceSet(
-                    essence1Ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId)),
-                    essence2Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Rain")),
-                    essence3Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Frost")),
-                    isRestricted = false,
-                )
-            ),
-        )
-
-        val confluenceNames = essenceDb.confluenceNamesReferencingEssenceRef(
-            RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId))
-        )
-        assertEquals(listOf("Storm"), confluenceNames)
+        val impact = repo.checkDeleteImpact("Wind")
+        assertEquals(listOf("Storm"), impact.referencingConfluenceSets)
+        assertEquals(emptyList<String>(), impact.referencingBuilds)
     }
+
+    @Test
+    fun `checkDeleteImpact returns referencingBuilds when essence is referenced by a build attribute`() = runTest {
+        val repo = repositoryWithRealDb { essenceDb, buildDb ->
+            val manifestationId = essenceDb.insertManifestation(manifestation("Wind"))
+            val essenceRef = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId))
+            // Hand-build a CharacterBuild that puts Wind in the Power slot.
+            buildDb.writeAll(
+                listOf(
+                    wizardry.compendium.domain.model.CharacterBuild(
+                        name = "AirMage",
+                        race = "Human",
+                        racialAbilities = emptyList(),
+                        attributes = setOf(
+                            wizardry.compendium.domain.model.Attribute.Power(
+                                essence = wizardry.compendium.domain.model.AbsorbedEssence(
+                                    essence = manifestation("Wind"),
+                                    abilities = emptyList(),
+                                ),
+                            ),
+                            wizardry.compendium.domain.model.Attribute.Speed(),
+                            wizardry.compendium.domain.model.Attribute.Spirit(),
+                            wizardry.compendium.domain.model.Attribute.Recovery(),
+                        ),
+                    ),
+                ),
+                object : wizardry.compendium.persistence.BuildRefResolver {
+                    override fun encodeListing(listing: wizardry.compendium.domain.model.Ability.Listing) =
+                        RefCodec.encodeAbilityRef(wizardry.compendium.domain.model.AbilityRef.Canonical(listing.name))
+                    override fun encodeEssence(essence: Essence) = essenceRef
+                },
+            )
+        }
+
+        val impact = repo.checkDeleteImpact("Wind")
+        assertEquals(listOf("AirMage"), impact.referencingBuilds)
+    }
+
+    @Test
+    fun `checkDeleteImpact for a contributed confluence reports referencing builds`() = runTest {
+        val repo = repositoryWithRealDb { essenceDb, buildDb ->
+            // Contribute a confluence so it gets a stable id we can ref via contr:.
+            val confluenceId = essenceDb.insertConfluence(
+                name = "Squall",
+                isRestricted = false,
+                sets = listOf(
+                    wizardry.compendium.persistence.RawConfluenceSet(
+                        essence1Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Wind")),
+                        essence2Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Rain")),
+                        essence3Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Frost")),
+                        isRestricted = false,
+                    ),
+                ),
+            )
+            val essenceRef = RefCodec.encodeEssenceRef(EssenceRef.Contributed(confluenceId))
+            buildDb.writeAll(
+                listOf(
+                    wizardry.compendium.domain.model.CharacterBuild(
+                        name = "StormCaller",
+                        race = "Human",
+                        racialAbilities = emptyList(),
+                        attributes = setOf(
+                            wizardry.compendium.domain.model.Attribute.Power(
+                                essence = wizardry.compendium.domain.model.AbsorbedEssence(
+                                    essence = manifestation("Squall"),
+                                    abilities = emptyList(),
+                                ),
+                            ),
+                            wizardry.compendium.domain.model.Attribute.Speed(),
+                            wizardry.compendium.domain.model.Attribute.Spirit(),
+                            wizardry.compendium.domain.model.Attribute.Recovery(),
+                        ),
+                    ),
+                ),
+                object : wizardry.compendium.persistence.BuildRefResolver {
+                    override fun encodeListing(listing: wizardry.compendium.domain.model.Ability.Listing) =
+                        RefCodec.encodeAbilityRef(wizardry.compendium.domain.model.AbilityRef.Canonical(listing.name))
+                    override fun encodeEssence(essence: Essence) = essenceRef
+                },
+            )
+        }
+
+        val impact = repo.checkDeleteImpact("Squall")
+        // Confluence delete impact reports referencing builds (the confluence-id branch
+        // of DefaultEssenceRepository.checkDeleteImpact).
+        assertEquals(listOf("StormCaller"), impact.referencingBuilds)
+    }
+}
+
+/**
+ * Build a DefaultEssenceRepository whose contributionsCache and essenceDatabase
+ * are the SAME concrete EssenceDatabase, sharing one in-memory SQLite driver
+ * with the CharacterBuildDatabase. [populate] runs against the real databases
+ * before the repository is constructed so test fixtures can write through the
+ * actual SQL path.
+ */
+private fun repositoryWithRealDb(
+    populate: (EssenceDatabase, CharacterBuildDatabase) -> Unit,
+): DefaultEssenceRepository {
+    val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+    CompendiumDatabase.Schema.create(driver)
+    val essenceDb = EssenceDatabase(driver)
+    val buildDb = CharacterBuildDatabase(driver)
+    populate(essenceDb, buildDb)
+    return DefaultEssenceRepository(
+        dataLoader = RenameTestFakeEssenceDataLoader(emptyList()),
+        canonicalCache = RenameTestFakeEssenceCache(emptyList()),
+        contributionsCache = essenceDb,
+        essenceDatabase = essenceDb,
+        characterBuildDatabase = buildDb,
+        toggle = RenameTestFakeEssenceToggle(true),
+        toggleFlow = RenameTestFakeEssenceToggleFlow(true),
+    )
 }
 
 // ------------------------------------------------------------------ helpers
