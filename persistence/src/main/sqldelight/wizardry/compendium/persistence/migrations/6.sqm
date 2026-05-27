@@ -1,0 +1,85 @@
+-- v6 -> v7: discriminate contributed essence refs by kind, sweep orphan
+-- effect_property/effect_cost rows the v5->v6 migration left behind, and add
+-- the three confluence_set ref indexes declared by Essences.sq.
+--
+-- 1. Essence-ref discriminator. v6 encoded both contributed manifestations
+--    and contributed confluences as 'contr:<id>', but manifestation and
+--    confluence have independent AUTOINCREMENT sequences, so the same numeric
+--    id could mean either kind. v7 splits these into 'mcontr:<id>'
+--    (manifestation) and 'ccontr:<id>' (confluence). Resolve each existing
+--    'contr:<id>' by looking the id up in manifestation, then confluence;
+--    leave unresolved orphans as 'contr:<id>' so IntegritySweep surfaces them
+--    as MalformedRef rather than silently dropping the row. The LIKE filter
+--    makes this idempotent and skips already-discriminated refs.
+--
+-- 2. Orphan property/cost cleanup. The v5->v6 migration dropped ability_effect
+--    rows whose listing_name didn't resolve in the new ability_listing table
+--    but did NOT cascade-clean effect_property and effect_cost. Those orphan
+--    rows are dangling garbage in every v6 device; delete them now.
+--
+-- 3. confluence_set ref indexes. Essences.sq declares three indexes on the
+--    new ref columns; the migration must add them to existing v6 databases.
+--    Fresh installs go through Essences.sq directly, so plain CREATE INDEX
+--    is correct here (this migration runs once per device).
+
+-- 1. Rewrite essence refs ------------------------------------------------
+
+UPDATE character_build_attribute
+SET essence_ref = CASE
+    WHEN essence_ref LIKE 'contr:%'
+        AND CAST(SUBSTR(essence_ref, 7) AS INTEGER) IN (SELECT id FROM manifestation)
+        THEN 'mcontr:' || SUBSTR(essence_ref, 7)
+    WHEN essence_ref LIKE 'contr:%'
+        AND CAST(SUBSTR(essence_ref, 7) AS INTEGER) IN (SELECT id FROM confluence)
+        THEN 'ccontr:' || SUBSTR(essence_ref, 7)
+    ELSE essence_ref
+END
+WHERE essence_ref LIKE 'contr:%';
+
+UPDATE confluence_set
+SET essence1_ref = CASE
+    WHEN essence1_ref LIKE 'contr:%'
+        AND CAST(SUBSTR(essence1_ref, 7) AS INTEGER) IN (SELECT id FROM manifestation)
+        THEN 'mcontr:' || SUBSTR(essence1_ref, 7)
+    WHEN essence1_ref LIKE 'contr:%'
+        AND CAST(SUBSTR(essence1_ref, 7) AS INTEGER) IN (SELECT id FROM confluence)
+        THEN 'ccontr:' || SUBSTR(essence1_ref, 7)
+    ELSE essence1_ref
+END
+WHERE essence1_ref LIKE 'contr:%';
+
+UPDATE confluence_set
+SET essence2_ref = CASE
+    WHEN essence2_ref LIKE 'contr:%'
+        AND CAST(SUBSTR(essence2_ref, 7) AS INTEGER) IN (SELECT id FROM manifestation)
+        THEN 'mcontr:' || SUBSTR(essence2_ref, 7)
+    WHEN essence2_ref LIKE 'contr:%'
+        AND CAST(SUBSTR(essence2_ref, 7) AS INTEGER) IN (SELECT id FROM confluence)
+        THEN 'ccontr:' || SUBSTR(essence2_ref, 7)
+    ELSE essence2_ref
+END
+WHERE essence2_ref LIKE 'contr:%';
+
+UPDATE confluence_set
+SET essence3_ref = CASE
+    WHEN essence3_ref LIKE 'contr:%'
+        AND CAST(SUBSTR(essence3_ref, 7) AS INTEGER) IN (SELECT id FROM manifestation)
+        THEN 'mcontr:' || SUBSTR(essence3_ref, 7)
+    WHEN essence3_ref LIKE 'contr:%'
+        AND CAST(SUBSTR(essence3_ref, 7) AS INTEGER) IN (SELECT id FROM confluence)
+        THEN 'ccontr:' || SUBSTR(essence3_ref, 7)
+    ELSE essence3_ref
+END
+WHERE essence3_ref LIKE 'contr:%';
+
+-- 2. Sweep orphan effect_property / effect_cost rows ---------------------
+
+DELETE FROM effect_property WHERE effect_id NOT IN (SELECT id FROM ability_effect);
+
+DELETE FROM effect_cost WHERE effect_id NOT IN (SELECT id FROM ability_effect);
+
+-- 3. Add confluence_set ref indexes --------------------------------------
+
+CREATE INDEX idx_confluence_set_essence1_ref ON confluence_set(essence1_ref);
+CREATE INDEX idx_confluence_set_essence2_ref ON confluence_set(essence2_ref);
+CREATE INDEX idx_confluence_set_essence3_ref ON confluence_set(essence3_ref);

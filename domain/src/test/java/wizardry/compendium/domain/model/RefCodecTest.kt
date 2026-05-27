@@ -25,9 +25,44 @@ class RefCodecTest {
     }
 
     @Test
-    fun `essence ref contributed round trip`() {
-        val ref = EssenceRef.Contributed(7L)
+    fun `essence ref contributed manifestation round trip`() {
+        val ref = EssenceRef.Contributed.Manifestation(7L)
         assertEquals(ref, RefCodec.decodeEssenceRef(RefCodec.encodeEssenceRef(ref)))
+    }
+
+    @Test
+    fun `essence ref contributed confluence round trip`() {
+        val ref = EssenceRef.Contributed.Confluence(7L)
+        assertEquals(ref, RefCodec.decodeEssenceRef(RefCodec.encodeEssenceRef(ref)))
+    }
+
+    @Test
+    fun `essence contributed manifestation encodes with mcontr prefix`() {
+        assertEquals("mcontr:42", RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(42L)))
+    }
+
+    @Test
+    fun `essence contributed confluence encodes with ccontr prefix`() {
+        assertEquals("ccontr:42", RefCodec.encodeEssenceRef(EssenceRef.Contributed.Confluence(42L)))
+    }
+
+    @Test
+    fun `essence contributed prefixes are disjoint -- same id different kind decodes to different variants`() {
+        val asManifestation = RefCodec.decodeEssenceRef("mcontr:1")
+        val asConfluence = RefCodec.decodeEssenceRef("ccontr:1")
+        assertEquals(EssenceRef.Contributed.Manifestation(1L), asManifestation)
+        assertEquals(EssenceRef.Contributed.Confluence(1L), asConfluence)
+    }
+
+    @Test
+    fun `essence decode rejects bare contr prefix at v7 -- legacy v6 form is migrated`() {
+        // The bare "contr:<id>" form is the v6 wire format; the v6 -> v7
+        // migration rewrites every such ref to mcontr: or ccontr:. After
+        // migration, encountering a bare "contr:" string is a bug, not a
+        // valid encoding.
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeEssenceRef("contr:42")
+        }
     }
 
     @Test
@@ -92,12 +127,37 @@ class RefCodecTest {
     }
 
     @Test
-    fun `malformed contr prefix with empty id throws MalformedRefException`() {
+    fun `malformed contr prefix with empty id throws MalformedRefException for ability ref`() {
         assertThrows(MalformedRefException::class.java) {
             RefCodec.decodeAbilityRef("contr:")
         }
+    }
+
+    @Test
+    fun `malformed mcontr prefix with empty id throws MalformedRefException`() {
         assertThrows(MalformedRefException::class.java) {
-            RefCodec.decodeEssenceRef("contr:")
+            RefCodec.decodeEssenceRef("mcontr:")
+        }
+    }
+
+    @Test
+    fun `malformed ccontr prefix with empty id throws MalformedRefException`() {
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeEssenceRef("ccontr:")
+        }
+    }
+
+    @Test
+    fun `malformed mcontr prefix with non-numeric id throws MalformedRefException`() {
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeEssenceRef("mcontr:abc")
+        }
+    }
+
+    @Test
+    fun `malformed ccontr prefix with non-numeric id throws MalformedRefException`() {
+        assertThrows(MalformedRefException::class.java) {
+            RefCodec.decodeEssenceRef("ccontr:abc")
         }
     }
 }

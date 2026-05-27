@@ -317,11 +317,11 @@ private class FakeEssenceCache(
             return RefCodec.encodeEssenceRef(EssenceRef.Canonical(m.name))
         }
         val existing = internMap[m.name]
-        if (existing != null) return RefCodec.encodeEssenceRef(EssenceRef.Contributed(existing))
+        if (existing != null) return RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(existing))
         val id = nextId++
         internMap[m.name] = id
         manifestationRows.add(IdentifiedManifestation(id, m))
-        return RefCodec.encodeEssenceRef(EssenceRef.Contributed(id))
+        return RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(id))
     }
 
     override val identifiedManifestations: List<IdentifiedManifestation> get() = manifestationRows.toList()

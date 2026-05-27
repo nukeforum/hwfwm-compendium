@@ -56,9 +56,9 @@ class EssenceDatabaseTest {
         val earthId = db.insertManifestation(earth())
 
         val rawSet = RawConfluenceSet(
-            essence1Ref = "contr:$fireId",
-            essence2Ref = "contr:$waterId",
-            essence3Ref = "contr:$earthId",
+            essence1Ref = "mcontr:$fireId",
+            essence2Ref = "mcontr:$waterId",
+            essence3Ref = "mcontr:$earthId",
             isRestricted = false,
         )
         val confluenceId = db.insertConfluence("Steam", isRestricted = false, sets = listOf(rawSet))
@@ -93,16 +93,16 @@ class EssenceDatabaseTest {
         val airName = "Air"  // canonical-only essence; encoded as canon:Air
 
         val original = RawConfluenceSet(
-            essence1Ref = "contr:$fireId",
-            essence2Ref = "contr:$waterId",
-            essence3Ref = "contr:$earthId",
+            essence1Ref = "mcontr:$fireId",
+            essence2Ref = "mcontr:$waterId",
+            essence3Ref = "mcontr:$earthId",
             isRestricted = false,
         )
         val id = db.insertConfluence("Steam", false, listOf(original))
 
         val replaced = RawConfluenceSet(
-            essence1Ref = "contr:$fireId",
-            essence2Ref = "contr:$waterId",
+            essence1Ref = "mcontr:$fireId",
+            essence2Ref = "mcontr:$waterId",
             essence3Ref = "canon:$airName",
             isRestricted = false,
         )
@@ -139,7 +139,7 @@ class EssenceDatabaseTest {
     }
 
     @Test
-    fun `replaceAll encodes contributed members as contr and unknown as canon`() {
+    fun `replaceAll encodes contributed members as mcontr and unknown as canon`() {
         val db = newDatabase()
         val steam = Essence.of(
             name = "Steam",
@@ -151,11 +151,13 @@ class EssenceDatabaseTest {
 
         val identifiedConf = db.identifiedConfluences.single()
         assertEquals("Steam", identifiedConf.name)
-        // All three members were inserted as manifestations, so all three refs are contr:<id>.
+        // All three members were inserted as manifestations, so all three refs are
+        // mcontr:<id> -- never ccontr:, because confluence_set members are
+        // structurally Manifestations.
         identifiedConf.sets.single().let { set ->
-            assertTrue("essence1 should be contr-tagged: ${set.essence1Ref}", set.essence1Ref.startsWith("contr:"))
-            assertTrue("essence2 should be contr-tagged: ${set.essence2Ref}", set.essence2Ref.startsWith("contr:"))
-            assertTrue("essence3 should be contr-tagged: ${set.essence3Ref}", set.essence3Ref.startsWith("contr:"))
+            assertTrue("essence1 should be mcontr-tagged: ${set.essence1Ref}", set.essence1Ref.startsWith("mcontr:"))
+            assertTrue("essence2 should be mcontr-tagged: ${set.essence2Ref}", set.essence2Ref.startsWith("mcontr:"))
+            assertTrue("essence3 should be mcontr-tagged: ${set.essence3Ref}", set.essence3Ref.startsWith("mcontr:"))
         }
     }
 

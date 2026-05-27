@@ -21,6 +21,10 @@ CREATE TABLE confluence_set (
     is_restricted INTEGER NOT NULL DEFAULT 0
 );
 
+CREATE INDEX idx_confluence_set_essence1_ref ON confluence_set(essence1_ref);
+CREATE INDEX idx_confluence_set_essence2_ref ON confluence_set(essence2_ref);
+CREATE INDEX idx_confluence_set_essence3_ref ON confluence_set(essence3_ref);
+
 insertManifestation:
 INSERT INTO manifestation(name, rarity, description, is_restricted) VALUES (?, ?, ?, ?);
 

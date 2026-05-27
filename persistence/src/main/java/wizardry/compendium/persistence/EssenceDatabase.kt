@@ -160,5 +160,8 @@ class EssenceDatabase @Inject constructor(driver: SqlDriver) : EssenceCache {
     }
 
     private fun encodeMemberRef(name: String, manifestationIds: Map<String, Long>): String =
-        manifestationIds[name]?.let { "contr:$it" } ?: "canon:$name"
+        // Confluence_set members are structurally Manifestations -- never Confluences --
+        // so the contributed variant is always mcontr:<id>. See domain/Refs.kt for the
+        // discriminator rationale.
+        manifestationIds[name]?.let { "mcontr:$it" } ?: "canon:$name"
 }

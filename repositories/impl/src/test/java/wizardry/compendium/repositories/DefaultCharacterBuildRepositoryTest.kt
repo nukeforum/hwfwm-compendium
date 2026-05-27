@@ -168,12 +168,12 @@ class DefaultCharacterBuildRepositoryTest {
         )
         repo.saveBuildContribution(build)
 
-        // Verify encoding uses contr: with the assigned id
+        // Verify encoding: AbilityRef.Contributed is contr:<id>; EssenceRef.Contributed.Manifestation is mcontr:<id>.
         val rawRacials = buildDb.readAllRacialAbilities()
         assertEquals("contr:$contribListingId", rawRacials.single().listingRef)
 
         val rawAttrs = buildDb.readAllAttributes()
-        assertEquals("contr:$contribEssenceId", rawAttrs.single().essenceRef)
+        assertEquals("mcontr:$contribEssenceId", rawAttrs.single().essenceRef)
 
         val rawAcquired = buildDb.readAllAcquiredAbilities()
         assertEquals("contr:$contribListingId", rawAcquired.single().listingRef)
@@ -324,20 +324,12 @@ class DefaultCharacterBuildRepositoryTest {
 
     @Test
     fun `unresolved contributed id drops the slot`() = runBlocking {
+        // Write a build whose Power slot references a contributed manifestation
+        // id that doesn't exist in the contributions cache. The repository
+        // should drop the slot (log + null) rather than surface a stale ref.
         val buildDb = newBuildDatabase()
-
-        // Write a build referencing contr:999 which will never exist in the cache
-        buildDb.upsert(
-            simpleBuild(name = "StaleContrib"),
-            object : wizardry.compendium.persistence.BuildRefResolver {
-                override fun encodeListing(listing: Ability.Listing) = "canon:${listing.name}"
-                override fun encodeEssence(essence: Essence) = "contr:999"
-            },
-        )
-        // Force an attribute row to exist
-        val buildDbForced = newBuildDatabase()
         val ghostEssence = manifestation("Force")
-        buildDbForced.upsert(
+        buildDb.upsert(
             simpleBuild(
                 name = "StaleContrib",
                 attributes = setOf(
@@ -347,12 +339,14 @@ class DefaultCharacterBuildRepositoryTest {
             ),
             object : wizardry.compendium.persistence.BuildRefResolver {
                 override fun encodeListing(listing: Ability.Listing) = "canon:${listing.name}"
-                override fun encodeEssence(essence: Essence) = "contr:999"
+                // mcontr:999 -- a Manifestation ref to an id that won't exist in
+                // the (empty) contributions cache. ccontr:999 would test the
+                // confluence-side miss; either exercises the drop-slot branch.
+                override fun encodeEssence(essence: Essence) = "mcontr:999"
             },
         )
 
-        // Contributions cache is empty — id 999 not present
-        val repo = repository(buildDb = buildDbForced)
+        val repo = repository(buildDb = buildDb)
 
         val result = repo.getBuilds().single()
         assertNull("expected Power slot empty when contributed essence id missing", result.Power.essence)

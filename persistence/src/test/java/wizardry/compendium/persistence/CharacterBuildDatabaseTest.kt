@@ -181,11 +181,14 @@ class CharacterBuildDatabaseTest {
     }
 
     @Test
-    fun `resolver receiving Contributed encoding round-trips contr-tagged refs`() {
+    fun `resolver receiving Contributed encoding round-trips discriminated refs`() {
         val db = newDatabase()
         val contribResolver = object : BuildRefResolver {
             override fun encodeListing(listing: Ability.Listing): String = "contr:42"
-            override fun encodeEssence(essence: Essence): String = "contr:7"
+            // Manifestation kind chosen here -- the schema preserves whatever the
+            // resolver emits; production code emits mcontr: for a manifestation
+            // attribute and ccontr: for a confluence attribute.
+            override fun encodeEssence(essence: Essence): String = "mcontr:7"
         }
 
         db.writeAll(listOf(
@@ -193,7 +196,7 @@ class CharacterBuildDatabaseTest {
         ), contribResolver)
 
         assertEquals(listOf("contr:42"), db.readAllRacialAbilities().map { it.listingRef })
-        assertEquals(listOf("contr:7"), db.readAllAttributes().map { it.essenceRef })
+        assertEquals(listOf("mcontr:7"), db.readAllAttributes().map { it.essenceRef })
         assertEquals(listOf("contr:42"), db.readAllAcquiredAbilities().map { it.listingRef })
     }
 }

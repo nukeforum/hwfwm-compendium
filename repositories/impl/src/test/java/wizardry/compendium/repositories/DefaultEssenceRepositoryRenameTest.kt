@@ -145,7 +145,7 @@ class DefaultEssenceRepositoryRenameTest {
                 isRestricted = false,
                 sets = listOf(
                     wizardry.compendium.persistence.RawConfluenceSet(
-                        essence1Ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId)),
+                        essence1Ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(manifestationId)),
                         essence2Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Rain")),
                         essence3Ref = RefCodec.encodeEssenceRef(EssenceRef.Canonical("Frost")),
                         isRestricted = false,
@@ -163,7 +163,7 @@ class DefaultEssenceRepositoryRenameTest {
     fun `checkDeleteImpact returns referencingBuilds when essence is referenced by a build attribute`() = runTest {
         val repo = repositoryWithRealDb { essenceDb, buildDb ->
             val manifestationId = essenceDb.insertManifestation(manifestation("Wind"))
-            val essenceRef = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId))
+            val essenceRef = RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(manifestationId))
             // Hand-build a CharacterBuild that puts Wind in the Power slot.
             buildDb.writeAll(
                 listOf(
@@ -212,7 +212,7 @@ class DefaultEssenceRepositoryRenameTest {
                     ),
                 ),
             )
-            val essenceRef = RefCodec.encodeEssenceRef(EssenceRef.Contributed(confluenceId))
+            val essenceRef = RefCodec.encodeEssenceRef(EssenceRef.Contributed.Confluence(confluenceId))
             buildDb.writeAll(
                 listOf(
                     wizardry.compendium.domain.model.CharacterBuild(
@@ -341,11 +341,11 @@ private class RenameTestFakeEssenceCache(
             return RefCodec.encodeEssenceRef(EssenceRef.Canonical(m.name))
         }
         val existing = internMap[m.name]
-        if (existing != null) return RefCodec.encodeEssenceRef(EssenceRef.Contributed(existing))
+        if (existing != null) return RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(existing))
         val id = nextId++
         internMap[m.name] = id
         manifestationRows.add(IdentifiedManifestation(id, m))
-        return RefCodec.encodeEssenceRef(EssenceRef.Contributed(id))
+        return RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(id))
     }
 
     override val identifiedManifestations: List<IdentifiedManifestation> get() = manifestationRows.toList()

@@ -218,7 +218,7 @@ internal class DefaultEssenceRepository @Inject constructor(
             ?.id
         if (manifestationId != null) {
             // Check whether other contributed confluences reference this manifestation.
-            val refToContr = "contr:$manifestationId"
+            val refToContr = RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(manifestationId))
             val isReferenced = contributionsCache.identifiedConfluences.any { conf ->
                 conf.sets.any { set ->
                     set.essence1Ref == refToContr || set.essence2Ref == refToContr || set.essence3Ref == refToContr
@@ -313,7 +313,7 @@ internal class DefaultEssenceRepository @Inject constructor(
         writeMutex.withLock {
             val manifestationId = contributionsCache.findManifestationIdByName(name)
             if (manifestationId != null) {
-                val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(manifestationId))
+                val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(manifestationId))
                 val builds = characterBuildDatabase.buildsReferencingEssenceRef(ref)
                 val confluences = essenceDatabase.confluenceNamesReferencingEssenceRef(ref)
                 return@withLock DeleteImpact(
@@ -323,7 +323,7 @@ internal class DefaultEssenceRepository @Inject constructor(
             }
             val confluenceId = contributionsCache.findConfluenceIdByName(name)
             if (confluenceId != null) {
-                val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed(confluenceId))
+                val ref = RefCodec.encodeEssenceRef(EssenceRef.Contributed.Confluence(confluenceId))
                 val builds = characterBuildDatabase.buildsReferencingEssenceRef(ref)
                 return@withLock DeleteImpact(referencingBuilds = builds)
             }
@@ -390,7 +390,11 @@ internal class DefaultEssenceRepository @Inject constructor(
     ): Essence.Manifestation? = try {
         when (val decoded = RefCodec.decodeEssenceRef(ref)) {
             is EssenceRef.Canonical -> canonicalByName[decoded.name] ?: selfByName[decoded.name]
-            is EssenceRef.Contributed -> contributedManifestationsById[decoded.id]
+            is EssenceRef.Contributed.Manifestation -> contributedManifestationsById[decoded.id]
+            // A confluence_set member is structurally a Manifestation — a contributed
+            // Confluence ref in this slot is a data error (encoder bug or migration
+            // miss), drop the set rather than try to coerce.
+            is EssenceRef.Contributed.Confluence -> null
         }
     } catch (e: MalformedRefException) {
         null
@@ -408,8 +412,13 @@ internal class DefaultEssenceRepository @Inject constructor(
     }
 
     private fun encodeMemberRef(name: String, canonical: List<Essence>): String {
+        // Confluence set members are structurally Manifestations; if the name resolves
+        // in the contributed manifestation table, encode as mcontr:<id>, otherwise as
+        // canonical-by-name.
         val contributedId = contributionsCache.findManifestationIdByName(name)
-        if (contributedId != null) return RefCodec.encodeEssenceRef(EssenceRef.Contributed(contributedId))
+        if (contributedId != null) {
+            return RefCodec.encodeEssenceRef(EssenceRef.Contributed.Manifestation(contributedId))
+        }
         return RefCodec.encodeEssenceRef(EssenceRef.Canonical(name))
     }
 

@@ -178,13 +178,18 @@ internal class DefaultCharacterBuildRepository @Inject constructor(
             is EssenceRef.Canonical -> canonicalByName[decoded.name].also {
                 if (it == null) Log.w(TAG, "build '$contextName' references unknown canonical essence '${decoded.name}' — dropping slot")
             }
-            is EssenceRef.Contributed -> {
-                contributedManifestationsById[decoded.id]
-                    ?: hydrateContributedConfluence(decoded.id, contributedConfluencesById, canonicalByName, contributedManifestationsById, contextName)
-                    ?: run {
-                        Log.w(TAG, "build '$contextName' references unknown contributed essence id ${decoded.id} — dropping slot")
-                        null
-                    }
+            is EssenceRef.Contributed.Manifestation -> contributedManifestationsById[decoded.id].also {
+                if (it == null) Log.w(TAG, "build '$contextName' references unknown contributed manifestation id ${decoded.id} — dropping slot")
+            }
+            is EssenceRef.Contributed.Confluence -> hydrateContributedConfluence(
+                id = decoded.id,
+                confluences = contributedConfluencesById,
+                canonicalEssencesByName = canonicalByName,
+                contributedManifestationsById = contributedManifestationsById,
+                contextName = contextName,
+            ) ?: run {
+                Log.w(TAG, "build '$contextName' references unknown contributed confluence id ${decoded.id} — dropping slot")
+                null
             }
         }
     } catch (e: MalformedRefException) {
@@ -209,7 +214,10 @@ internal class DefaultCharacterBuildRepository @Inject constructor(
         val confluence = hydrateConfluence(raw) { memberRef ->
             when (val decoded = RefCodec.decodeEssenceRef(memberRef)) {
                 is EssenceRef.Canonical -> canonicalEssencesByName[decoded.name] as? Essence.Manifestation
-                is EssenceRef.Contributed -> contributedManifestationsById[decoded.id]
+                is EssenceRef.Contributed.Manifestation -> contributedManifestationsById[decoded.id]
+                // Confluence_set members are structurally Manifestations; a contributed
+                // Confluence ref in this slot is a data error -- drop the set.
+                is EssenceRef.Contributed.Confluence -> null
             }
         }
         if (confluence == null) {
@@ -232,13 +240,26 @@ internal class DefaultCharacterBuildRepository @Inject constructor(
         }
 
         override fun encodeEssence(essence: Essence): String {
-            val name = essence.name
-            val contributedId = essenceContributionsCache.findManifestationIdByName(name)
-                ?: essenceContributionsCache.findConfluenceIdByName(name)
-            val ref = if (contributedId != null) {
-                EssenceRef.Contributed(contributedId)
-            } else {
-                EssenceRef.Canonical(name)
+            // Pattern-match on the Essence subtype so the correct contributed
+            // table is consulted: Manifestations live in `manifestation`,
+            // Confluences in `confluence`; ids in those two tables are
+            // independent. The v7 wire format (mcontr:/ccontr:) keeps the two
+            // disambiguated on disk.
+            val ref: EssenceRef = when (essence) {
+                is Essence.Manifestation -> {
+                    val id = essenceContributionsCache.findManifestationIdByName(essence.name)
+                    if (id != null) EssenceRef.Contributed.Manifestation(id)
+                    else EssenceRef.Canonical(essence.name)
+                }
+                is Essence.Confluence -> {
+                    val id = essenceContributionsCache.findConfluenceIdByName(essence.name)
+                    if (id != null) EssenceRef.Contributed.Confluence(id)
+                    else EssenceRef.Canonical(essence.name)
+                }
+                // Essence is a non-sealed interface in :domain, so an exhaustive
+                // when isn't possible. Any future subtype falls back to canonical-
+                // by-name encoding.
+                else -> EssenceRef.Canonical(essence.name)
             }
             return RefCodec.encodeEssenceRef(ref)
         }

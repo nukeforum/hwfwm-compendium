@@ -136,7 +136,7 @@ internal class DefaultIntegritySweep @Inject constructor(
                                     )
                                 }
                             }
-                            is EssenceRef.Contributed -> {
+                            is EssenceRef.Contributed.Manifestation -> {
                                 if (decoded.id !in contributedManifestationIds) {
                                     out += IntegrityIssue.OrphanedContributedRef(
                                         location,
@@ -144,6 +144,17 @@ internal class DefaultIntegritySweep @Inject constructor(
                                         IntegrityIssue.OrphanedContributedRef.Kind.Essence,
                                     )
                                 }
+                            }
+                            is EssenceRef.Contributed.Confluence -> {
+                                // A confluence_set member is structurally a Manifestation;
+                                // a contributed Confluence ref in this slot is a kind-mismatch
+                                // and the set won't hydrate. Surface as an orphan so the user
+                                // can edit or remove the broken set.
+                                out += IntegrityIssue.OrphanedContributedRef(
+                                    location,
+                                    decoded.id,
+                                    IntegrityIssue.OrphanedContributedRef.Kind.Essence,
+                                )
                             }
                         }
                     } catch (e: MalformedRefException) {
@@ -228,8 +239,17 @@ internal class DefaultIntegritySweep @Inject constructor(
                         )
                     }
                 }
-                is EssenceRef.Contributed -> {
-                    if (decoded.id !in contributedManifestationIds && decoded.id !in contributedConfluenceIds) {
+                is EssenceRef.Contributed.Manifestation -> {
+                    if (decoded.id !in contributedManifestationIds) {
+                        out += IntegrityIssue.OrphanedContributedRef(
+                            location,
+                            decoded.id,
+                            IntegrityIssue.OrphanedContributedRef.Kind.Essence,
+                        )
+                    }
+                }
+                is EssenceRef.Contributed.Confluence -> {
+                    if (decoded.id !in contributedConfluenceIds) {
                         out += IntegrityIssue.OrphanedContributedRef(
                             location,
                             decoded.id,

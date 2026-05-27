@@ -120,7 +120,7 @@ class DefaultIntegritySweepTest {
             listOf(buildWith("X", powerEssence = manifestation("E"), powerAbilities = listOf(listing))),
             object : BuildRefResolver {
                 override fun encodeListing(l: Ability.Listing) = "contr:$listingId"
-                override fun encodeEssence(e: Essence) = "contr:$essenceId"
+                override fun encodeEssence(e: Essence) = "mcontr:$essenceId"
             },
         )
         // Delete the listing from the cache — leaves an orphan ref in the build
@@ -140,7 +140,7 @@ class DefaultIntegritySweepTest {
             listOf(buildWith("X", powerEssence = manifestation("E"))),
             object : BuildRefResolver {
                 override fun encodeListing(l: Ability.Listing) = "canon:${l.name}"
-                override fun encodeEssence(e: Essence) = "contr:$essenceId"
+                override fun encodeEssence(e: Essence) = "mcontr:$essenceId"
             },
         )
         // Delete essence from cache — leaves orphan in build
@@ -374,7 +374,7 @@ class DefaultIntegritySweepTest {
     fun `confluence_set with orphaned contributed manifestation ref produces OrphanedContributedRef Essence`() = runBlocking {
         val env = newEnv()
         // Insert two manifestations, capture one's id, then delete it so the
-        // confluence_set's contr:<id> ref becomes dangling.
+        // confluence_set's mcontr:<id> ref becomes dangling.
         val keepId = env.ed.insertManifestation(manifestation("Keeper"))
         val danglingId = env.ed.insertManifestation(manifestation("Doomed"))
         val otherId = env.ed.insertManifestation(manifestation("Other"))
@@ -383,9 +383,9 @@ class DefaultIntegritySweepTest {
             isRestricted = false,
             sets = listOf(
                 RawConfluenceSet(
-                    essence1Ref = "contr:$keepId",
-                    essence2Ref = "contr:$danglingId",
-                    essence3Ref = "contr:$otherId",
+                    essence1Ref = "mcontr:$keepId",
+                    essence2Ref = "mcontr:$danglingId",
+                    essence3Ref = "mcontr:$otherId",
                     isRestricted = false,
                 ),
             ),
