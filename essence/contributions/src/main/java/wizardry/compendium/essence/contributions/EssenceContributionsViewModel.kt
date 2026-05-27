@@ -244,14 +244,22 @@ class EssenceContributionsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Compute the delete impact and decide what to surface to the UI. If the
+     * impact is empty the delete proceeds immediately; otherwise [_deleteImpact]
+     * is populated and the screen renders the confirmation dialog. This
+     * collapses what used to be a 4×-duplicated `if (impact.isEmpty) LaunchedEffect`
+     * pattern in every contributions screen.
+     */
     fun requestDelete() {
-        val name = when (val m = mode.value) {
-            is Mode.Edit.ManifestationReady -> m.manifestation.name
-            is Mode.Edit.ConfluenceReady -> m.confluence.name
-            else -> return
-        }
+        val name = currentEditName() ?: return
         viewModelScope.launch(ioDispatcher) {
-            _deleteImpact.value = essenceRepository.checkDeleteImpact(name)
+            val impact = essenceRepository.checkDeleteImpact(name)
+            if (impact.isEmpty) {
+                deleteContributionInternal(name)
+            } else {
+                _deleteImpact.value = impact
+            }
         }
     }
 
@@ -260,23 +268,25 @@ class EssenceContributionsViewModel @Inject constructor(
     }
 
     fun confirmDelete() {
+        val name = currentEditName() ?: return
         _deleteImpact.value = null
-        deleteContribution()
+        viewModelScope.launch(ioDispatcher) {
+            deleteContributionInternal(name)
+        }
     }
 
-    fun deleteContribution() {
-        val name = when (val m = mode.value) {
-            is Mode.Edit.ManifestationReady -> m.manifestation.name
-            is Mode.Edit.ConfluenceReady -> m.confluence.name
-            else -> return
+    private suspend fun deleteContributionInternal(name: String) {
+        _saveState.emit(SaveState.Saving)
+        when (val result = essenceRepository.deleteContribution(name)) {
+            is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)
+            is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
         }
-        viewModelScope.launch(ioDispatcher) {
-            _saveState.emit(SaveState.Saving)
-            when (val result = essenceRepository.deleteContribution(name)) {
-                is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)
-                is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
-            }
-        }
+    }
+
+    private fun currentEditName(): String? = when (val m = mode.value) {
+        is Mode.Edit.ManifestationReady -> m.manifestation.name
+        is Mode.Edit.ConfluenceReady -> m.confluence.name
+        else -> null
     }
 
     fun clearSaveState() {

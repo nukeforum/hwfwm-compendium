@@ -71,7 +71,7 @@ class StatusEffectContributionsViewModelTest {
     @Test
     fun `create mode saves a new effect`() = runTest {
         val repo = FakeRepo()
-        val vm = StatusEffectContributionsViewModel(SavedStateHandle(), repo, stubShareUseCase())
+        val vm = StatusEffectContributionsViewModel(SavedStateHandle(), repo, stubShareUseCase(), dispatcher)
         vm.save("Burn", StatusType.Affliction.Elemental, listOf(Property.Fire), stackable = true, description = "burn")
         advanceUntilIdle()
         assertEquals(StatusEffect(
@@ -85,7 +85,7 @@ class StatusEffectContributionsViewModelTest {
     fun `edit mode loads existing then updates`() = runTest {
         val burn = effect("Burn")
         val repo = FakeRepo(items = listOf(burn), contributions = setOf("Burn"))
-        val vm = StatusEffectContributionsViewModel(SavedStateHandle(mapOf("name" to "Burn")), repo, stubShareUseCase())
+        val vm = StatusEffectContributionsViewModel(SavedStateHandle(mapOf("name" to "Burn")), repo, stubShareUseCase(), dispatcher)
         advanceUntilIdle()
         assertTrue(vm.mode.value is StatusEffectContributionsViewModel.Mode.Edit.Ready)
         vm.save("Burn", StatusType.Affliction.Elemental, emptyList(), stackable = false, description = "")
@@ -96,7 +96,7 @@ class StatusEffectContributionsViewModelTest {
     @Test
     fun `blank name yields error state`() = runTest {
         val repo = FakeRepo()
-        val vm = StatusEffectContributionsViewModel(SavedStateHandle(), repo, stubShareUseCase())
+        val vm = StatusEffectContributionsViewModel(SavedStateHandle(), repo, stubShareUseCase(), dispatcher)
         vm.save("", StatusType.Affliction.Curse, emptyList(), stackable = false, description = "")
         advanceUntilIdle()
         val s = vm.saveState.value

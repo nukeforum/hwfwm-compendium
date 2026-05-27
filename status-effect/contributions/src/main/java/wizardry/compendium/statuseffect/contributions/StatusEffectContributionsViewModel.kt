@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,6 +20,7 @@ import wizardry.compendium.domain.model.StatusEffect
 import wizardry.compendium.domain.model.StatusType
 import wizardry.compendium.share.DecodedSingle
 import wizardry.compendium.share.StatusEffectShareUseCase
+import wizardry.compendium.ui.coroutines.IoDispatcher
 import javax.inject.Inject
 
 @HiltViewModel
@@ -26,6 +28,7 @@ class StatusEffectContributionsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: StatusEffectRepository,
     private val shareUseCase: StatusEffectShareUseCase,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     private val editName: String? = savedStateHandle.get<String>("name")
@@ -44,7 +47,7 @@ class StatusEffectContributionsViewModel @Inject constructor(
 
     init {
         if (editName != null) {
-            viewModelScope.launch {
+            viewModelScope.launch(ioDispatcher) {
                 val effect = repository.getStatusEffects().find { it.name == editName }
                 if (effect != null && repository.isContribution(effect.name)) {
                     _mode.emit(Mode.Edit.Ready(effect))
@@ -66,7 +69,7 @@ class StatusEffectContributionsViewModel @Inject constructor(
             viewModelScope.launch { _saveState.emit(SaveState.Error("Name cannot be empty")) }
             return
         }
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             _saveState.emit(SaveState.Saving)
             val effect = StatusEffect(
                 name = name.trim(),
@@ -90,10 +93,22 @@ class StatusEffectContributionsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Compute the delete impact and decide what to surface to the UI. If the
+     * impact is empty the delete proceeds immediately; otherwise [_deleteImpact]
+     * is populated and the screen renders the confirmation dialog. This
+     * collapses what used to be a 4×-duplicated `if (impact.isEmpty) LaunchedEffect`
+     * pattern in every contributions screen.
+     */
     fun requestDelete() {
         val target = (mode.value as? Mode.Edit.Ready)?.effect ?: return
-        viewModelScope.launch {
-            _deleteImpact.value = repository.checkDeleteImpact(target.name)
+        viewModelScope.launch(ioDispatcher) {
+            val impact = repository.checkDeleteImpact(target.name)
+            if (impact.isEmpty) {
+                deleteContributionInternal(target.name)
+            } else {
+                _deleteImpact.value = impact
+            }
         }
     }
 
@@ -102,18 +117,18 @@ class StatusEffectContributionsViewModel @Inject constructor(
     }
 
     fun confirmDelete() {
+        val target = (mode.value as? Mode.Edit.Ready)?.effect ?: return
         _deleteImpact.value = null
-        deleteContribution()
+        viewModelScope.launch(ioDispatcher) {
+            deleteContributionInternal(target.name)
+        }
     }
 
-    fun deleteContribution() {
-        val target = (mode.value as? Mode.Edit.Ready)?.effect ?: return
-        viewModelScope.launch {
-            _saveState.emit(SaveState.Saving)
-            when (val result = repository.deleteContribution(target.name)) {
-                is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)
-                is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
-            }
+    private suspend fun deleteContributionInternal(name: String) {
+        _saveState.emit(SaveState.Saving)
+        when (val result = repository.deleteContribution(name)) {
+            is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)
+            is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
         }
     }
 
@@ -122,7 +137,7 @@ class StatusEffectContributionsViewModel @Inject constructor(
     }
 
     fun requestImport(text: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(ioDispatcher) {
             when (val r = shareUseCase.decodeSingleStatusEffect(text)) {
                 is DecodedSingle.Loaded -> _importEvents.emit(ImportEvent.Loaded(r.model))
                 is DecodedSingle.Failed -> _importEvents.emit(ImportEvent.Failed(r.reason))

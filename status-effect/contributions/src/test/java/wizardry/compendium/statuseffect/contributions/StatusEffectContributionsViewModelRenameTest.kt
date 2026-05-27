@@ -92,7 +92,7 @@ class StatusEffectContributionsViewModelRenameTest {
     }
 
     @Test
-    fun `requestDelete with no references short-circuits to confirmDelete`() = runTest {
+    fun `requestDelete with empty impact deletes immediately without surfacing dialog state`() = runTest {
         val deletedNames = mutableListOf<String>()
         val repo = object : SpyEffectRepo() {
             override suspend fun getStatusEffects() = listOf(effect("Burn"))
@@ -106,10 +106,10 @@ class StatusEffectContributionsViewModelRenameTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         vm.requestDelete()
-        val impact = vm.deleteImpact.first()
-        assertTrue(impact != null && impact.isEmpty)
+        dispatcher.scheduler.advanceUntilIdle()
 
-        vm.confirmDelete()
+        // Empty impact -> requestDelete proceeds straight to deleteContribution.
+        // The VM never publishes a non-null deleteImpact, so no dialog ever appears.
         assertNull(vm.deleteImpact.first())
         assertEquals(listOf("Burn"), deletedNames)
     }
@@ -144,6 +144,7 @@ class StatusEffectContributionsViewModelRenameTest {
         savedStateHandle = SavedStateHandle(mapOf("name" to editName)),
         repository = repo,
         shareUseCase = stubShareUseCase(),
+        ioDispatcher = dispatcher,
     )
 
     private open class SpyEffectRepo : StatusEffectRepository {

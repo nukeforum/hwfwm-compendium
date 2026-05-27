@@ -83,6 +83,7 @@ class StatusEffectContributionsViewModelImportTest {
             savedStateHandle = SavedStateHandle(),
             repository = ImportFakeRepo(),
             shareUseCase = useCase,
+            ioDispatcher = dispatcher,
         )
     }
 }

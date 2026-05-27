@@ -156,18 +156,16 @@ fun StatusEffectContributionsScreen(
                 onImportClick = null,
             )
             deleteImpact?.let { impact ->
-                if (impact.isEmpty) {
-                    LaunchedEffect(impact) { viewModel.confirmDelete() }
-                } else {
-                    DeleteWithReferencesDialog(
-                        contributionName = current.effect.name,
-                        impact = impact,
-                        explanatoryNote = "Deleting will leave the {status:${current.effect.name}} " +
-                            "tokens in these abilities unresolved. They cannot be auto-restored.",
-                        onCancel = viewModel::cancelDelete,
-                        onConfirm = viewModel::confirmDelete,
-                    )
-                }
+                // The ViewModel only surfaces a non-empty impact here -- the
+                // empty-impact short-circuit lives in requestDelete().
+                DeleteWithReferencesDialog(
+                    contributionName = current.effect.name,
+                    impact = impact,
+                    explanatoryNote = "Deleting will leave the {status:${current.effect.name}} " +
+                        "tokens in these abilities unresolved. They cannot be auto-restored.",
+                    onCancel = viewModel::cancelDelete,
+                    onConfirm = viewModel::confirmDelete,
+                )
             }
         }
     }

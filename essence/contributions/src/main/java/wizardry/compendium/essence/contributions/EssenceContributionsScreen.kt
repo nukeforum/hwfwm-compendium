@@ -146,16 +146,14 @@ fun EssenceContributionsScreen(
                         onImportClick = null,
                     )
                     deleteImpact?.let { impact ->
-                        if (impact.isEmpty) {
-                            LaunchedEffect(impact) { viewModel.confirmDelete() }
-                        } else {
-                            DeleteWithReferencesDialog(
-                                contributionName = current.manifestation.name,
-                                impact = impact,
-                                onCancel = viewModel::cancelDelete,
-                                onConfirm = viewModel::confirmDelete,
-                            )
-                        }
+                        // The ViewModel only surfaces a non-empty impact here -- the
+                        // empty-impact short-circuit lives in requestDelete().
+                        DeleteWithReferencesDialog(
+                            contributionName = current.manifestation.name,
+                            impact = impact,
+                            onCancel = viewModel::cancelDelete,
+                            onConfirm = viewModel::confirmDelete,
+                        )
                     }
                 }
                 is EssenceContributionsViewModel.Mode.Edit.ConfluenceReady -> {
@@ -166,16 +164,14 @@ fun EssenceContributionsScreen(
                         onDelete = viewModel::requestDelete,
                     )
                     deleteImpact?.let { impact ->
-                        if (impact.isEmpty) {
-                            LaunchedEffect(impact) { viewModel.confirmDelete() }
-                        } else {
-                            DeleteWithReferencesDialog(
-                                contributionName = current.confluence.name,
-                                impact = impact,
-                                onCancel = viewModel::cancelDelete,
-                                onConfirm = viewModel::confirmDelete,
-                            )
-                        }
+                        // The ViewModel only surfaces a non-empty impact here -- the
+                        // empty-impact short-circuit lives in requestDelete().
+                        DeleteWithReferencesDialog(
+                            contributionName = current.confluence.name,
+                            impact = impact,
+                            onCancel = viewModel::cancelDelete,
+                            onConfirm = viewModel::confirmDelete,
+                        )
                     }
                 }
                 EssenceContributionsViewModel.Mode.Create -> CreateContributions(

@@ -157,10 +157,22 @@ class AbilityListingContributionsViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Compute the delete impact and decide what to surface to the UI. If the
+     * impact is empty the delete proceeds immediately; otherwise [_deleteImpact]
+     * is populated and the screen renders the confirmation dialog. This
+     * collapses what used to be a 4×-duplicated `if (impact.isEmpty) LaunchedEffect`
+     * pattern in every contributions screen.
+     */
     fun requestDelete() {
         val target = (mode.value as? Mode.Edit.Ready)?.listing ?: return
         viewModelScope.launch(ioDispatcher) {
-            _deleteImpact.value = abilityListingRepository.checkDeleteImpact(target.name)
+            val impact = abilityListingRepository.checkDeleteImpact(target.name)
+            if (impact.isEmpty) {
+                deleteContributionInternal(target.name)
+            } else {
+                _deleteImpact.value = impact
+            }
         }
     }
 
@@ -169,18 +181,18 @@ class AbilityListingContributionsViewModel @Inject constructor(
     }
 
     fun confirmDelete() {
+        val target = (mode.value as? Mode.Edit.Ready)?.listing ?: return
         _deleteImpact.value = null
-        deleteContribution()
+        viewModelScope.launch(ioDispatcher) {
+            deleteContributionInternal(target.name)
+        }
     }
 
-    fun deleteContribution() {
-        val target = (mode.value as? Mode.Edit.Ready)?.listing ?: return
-        viewModelScope.launch(ioDispatcher) {
-            _saveState.emit(SaveState.Saving)
-            when (val result = abilityListingRepository.deleteContribution(target.name)) {
-                is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)
-                is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
-            }
+    private suspend fun deleteContributionInternal(name: String) {
+        _saveState.emit(SaveState.Saving)
+        when (val result = abilityListingRepository.deleteContribution(name)) {
+            is ContributionResult.Success -> _saveState.emit(SaveState.Deleted)
+            is ContributionResult.Failure -> _saveState.emit(SaveState.Error(result.message))
         }
     }
 

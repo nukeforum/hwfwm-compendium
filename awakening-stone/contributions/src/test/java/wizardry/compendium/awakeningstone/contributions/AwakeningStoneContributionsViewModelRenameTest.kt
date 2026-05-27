@@ -69,7 +69,7 @@ class AwakeningStoneContributionsViewModelRenameTest {
     }
 
     @Test
-    fun `requestDelete short-circuits to confirmDelete since impact is always empty`() = runTest {
+    fun `requestDelete with empty impact deletes immediately without surfacing dialog state`() = runTest {
         val stone = AwakeningStone.of("Granite", Rarity.Common)
         val deletedNames = mutableListOf<String>()
         val repo = object : SpyStoneRepo() {
@@ -85,12 +85,10 @@ class AwakeningStoneContributionsViewModelRenameTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         vm.requestDelete()
-        // deleteImpact is set to empty DeleteImpact() — screen's LaunchedEffect
-        // would call confirmDelete(). Simulate that directly:
-        val impact = vm.deleteImpact.first()
-        assertTrue(impact != null && impact.isEmpty)
+        dispatcher.scheduler.advanceUntilIdle()
 
-        vm.confirmDelete()
+        // Empty impact -> requestDelete proceeds straight to deleteContribution.
+        // The VM never publishes a non-null deleteImpact, so no dialog ever appears.
         assertNull(vm.deleteImpact.first())
         assertEquals(listOf("Granite"), deletedNames)
     }
@@ -99,10 +97,16 @@ class AwakeningStoneContributionsViewModelRenameTest {
     fun `cancelDelete clears deleteImpact without deleting`() = runTest {
         val stone = AwakeningStone.of("Granite", Rarity.Common)
         val deletedNames = mutableListOf<String>()
+        // Stub a non-empty impact so requestDelete surfaces the dialog instead
+        // of short-circuiting to deleteContribution. AwakeningStone's production
+        // checkDeleteImpact always returns DeleteImpact(), so this scenario is
+        // structural -- it pins the cancel-from-dialog flow against the chance
+        // that the AwakeningStone repo ever grows real references.
         val repo = object : SpyStoneRepo() {
             override suspend fun getAwakeningStones() = listOf(stone)
             override suspend fun isContribution(name: String) = true
-            override suspend fun checkDeleteImpact(name: String) = DeleteImpact()
+            override suspend fun checkDeleteImpact(name: String) =
+                DeleteImpact(referencingBuilds = listOf("Mountain Tank"))
             override suspend fun deleteContribution(name: String): ContributionResult {
                 deletedNames += name
                 return ContributionResult.Success
@@ -112,6 +116,7 @@ class AwakeningStoneContributionsViewModelRenameTest {
         dispatcher.scheduler.advanceUntilIdle()
 
         vm.requestDelete()
+        dispatcher.scheduler.advanceUntilIdle()
         vm.cancelDelete()
 
         assertNull(vm.deleteImpact.first())
