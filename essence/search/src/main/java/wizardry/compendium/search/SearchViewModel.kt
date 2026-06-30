@@ -71,7 +71,7 @@ class SearchViewModel @Inject constructor(
         filters: Collection<SearchFilter>
     ): List<Essence> = mapNotNull { essence ->
         essence.takeIf {
-            essence.name.lowercase().contains(term.lowercase())
+            essence.name.contains(term, ignoreCase = true)
                     && filters.any { filter -> filter.predicate(essence) }
         }
     }
