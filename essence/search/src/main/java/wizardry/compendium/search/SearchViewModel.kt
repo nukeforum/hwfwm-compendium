@@ -66,6 +66,7 @@ class SearchViewModel @Inject constructor(
         }
     }
 
+    /** Keeps essences whose name contains [term] (case-insensitive substring match) and satisfies any active filter. */
     private fun List<Essence>.filterWith(
         term: String,
         filters: Collection<SearchFilter>
