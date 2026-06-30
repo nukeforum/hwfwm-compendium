@@ -42,8 +42,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import wizardry.compendium.ui.ButtonSegment
 import wizardry.compendium.ui.ContributionDomainPicker
 import wizardry.compendium.ui.DomainPickerRow
+import wizardry.compendium.ui.SegmentedButtonBar
 import wizardry.compendium.ui.PreviewLightDark
 import wizardry.compendium.ui.theme.CompendiumTheme
 import wizardry.compendium.preferences.ThemeMode
@@ -435,25 +437,12 @@ fun SettingsContent(
             ioState is SettingsViewModel.IoState.Decoding ||
             ioState is SettingsViewModel.IoState.ImportPreviewOpen ||
             ioState is SettingsViewModel.IoState.ImportSourceOpen
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Button(
-                onClick = onExportClick,
-                enabled = !encoding,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Export…")
-            }
-            Button(
-                onClick = onImportClick,
-                enabled = !importing,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Import…")
-            }
-        }
+        SegmentedButtonBar(
+            segments = listOf(
+                ButtonSegment(label = "Export…", onClick = onExportClick, enabled = !encoding),
+                ButtonSegment(label = "Import…", onClick = onImportClick, enabled = !importing),
+            ),
+        )
 
         HorizontalDivider()
 
@@ -487,19 +476,12 @@ fun SettingsContent(
                     color = MaterialTheme.colorScheme.error,
                 )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(
-                    onClick = onBackupNowClick,
-                    modifier = Modifier.weight(1f),
-                ) { Text("Back up now") }
-                OutlinedButton(
-                    onClick = onRestoreNowClick,
-                    modifier = Modifier.weight(1f),
-                ) { Text("Restore from Drive") }
-            }
+            SegmentedButtonBar(
+                segments = listOf(
+                    ButtonSegment(label = "Back up now", onClick = onBackupNowClick),
+                    ButtonSegment(label = "Restore from Drive", onClick = onRestoreNowClick),
+                ),
+            )
         }
 
         HorizontalDivider()
@@ -639,21 +621,12 @@ private fun ExportPickerSheet(
                 onToggle = onToggle,
             )
             val anySelected = rows.any { it.selected }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(
-                    onClick = onShare,
-                    enabled = anySelected,
-                    modifier = Modifier.weight(1f),
-                ) { Text("Share") }
-                OutlinedButton(
-                    onClick = onSaveToFile,
-                    enabled = anySelected,
-                    modifier = Modifier.weight(1f),
-                ) { Text("Save to File") }
-            }
+            SegmentedButtonBar(
+                segments = listOf(
+                    ButtonSegment(label = "Share", onClick = onShare, enabled = anySelected),
+                    ButtonSegment(label = "Save to File", onClick = onSaveToFile, enabled = anySelected),
+                ),
+            )
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.End),
@@ -688,19 +661,12 @@ private fun ImportSourceSheet(
                 "Paste a share you received, or open a saved .compendium file.",
                 style = MaterialTheme.typography.bodyMedium,
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(
-                    onClick = onPaste,
-                    modifier = Modifier.weight(1f),
-                ) { Text("Paste text") }
-                OutlinedButton(
-                    onClick = onOpenFile,
-                    modifier = Modifier.weight(1f),
-                ) { Text("Open file") }
-            }
+            SegmentedButtonBar(
+                segments = listOf(
+                    ButtonSegment(label = "Paste text", onClick = onPaste),
+                    ButtonSegment(label = "Open file", onClick = onOpenFile),
+                ),
+            )
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.End),
