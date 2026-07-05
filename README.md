@@ -16,8 +16,9 @@ This is an unofficial fan project. It is not affiliated with, endorsed by, or li
 - **Awakening stone search & details** — look up awakening stones and the abilities they confer.
 - **Status effect search & details** — look up status effects, including ones referenced by abilities.
 - **Character build search & details** — browse builds composed of an essence loadout plus chosen abilities.
+- **Race template search & contribution** — assemble reusable race templates, each pairing a name with exactly six racial abilities.
 - **Randomizer** — roll randomized essence/confluence combinations.
-- **Contributions** — add or edit user-supplied entries for essences, abilities, awakening stones, status effects, and character builds, kept in a separate database so canonical updates don't clobber your additions. Renaming a contributed entity cascades through every other contribution that referenced the old name.
+- **Contributions** — add or edit user-supplied entries for essences, abilities, awakening stones, status effects, character builds, and race templates, kept in a separate database so canonical updates don't clobber your additions. Renaming a contributed entity cascades through every other contribution that referenced the old name.
 - **Conflicts screen** — surfaces collisions and dangling references across your contributions, walking every cross-entity reference and embedded status token.
 - **Share / Export** — share a plain-text summary of any entity, or export the Wire-format bundle for re-import in another install.
 - **Google Drive backup** — opt-in OAuth-backed periodic backup and restore of the contributions database and preferences via the user's own Drive app-folder.
