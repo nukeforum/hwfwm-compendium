@@ -1,0 +1,21 @@
+-- v7 -> v8: add the race_template family of tables. Purely additive -- two new
+-- tables and one index, no rewrites of existing data. race_template stores the
+-- template name; race_template_racial_ability stores its racial-ability
+-- listing refs ('canon:<name>' or 'contr:<id>') keyed by (template_name,
+-- ordinal), mirroring character_build_racial_ability. No REFERENCES clauses
+-- (FK enforcement is off on this driver; the project dropped all soft-ref
+-- REFERENCES at v7).
+
+CREATE TABLE race_template (
+    name TEXT PRIMARY KEY NOT NULL
+);
+
+CREATE TABLE race_template_racial_ability (
+    template_name TEXT NOT NULL,
+    listing_ref TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (template_name, ordinal)
+);
+
+CREATE INDEX idx_race_template_racial_ability_listing_ref
+    ON race_template_racial_ability(listing_ref);

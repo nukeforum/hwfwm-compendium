@@ -5,6 +5,7 @@ import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.domain.model.AwakeningStone
 import wizardry.compendium.domain.model.CharacterBuild
 import wizardry.compendium.domain.model.Essence
+import wizardry.compendium.domain.model.RaceTemplate
 import wizardry.compendium.domain.model.StatusEffect
 
 sealed class Nav(val route: String) {
@@ -66,5 +67,12 @@ sealed class Nav(val route: String) {
     object CharacterBuildDetail : Nav("characterBuildDetail/{buildName}") {
         const val ARG_NAME = "buildName"
         fun buildRoute(build: CharacterBuild) = "characterBuildDetail/${Uri.encode(build.name)}"
+    }
+    object RaceTemplateSearch : Nav("raceTemplateSearch")
+    object RaceTemplateContributions : Nav("raceTemplateContributions?name={name}") {
+        const val ARG_NAME = "name"
+        const val newRoute = "raceTemplateContributions"
+        fun buildEditRoute(template: RaceTemplate) = buildEditRouteByName(template.name)
+        fun buildEditRouteByName(name: String) = "raceTemplateContributions?name=${Uri.encode(name)}"
     }
 }
