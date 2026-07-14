@@ -27,9 +27,9 @@ class AbilityListingCsvLoaderTest {
 
     @Test
     fun `name-only row loads a listing with no effects`() = runBlocking {
-        val result = loader("Earth Affinity\n").loadAbilityListingData()
+        val result = loader("Mystery Gift\n").loadAbilityListingData()
 
-        assertEquals(listOf("Earth Affinity"), result.map { it.name })
+        assertEquals(listOf("Mystery Gift"), result.map { it.name })
         assertTrue(result.single().effects.isEmpty())
     }
 

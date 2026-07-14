@@ -15,6 +15,7 @@ import wizardry.compendium.persistence.AbilityListingDatabase
 import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.IdentifiedListing
+import wizardry.compendium.persistence.RaceTemplateDatabase
 import wizardry.compendium.preferences.AbilityListingContributionsToggle
 import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
 
@@ -143,11 +144,48 @@ class DefaultAbilityListingRepositoryConflictTest {
             canonicalCache = FakeAbilityListingCache(emptyList()),
             contributionsCache = contributionsCache,
             characterBuildDatabase = buildDb,
+            raceTemplateDatabase = RaceTemplateDatabase(driver),
             toggle = FakeAbilityListingToggle(true),
             toggleFlow = FakeAbilityListingToggleFlow(true),
         )
         val impact = repo.checkDeleteImpact("Frost")
         assertEquals(listOf("FrostMage"), impact.referencingBuilds)
+    }
+
+    @Test
+    fun `checkDeleteImpact returns referencingRaceTemplates when a race template references this listing`() = runTest {
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
+        CompendiumDatabase.Schema.create(driver)
+        val contributionsCache = AbilityListingDatabase(driver)
+        val raceTemplateDb = RaceTemplateDatabase(driver)
+        val listing = listing("Frost")
+        val listingId = contributionsCache.insert(listing)
+
+        raceTemplateDb.upsert(
+            wizardry.compendium.domain.model.RaceTemplate(
+                name = "Golem",
+                racialAbilities = listOf(listing),
+            ),
+            object : wizardry.compendium.persistence.RaceTemplateRefResolver {
+                override fun encodeListing(l: Ability.Listing) =
+                    wizardry.compendium.domain.model.RefCodec.encodeAbilityRef(
+                        wizardry.compendium.domain.model.AbilityRef.Contributed(listingId),
+                    )
+            },
+        )
+
+        val repo = DefaultAbilityListingRepository(
+            dataLoader = FakeAbilityListingDataLoader(emptyList()),
+            canonicalCache = FakeAbilityListingCache(emptyList()),
+            contributionsCache = contributionsCache,
+            characterBuildDatabase = CharacterBuildDatabase(driver),
+            raceTemplateDatabase = raceTemplateDb,
+            toggle = FakeAbilityListingToggle(true),
+            toggleFlow = FakeAbilityListingToggleFlow(true),
+        )
+        val impact = repo.checkDeleteImpact("Frost")
+        assertEquals(listOf("Golem"), impact.referencingRaceTemplates)
+        assertTrue(impact.referencingBuilds.isEmpty())
     }
 
     @Test
@@ -171,6 +209,7 @@ private fun repository(
         canonicalCache = FakeAbilityListingCache(canonical),
         contributionsCache = FakeAbilityListingCache(contributions),
         characterBuildDatabase = buildDatabase,
+        raceTemplateDatabase = RaceTemplateDatabase(driver),
         toggle = FakeAbilityListingToggle(toggle),
         toggleFlow = FakeAbilityListingToggleFlow(toggle),
     )

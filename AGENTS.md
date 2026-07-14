@@ -26,8 +26,10 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - **Canonical races** seed from `races.csv` (`RaceName,Ability1..Ability6`, names only) into
   the `@Canonical` `RaceTemplateDatabase` as `canon:<name>` refs. The referenced racial
   abilities are first-class canonical ability listings seeded from `ability_listings.csv`
-  (`name` alone for unknown/"???" data, or `name,type,description` with the description as
-  the last, comma-tolerant column). Every ability name in `races.csv` must have a matching
+  (`name,type,description` rows with the description as the last, comma-tolerant column;
+  unknown "???" details seed as `name,Racial ability,???` so the racial classification is
+  kept — a bare `name` row is still parseable but leaves the listing untyped, which makes
+  it a slot-picker candidate). Every ability name in `races.csv` must have a matching
   `ability_listings.csv` row or ref resolution drops it — guarded by
   `app/src/test/.../CanonicalRaceSeedDataTest.kt`. Outworlder (five per-individual "<Varies>"
   abilities) and Goblin (all six unknown) cannot satisfy the exactly-6 rule and are

@@ -14,8 +14,10 @@ import kotlin.time.Duration
  * Reads `assets/ability_listings.csv`. Two row shapes are accepted:
  *
  * - `name` — a bare listing with no effect data, for canonical abilities whose
- *   details are unknown / not yet curated (e.g. a racial ability the source
- *   sheet lists as "???").
+ *   details are unknown / not yet curated. Note a bare listing has no
+ *   [AbilityType] classification, so prefer `name,type,???` when the type is
+ *   known even if the source sheet's description is "???" — the character
+ *   build editor's racial/slot pickers classify by effect type.
  * - `name,type,description` — a listing with a single effect of the given
  *   [AbilityType] (the token is the type's `toString()` form, e.g.
  *   `Racial ability`). The description is the LAST column and may itself
