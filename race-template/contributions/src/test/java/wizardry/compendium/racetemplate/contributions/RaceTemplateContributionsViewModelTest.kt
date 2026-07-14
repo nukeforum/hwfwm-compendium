@@ -71,6 +71,17 @@ class RaceTemplateContributionsViewModelTest {
         assertTrue(mode is RaceTemplateContributionsViewModel.Mode.Edit.NotFound)
     }
 
+    @Test
+    fun `Edit mode emits NotFound for a canonical template — canonical races are read-only`() = runTest {
+        val human = RaceTemplate("Human", sixRacials())
+        val repo = FakeRaceTemplateRepo(listOf(human), canonicalNames = setOf("Human"))
+        val vm = create(savedName = "Human", repo = repo)
+        advanceUntilIdle()
+
+        val mode = vm.mode.first { it is RaceTemplateContributionsViewModel.Mode.Edit.NotFound }
+        assertTrue(mode is RaceTemplateContributionsViewModel.Mode.Edit.NotFound)
+    }
+
     // --- Racial-only filter rule ---------------------------------------
 
     @Test
@@ -255,11 +266,16 @@ class RaceTemplateContributionsViewModelTest {
         )
     }
 
-    private class FakeRaceTemplateRepo(initial: List<RaceTemplate>) : RaceTemplateRepository {
+    private class FakeRaceTemplateRepo(
+        initial: List<RaceTemplate>,
+        private val canonicalNames: Set<String> = emptySet(),
+    ) : RaceTemplateRepository {
         private val flow = MutableStateFlow(initial)
         override val raceTemplates: Flow<List<RaceTemplate>> = flow
         override suspend fun getRaceTemplates() = flow.value
         override suspend fun getRaceTemplate(name: String) = flow.value.firstOrNull { it.name == name }
+        override suspend fun isContribution(name: String) =
+            name !in canonicalNames && flow.value.any { it.name == name }
         override suspend fun saveRaceTemplateContribution(template: RaceTemplate): ContributionResult {
             flow.value = flow.value.filterNot { it.name == template.name } + template
             return ContributionResult.Success

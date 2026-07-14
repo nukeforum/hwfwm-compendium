@@ -70,7 +70,9 @@ class RaceTemplateContributionsViewModel @Inject constructor(
         if (editName != null) {
             viewModelScope.launch {
                 val match = repository.getRaceTemplate(editName)
-                if (match == null) {
+                // Canonical (seeded) templates are read-only — same gate the
+                // ability-listing editor applies via isContribution.
+                if (match == null || !repository.isContribution(editName)) {
                     _mode.emit(Mode.Edit.NotFound)
                 } else {
                     _formState.emit(match.toForm())

@@ -5,9 +5,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import wizardry.compendium.essences.dataloader.RaceTemplateDataLoader
 import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.domain.model.RaceTemplate
 import wizardry.compendium.persistence.AbilityListingDatabase
@@ -30,9 +32,14 @@ class DefaultRaceTemplateRepositoryTest {
 
     private fun repository(
         templateDb: RaceTemplateDatabase = newTemplateDatabase(),
+        canonicalTemplateDb: RaceTemplateDatabase = newTemplateDatabase(),
         listingContribDb: AbilityListingDatabase = newAbilityListingDatabase(),
         canonicalListings: List<Ability.Listing> = emptyList(),
+        canonicalTemplates: List<RaceTemplate> = emptyList(),
+        loader: FakeRaceTemplateDataLoader = FakeRaceTemplateDataLoader(canonicalTemplates),
     ): DefaultRaceTemplateRepository = DefaultRaceTemplateRepository(
+        dataLoader = loader,
+        canonicalDatabase = canonicalTemplateDb,
         database = templateDb,
         abilityListingContributionsCache = listingContribDb,
         abilityListingRepository = FakeListingRepository(canonicalListings),
@@ -172,6 +179,138 @@ class DefaultRaceTemplateRepositoryTest {
     @Test
     fun `getRaceTemplate returns null for unknown name`() = runBlocking {
         assertNull(repository().getRaceTemplate("ghost"))
+    }
+
+    // --- Canonical seed ---------------------------------------------------
+
+    private fun sixListings(): List<Ability.Listing> = (1..6).map { listing("Racial $it") }
+
+    @Test
+    fun `canonical templates seed lazily into the canonical DB and resolve canon refs`() = runBlocking {
+        val racials = sixListings()
+        val canonicalDb = newTemplateDatabase()
+        val repo = repository(
+            canonicalTemplateDb = canonicalDb,
+            canonicalListings = racials,
+            canonicalTemplates = listOf(template("Human", racials)),
+        )
+
+        val result = repo.getRaceTemplates()
+
+        assertEquals(listOf("Human"), result.map { it.name })
+        assertEquals(racials.map { it.name }, result.single().racialAbilities.map { it.name })
+        assertEquals(
+            racials.map { "canon:${it.name}" },
+            canonicalDb.readAllRacialAbilities().sortedBy { it.ordinal }.map { it.listingRef },
+        )
+    }
+
+    @Test
+    fun `canonical seed loads from the data loader only once`() = runBlocking {
+        val racials = sixListings()
+        val loader = FakeRaceTemplateDataLoader(listOf(template("Human", racials)))
+        val repo = repository(canonicalListings = racials, loader = loader)
+
+        repo.getRaceTemplates()
+        repo.getRaceTemplates()
+
+        assertEquals(1, loader.loadCount)
+    }
+
+    @Test
+    fun `merged view lists canonical and contributed templates sorted by name`() = runBlocking {
+        val racials = sixListings()
+        val repo = repository(
+            canonicalListings = racials,
+            canonicalTemplates = listOf(template("Human", racials)),
+        )
+
+        repo.saveRaceTemplateContribution(template("Golem", racials.take(2)))
+
+        assertEquals(listOf("Golem", "Human"), repo.getRaceTemplates().map { it.name })
+    }
+
+    @Test
+    fun `save rejects a canonical race name case-insensitively`() = runBlocking {
+        val racials = sixListings()
+        val templateDb = newTemplateDatabase()
+        val repo = repository(
+            templateDb = templateDb,
+            canonicalListings = racials,
+            canonicalTemplates = listOf(template("Human", racials)),
+        )
+
+        val result = repo.saveRaceTemplateContribution(template("human", racials))
+
+        assertTrue(result is ContributionResult.Failure)
+        assertTrue((result as ContributionResult.Failure).message.contains("canonical"))
+        assertTrue(templateDb.readAllRaceTemplates().isEmpty())
+    }
+
+    @Test
+    fun `isContribution is true for contributed templates and false for canonical ones`() = runBlocking {
+        val racials = sixListings()
+        val repo = repository(
+            canonicalListings = racials,
+            canonicalTemplates = listOf(template("Human", racials)),
+        )
+        repo.saveRaceTemplateContribution(template("Golem", racials.take(1)))
+        // Force the canonical seed so "Human" is present in the merged view.
+        assertEquals(2, repo.getRaceTemplates().size)
+
+        assertTrue(repo.isContribution("Golem"))
+        assertFalse(repo.isContribution("Human"))
+    }
+
+    @Test
+    fun `deleteContribution refuses canonical templates`() = runBlocking {
+        val racials = sixListings()
+        val repo = repository(
+            canonicalListings = racials,
+            canonicalTemplates = listOf(template("Human", racials)),
+        )
+        repo.getRaceTemplates()
+
+        assertTrue(repo.deleteContribution("Human") is ContributionResult.Failure)
+        assertEquals(listOf("Human"), repo.getRaceTemplates().map { it.name })
+    }
+
+    @Test
+    fun `a contribution sharing a canonical name shadows the canonical template`() = runBlocking {
+        val racials = sixListings()
+        val templateDb = newTemplateDatabase()
+        val repo = repository(
+            templateDb = templateDb,
+            canonicalListings = racials,
+            canonicalTemplates = listOf(template("Human", racials)),
+        )
+
+        // Saves are rejected for canonical names, but a restored backup can
+        // still contain one — write it straight into the contributions DB.
+        templateDb.upsert(
+            template("Human", racials.take(3)),
+            object : wizardry.compendium.persistence.RaceTemplateRefResolver {
+                override fun encodeListing(listing: Ability.Listing) = "canon:${listing.name}"
+            },
+        )
+
+        val result = repo.getRaceTemplates()
+        assertEquals(listOf("Human"), result.map { it.name })
+        assertEquals(3, result.single().racialAbilities.size)
+    }
+}
+
+// --- Fakes ------------------------------------------------------------------
+
+private class FakeRaceTemplateDataLoader(
+    private val data: List<RaceTemplate>,
+) : RaceTemplateDataLoader {
+    var loadCount = 0
+        private set
+
+    override suspend fun loadRaceTemplateData(): List<RaceTemplate> {
+        loadCount++
+        return data
     }
 }
 

@@ -16,9 +16,22 @@ This file is the project's committed home for project-intrinsic agent knowledge:
   `<Entity>Database.kt` wrapper exposing only its generated queries. Per-file drivers are
   provided in `app/.../di/DatabaseModule.kt` under `@Canonical` (compendium.db) and
   `@Contributions` (contributions.db) qualifiers.
-- **Contributions-only entities** (`character-build`, `race-template`) have no canonical seed
-  data, so their `Default*Repository` reads/writes the `@Contributions` DB only. Every stored
-  row is therefore editable.
+- **Contributions-only entities** (`character-build`) have no canonical seed data, so their
+  `Default*Repository` reads/writes the `@Contributions` DB only. Every stored row is
+  therefore editable.
+- **Canonical seed data** lives in `app/src/main/assets/*.csv`, parsed by per-entity loaders
+  in `dataloader/` (bound in `app/.../di/DataLoaderModule.kt`) and lazily written into the
+  `@Canonical` DB/cache on first read (`ensureCanonicalLoaded` in each `Default*Repository`).
+  Canonical rows are read-only; contributions may not reuse a canonical name.
+- **Canonical races** seed from `races.csv` (`RaceName,Ability1..Ability6`, names only) into
+  the `@Canonical` `RaceTemplateDatabase` as `canon:<name>` refs. The referenced racial
+  abilities are first-class canonical ability listings seeded from `ability_listings.csv`
+  (`name` alone for unknown/"???" data, or `name,type,description` with the description as
+  the last, comma-tolerant column). Every ability name in `races.csv` must have a matching
+  `ability_listings.csv` row or ref resolution drops it — guarded by
+  `app/src/test/.../CanonicalRaceSeedDataTest.kt`. Outworlder (five per-individual "<Varies>"
+  abilities) and Goblin (all six unknown) cannot satisfy the exactly-6 rule and are
+  deliberately not seeded.
 - **Cross-domain references are tagged-string soft refs** encoded by `domain/.../model/Refs.kt`
   `RefCodec`: `canon:<name>` for canonical, `contr:<id>` for a contributed ability listing,
   `mcontr:<id>`/`ccontr:<id>` for contributed manifestation/confluence essences. FK enforcement

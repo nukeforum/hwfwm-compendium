@@ -79,6 +79,12 @@ object DatabaseModule {
     fun provideCanonicalStatusEffectCache(@Canonical driver: SqlDriver): StatusEffectCache =
         StatusEffectDatabase(driver)
 
+    @Provides
+    @Singleton
+    @Canonical
+    fun provideCanonicalRaceTemplateDatabase(@Canonical driver: SqlDriver): RaceTemplateDatabase =
+        RaceTemplateDatabase(driver)
+
     // ── Contributions ────────────────────────────────────────────────────
 
     @Provides

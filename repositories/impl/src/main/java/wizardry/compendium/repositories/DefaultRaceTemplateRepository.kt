@@ -17,21 +17,32 @@ import wizardry.compendium.domain.model.Ability
 import wizardry.compendium.domain.model.MalformedRefException
 import wizardry.compendium.domain.model.RaceTemplate
 import wizardry.compendium.domain.model.RefCodec
+import wizardry.compendium.essences.dataloader.RaceTemplateDataLoader
 import wizardry.compendium.persistence.AbilityListingCache
+import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.RaceTemplateDatabase
 import wizardry.compendium.persistence.RaceTemplateRefResolver
+import wizardry.compendium.persistence.RawRaceTemplateSnapshot
 
 /**
- * Race templates live only in the @Contributions database (there is no
- * canonical seed), so this repository mirrors [DefaultCharacterBuildRepository]
- * minus the essence/attribute machinery: it decodes stored ability-listing refs
- * against the canonical and contributed listing caches at read time and encodes
- * them back (contr:<id> when the listing is a contribution, else canon:<name>)
- * at write time.
+ * Race templates merge two sources, like the other canonical-backed entities:
+ * the canonical seed (`races.csv`, lazily written into the @Canonical DB on
+ * first read — the same ensureCanonicalLoaded pattern the essence / ability /
+ * status-effect repositories use) and the @Contributions DB. Both store
+ * ability-listing refs as tagged strings that are decoded against the
+ * canonical and contributed listing caches at read time; canonical templates
+ * only ever hold `canon:<name>` refs, contributions encode `contr:<id>` when
+ * the listing is itself a contribution. Canonical templates are read-only:
+ * saves under a canonical name are rejected and deletes only see the
+ * contributions DB. A contribution that nonetheless shares a canonical name
+ * (e.g. restored from an old backup) shadows the canonical entry, mirroring
+ * the merged-view precedence of the other repositories.
  */
 @Singleton
 internal class DefaultRaceTemplateRepository @Inject constructor(
+    private val dataLoader: RaceTemplateDataLoader,
+    @param:Canonical private val canonicalDatabase: RaceTemplateDatabase,
     @param:Contributions private val database: RaceTemplateDatabase,
     @param:Contributions private val abilityListingContributionsCache: AbilityListingCache,
     private val abilityListingRepository: AbilityListingRepository,
@@ -41,6 +52,12 @@ internal class DefaultRaceTemplateRepository @Inject constructor(
     private val invalidations = MutableStateFlow(0)
 
     private val resolver = RaceTemplateRefResolverImpl()
+
+    /** Canonical templates reference canonical listings by name, always. */
+    private val canonicalSeedResolver = object : RaceTemplateRefResolver {
+        override fun encodeListing(listing: Ability.Listing): String =
+            RefCodec.encodeAbilityRef(AbilityRef.Canonical(listing.name))
+    }
 
     override val raceTemplates: Flow<List<RaceTemplate>> = combine(
         invalidations,
@@ -53,8 +70,19 @@ internal class DefaultRaceTemplateRepository @Inject constructor(
     override suspend fun getRaceTemplate(name: String): RaceTemplate? =
         withContext(Dispatchers.IO) { readAllResolved().firstOrNull { it.name == name } }
 
+    override suspend fun isContribution(name: String): Boolean = writeMutex.withLock {
+        val key = name.normalized()
+        database.readAllRaceTemplates().any { it.name.normalized() == key }
+    }
+
     override suspend fun saveRaceTemplateContribution(template: RaceTemplate): ContributionResult =
         writeMutex.withLock {
+            val canonicalNames = ensureCanonicalLoaded().templates.map { it.name.normalized() }.toSet()
+            if (template.name.normalized() in canonicalNames) {
+                return@withLock ContributionResult.Failure(
+                    "A canonical race template named \"${template.name}\" already exists"
+                )
+            }
             database.upsert(template, resolver)
             invalidations.update { it + 1 }
             ContributionResult.Success
@@ -76,14 +104,29 @@ internal class DefaultRaceTemplateRepository @Inject constructor(
     // --- Read path: decode raw rows and resolve refs --------------------
 
     private suspend fun readAllResolved(): List<RaceTemplate> {
-        val snapshot = database.readSnapshot()
-        if (snapshot.templates.isEmpty()) return emptyList()
+        val canonicalSnapshot = ensureCanonicalLoaded()
+        val contributionsSnapshot = database.readSnapshot()
+        if (canonicalSnapshot.templates.isEmpty() && contributionsSnapshot.templates.isEmpty()) {
+            return emptyList()
+        }
 
         val canonicalListingsByName = abilityListingRepository.getAbilityListings().associateBy { it.name }
         val contributedListingsById = abilityListingContributionsCache.identified.associate { it.id to it.listing }
 
-        val rawRacial = snapshot.racialAbilities.groupBy { it.templateName }
+        val canonical = resolveSnapshot(canonicalSnapshot, canonicalListingsByName, contributedListingsById)
+        val contributions = resolveSnapshot(contributionsSnapshot, canonicalListingsByName, contributedListingsById)
 
+        val contributedNames = contributions.map { it.name.normalized() }.toSet()
+        return (canonical.filterNot { it.name.normalized() in contributedNames } + contributions)
+            .sortedBy { it.name }
+    }
+
+    private fun resolveSnapshot(
+        snapshot: RawRaceTemplateSnapshot,
+        canonicalListingsByName: Map<String, Ability.Listing>,
+        contributedListingsById: Map<Long, Ability.Listing>,
+    ): List<RaceTemplate> {
+        val rawRacial = snapshot.racialAbilities.groupBy { it.templateName }
         return snapshot.templates.map { rawTemplate ->
             val racialAbilities = rawRacial[rawTemplate.name].orEmpty()
                 .sortedBy { it.ordinal }
@@ -91,7 +134,7 @@ internal class DefaultRaceTemplateRepository @Inject constructor(
                     resolveListingRef(row.listingRef, canonicalListingsByName, contributedListingsById, contextName = rawTemplate.name)
                 }
             RaceTemplate(name = rawTemplate.name, racialAbilities = racialAbilities)
-        }.sortedBy { it.name }
+        }
     }
 
     private fun resolveListingRef(
@@ -113,6 +156,23 @@ internal class DefaultRaceTemplateRepository @Inject constructor(
         null
     }
 
+    // --- Canonical seed --------------------------------------------------
+
+    /**
+     * Lazily seed the @Canonical race-template tables from the data loader on
+     * first read, mirroring `ensureCanonicalLoaded` in the other repositories.
+     * A concurrent double-seed is benign: [RaceTemplateDatabase.writeAll]
+     * replaces all rows in one transaction with the same data.
+     */
+    private suspend fun ensureCanonicalLoaded(): RawRaceTemplateSnapshot {
+        val current = canonicalDatabase.readSnapshot()
+        if (current.templates.isNotEmpty()) return current
+        val loaded = dataLoader.loadRaceTemplateData()
+        if (loaded.isEmpty()) return current
+        canonicalDatabase.writeAll(loaded, canonicalSeedResolver)
+        return canonicalDatabase.readSnapshot()
+    }
+
     // --- Write path: RaceTemplateRefResolverImpl ------------------------
 
     private inner class RaceTemplateRefResolverImpl : RaceTemplateRefResolver {
@@ -126,6 +186,8 @@ internal class DefaultRaceTemplateRepository @Inject constructor(
             return RefCodec.encodeAbilityRef(ref)
         }
     }
+
+    private fun String.normalized(): String = trim().lowercase()
 
     private companion object {
         const val TAG = "RaceTemplateRepo"
