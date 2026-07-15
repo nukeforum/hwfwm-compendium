@@ -28,6 +28,7 @@ fun LandingScreen(
     onAbilitiesClicked: () -> Unit,
     onStatusEffectClicked: () -> Unit,
     onCharacterBuildClicked: () -> Unit,
+    onRaceTemplateClicked: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -81,13 +82,28 @@ fun LandingScreen(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        PanelButton(
-            label = "Character Builds",
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp),
-            onClick = onCharacterBuildClicked,
-        )
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            PanelButton(
+                label = "Character Builds",
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize(),
+                onClick = onCharacterBuildClicked,
+            )
+            PanelButton(
+                label = "Race Templates",
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize(),
+                onClick = onRaceTemplateClicked,
+            )
+        }
         Spacer(modifier = Modifier.height(16.dp))
     }
 }
@@ -130,6 +146,7 @@ private fun LandingScreenPreview() {
             onAbilitiesClicked = {},
             onStatusEffectClicked = {},
             onCharacterBuildClicked = {},
+            onRaceTemplateClicked = {},
         )
     }
 }

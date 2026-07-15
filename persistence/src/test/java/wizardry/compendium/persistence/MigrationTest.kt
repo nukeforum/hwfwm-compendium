@@ -23,8 +23,8 @@ import wizardry.compendium.domain.model.Rarity
 class MigrationTest {
 
     @Test
-    fun `schema version is 7`() {
-        assertEquals(7L, CompendiumDatabase.Schema.version)
+    fun `schema version is 8`() {
+        assertEquals(8L, CompendiumDatabase.Schema.version)
     }
 
     @Test
@@ -261,6 +261,7 @@ class MigrationTest {
         migrate(migrated, from = 4, to = 5)
         migrate(migrated, from = 5, to = 6)
         migrate(migrated, from = 6, to = 7)
+        migrate(migrated, from = 7, to = 8)
 
         val fresh = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         CompendiumDatabase.Schema.create(fresh)
@@ -1112,6 +1113,47 @@ class MigrationTest {
         )
     }
 
+    // --- v7 -> v8 migration tests ---------------------------------------
+    //
+    // The v7 -> v8 migration (migrations/7.sqm) is purely additive: it creates
+    // the race_template + race_template_racial_ability tables and one index.
+    // No existing table or row is touched.
+
+    @Test
+    fun `v7 to v8 creates the race_template tables while preserving existing rows`() {
+        val driver = freshV7Driver()
+        // Seed a character_build row (a table the migration must not touch).
+        driver.execute(null, "INSERT INTO character_build(name, race) VALUES ('KeepMe', 'Human')", 0)
+
+        migrate(driver, from = 7, to = 8)
+
+        // New tables exist and are empty.
+        assertTrue("race_template missing", "race_template" in listTables(driver))
+        assertTrue("race_template_racial_ability missing", "race_template_racial_ability" in listTables(driver))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT name FROM race_template"))
+        assertEquals(emptyList<String>(), selectColumn(driver, "SELECT template_name FROM race_template_racial_ability"))
+        // Pre-existing data untouched.
+        assertEquals(listOf("KeepMe"), selectColumn(driver, "SELECT name FROM character_build"))
+    }
+
+    @Test
+    fun `v7 to v8 accepts race_template rows and creates the listing-ref index`() {
+        val driver = freshV8Driver()
+        driver.execute(null, "INSERT INTO race_template(name) VALUES ('Golem')", 0)
+        driver.execute(
+            null,
+            "INSERT INTO race_template_racial_ability(template_name, listing_ref, ordinal) VALUES ('Golem', 'canon:Stoneskin', 0)",
+            0,
+        )
+
+        assertEquals(listOf("Golem"), selectColumn(driver, "SELECT name FROM race_template"))
+        assertEquals(listOf("canon:Stoneskin"), selectColumn(driver, "SELECT listing_ref FROM race_template_racial_ability"))
+        assertTrue(
+            "idx_race_template_racial_ability_listing_ref missing",
+            "idx_race_template_racial_ability_listing_ref" in selectColumn(driver, "SELECT name FROM sqlite_master WHERE type='index'"),
+        )
+    }
+
     // --- Helpers ---------------------------------------------------------
 
     /**
@@ -1139,13 +1181,19 @@ class MigrationTest {
         return driver
     }
 
-    /**
-     * Returns a driver at the current (v7) schema, as produced by walking the
-     * full migration ladder from v5 to the current version.
-     */
     private fun freshV7Driver(): SqlDriver {
         val driver = freshV6Driver()
         migrate(driver, from = 6, to = 7)
+        return driver
+    }
+
+    /**
+     * Returns a driver at the current (v8) schema, as produced by walking the
+     * full migration ladder from v5 to the current version.
+     */
+    private fun freshV8Driver(): SqlDriver {
+        val driver = freshV7Driver()
+        migrate(driver, from = 7, to = 8)
         return driver
     }
 

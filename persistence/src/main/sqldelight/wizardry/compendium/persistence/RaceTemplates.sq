@@ -1,0 +1,48 @@
+CREATE TABLE race_template (
+    name TEXT PRIMARY KEY NOT NULL
+);
+
+-- listing_ref is a soft cross-domain ref encoded by RefCodec ('canon:<name>'
+-- or 'contr:<id>'); see the note in AbilityListings.sq / CharacterBuilds.sq.
+-- FK enforcement is off on this driver, so no REFERENCES clause is declared
+-- (dropped project-wide at v7). Kotlin-side cascade lives in
+-- RaceTemplateDatabase's deleteByName / upsert / writeAll, which delete
+-- children before parents inside a single transaction.
+CREATE TABLE race_template_racial_ability (
+    template_name TEXT NOT NULL,
+    listing_ref TEXT NOT NULL,
+    ordinal INTEGER NOT NULL,
+    PRIMARY KEY (template_name, ordinal)
+);
+
+CREATE INDEX idx_race_template_racial_ability_listing_ref
+    ON race_template_racial_ability(listing_ref);
+
+-- Replace semantics intentional: template is keyed by name, no surrogate id.
+insertRaceTemplate:
+INSERT OR REPLACE INTO race_template(name) VALUES (?);
+
+insertRacialAbility:
+INSERT INTO race_template_racial_ability(template_name, listing_ref, ordinal)
+VALUES (?, ?, ?);
+
+selectAllRaceTemplates:
+SELECT * FROM race_template ORDER BY name;
+
+selectAllRacialAbilities:
+SELECT * FROM race_template_racial_ability ORDER BY template_name, ordinal;
+
+selectRacialAbilitiesReferencingListing:
+SELECT DISTINCT template_name FROM race_template_racial_ability WHERE listing_ref = ?;
+
+deleteAllRacialAbilities:
+DELETE FROM race_template_racial_ability;
+
+deleteAllRaceTemplates:
+DELETE FROM race_template;
+
+deleteRaceTemplateByName:
+DELETE FROM race_template WHERE name = ?;
+
+deleteRacialAbilitiesForTemplate:
+DELETE FROM race_template_racial_ability WHERE template_name = ?;

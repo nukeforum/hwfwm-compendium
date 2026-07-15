@@ -52,6 +52,8 @@ import wizardry.compendium.conflicts.ConflictsScreen
 import wizardry.compendium.conflicts.ConflictsViewModel
 import wizardry.compendium.essence.contributions.EssenceContributionsScreen
 import wizardry.compendium.essenceinfo.EssenceDetails
+import wizardry.compendium.racetemplate.contributions.RaceTemplateContributionsScreen
+import wizardry.compendium.racetemplate.search.RaceTemplateSearch
 import wizardry.compendium.randomizer.Randomizer
 import wizardry.compendium.search.EssenceSearch
 import wizardry.compendium.settings.SettingsScreen
@@ -108,6 +110,9 @@ class MainActivity : ComponentActivity() {
                                     Nav.CharacterBuildSearch.route -> ContributeButton {
                                         navController.navigate(Nav.CharacterBuildContributions.newRoute)
                                     }
+                                    Nav.RaceTemplateSearch.route -> ContributeButton {
+                                        navController.navigate(Nav.RaceTemplateContributions.newRoute)
+                                    }
                                 }
                                 ConflictsBadge(navigate = { navController.navigate(Nav.Conflicts.route) })
                                 if (currentRoute != Nav.Settings.route) {
@@ -130,6 +135,7 @@ class MainActivity : ComponentActivity() {
                                 onAbilitiesClicked = { navController.navigate(Nav.AbilitySearch.route) },
                                 onStatusEffectClicked = { navController.navigate(Nav.StatusEffectSearch.route) },
                                 onCharacterBuildClicked = { navController.navigate(Nav.CharacterBuildSearch.route) },
+                                onRaceTemplateClicked = { navController.navigate(Nav.RaceTemplateSearch.route) },
                             )
                         }
                         composable(Nav.EssenceSearch.route) {
@@ -369,6 +375,31 @@ class MainActivity : ComponentActivity() {
                                 onContributionDeleted = { navController.popBackStack(Nav.CharacterBuildSearch.route, false) },
                             )
                         }
+                        composable(Nav.RaceTemplateSearch.route) {
+                            RaceTemplateSearch(
+                                onTemplateClicked = { template ->
+                                    navController.navigate(Nav.RaceTemplateContributions.buildEditRoute(template))
+                                },
+                                onAddClicked = {
+                                    navController.navigate(Nav.RaceTemplateContributions.newRoute)
+                                },
+                            )
+                        }
+                        composable(
+                            Nav.RaceTemplateContributions.route,
+                            arguments = listOf(
+                                navArgument(Nav.RaceTemplateContributions.ARG_NAME) {
+                                    type = NavType.StringType
+                                    nullable = true
+                                    defaultValue = null
+                                }
+                            ),
+                        ) {
+                            RaceTemplateContributionsScreen(
+                                onContributionSaved = { navController.popBackStack() },
+                                onContributionDeleted = { navController.popBackStack(Nav.RaceTemplateSearch.route, false) },
+                            )
+                        }
                     }
                 }
             }
@@ -383,6 +414,7 @@ private fun titleForRoute(route: String?, entry: NavBackStackEntry?): String = w
     Nav.AbilitySearch.route -> "Ability Search"
     Nav.StatusEffectSearch.route -> "Status Effect Search"
     Nav.CharacterBuildSearch.route -> "Character Build Search"
+    Nav.RaceTemplateSearch.route -> "Race Template Search"
     Nav.EssenceRandomizer.route -> "Randomizer"
     Nav.Settings.route -> "Settings"
     Nav.About.route -> "About"
@@ -402,6 +434,8 @@ private fun titleForRoute(route: String?, entry: NavBackStackEntry?): String = w
         if (entry?.arguments?.getString(Nav.StatusEffectContributions.ARG_NAME) != null) "Edit Status Effect" else "Add Status Effect"
     Nav.CharacterBuildContributions.route ->
         if (entry?.arguments?.getString(Nav.CharacterBuildContributions.ARG_NAME) != null) "Edit Build" else "Add Build"
+    Nav.RaceTemplateContributions.route ->
+        if (entry?.arguments?.getString(Nav.RaceTemplateContributions.ARG_NAME) != null) "Edit Race Template" else "Add Race Template"
     else -> "Magic Society Compendium"
 }
 

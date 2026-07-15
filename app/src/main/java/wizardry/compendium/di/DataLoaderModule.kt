@@ -8,6 +8,8 @@ import wizardry.compendium.essences.dataloader.AwakeningStoneDataLoader
 import wizardry.compendium.essences.dataloader.EssenceCsvLoader
 import wizardry.compendium.essences.dataloader.EssenceDataLoader
 import wizardry.compendium.essences.dataloader.FileStreamSource
+import wizardry.compendium.essences.dataloader.RaceTemplateCsvLoader
+import wizardry.compendium.essences.dataloader.RaceTemplateDataLoader
 import wizardry.compendium.essences.dataloader.StatusEffectCsvLoader
 import wizardry.compendium.essences.dataloader.StatusEffectDataLoader
 import dagger.Binds
@@ -38,4 +40,8 @@ abstract class DataLoaderModule {
     @Singleton
     @Binds
     abstract fun getStatusEffectDataLoader(loader: StatusEffectCsvLoader): StatusEffectDataLoader
+
+    @Singleton
+    @Binds
+    abstract fun getRaceTemplateDataLoader(loader: RaceTemplateCsvLoader): RaceTemplateDataLoader
 }

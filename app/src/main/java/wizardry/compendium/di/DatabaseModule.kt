@@ -19,6 +19,7 @@ import wizardry.compendium.persistence.CompendiumDatabase
 import wizardry.compendium.persistence.Contributions
 import wizardry.compendium.persistence.EssenceCache
 import wizardry.compendium.persistence.EssenceDatabase
+import wizardry.compendium.persistence.RaceTemplateDatabase
 import wizardry.compendium.persistence.StatusEffectCache
 import wizardry.compendium.persistence.StatusEffectDatabase
 
@@ -78,6 +79,12 @@ object DatabaseModule {
     fun provideCanonicalStatusEffectCache(@Canonical driver: SqlDriver): StatusEffectCache =
         StatusEffectDatabase(driver)
 
+    @Provides
+    @Singleton
+    @Canonical
+    fun provideCanonicalRaceTemplateDatabase(@Canonical driver: SqlDriver): RaceTemplateDatabase =
+        RaceTemplateDatabase(driver)
+
     // ── Contributions ────────────────────────────────────────────────────
 
     @Provides
@@ -114,4 +121,10 @@ object DatabaseModule {
     @Contributions
     fun provideContributionsCharacterBuildDatabase(@Contributions driver: SqlDriver): CharacterBuildDatabase =
         CharacterBuildDatabase(driver)
+
+    @Provides
+    @Singleton
+    @Contributions
+    fun provideContributionsRaceTemplateDatabase(@Contributions driver: SqlDriver): RaceTemplateDatabase =
+        RaceTemplateDatabase(driver)
 }

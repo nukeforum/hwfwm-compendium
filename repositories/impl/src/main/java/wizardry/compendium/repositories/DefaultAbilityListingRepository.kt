@@ -24,6 +24,7 @@ import wizardry.compendium.persistence.AbilityListingCache
 import wizardry.compendium.persistence.Canonical
 import wizardry.compendium.persistence.CharacterBuildDatabase
 import wizardry.compendium.persistence.Contributions
+import wizardry.compendium.persistence.RaceTemplateDatabase
 import wizardry.compendium.preferences.AbilityListingContributionsToggle
 import wizardry.compendium.preferences.AbilityListingContributionsToggleFlow
 
@@ -33,6 +34,7 @@ internal class DefaultAbilityListingRepository @Inject constructor(
     @param:Canonical private val canonicalCache: AbilityListingCache,
     @param:Contributions private val contributionsCache: AbilityListingCache,
     @param:Contributions private val characterBuildDatabase: CharacterBuildDatabase,
+    @param:Contributions private val raceTemplateDatabase: RaceTemplateDatabase,
     private val toggle: AbilityListingContributionsToggle,
     toggleFlow: AbilityListingContributionsToggleFlow,
 ) : AbilityListingRepository {
@@ -138,7 +140,8 @@ internal class DefaultAbilityListingRepository @Inject constructor(
             val id = contributionsCache.findIdByName(name) ?: return@withLock DeleteImpact()
             val ref = RefCodec.encodeAbilityRef(AbilityRef.Contributed(id))
             val builds = characterBuildDatabase.buildsReferencingListingRef(ref)
-            DeleteImpact(referencingBuilds = builds)
+            val templates = raceTemplateDatabase.templatesReferencingListingRef(ref)
+            DeleteImpact(referencingBuilds = builds, referencingRaceTemplates = templates)
         }
     }
 

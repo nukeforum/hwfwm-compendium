@@ -73,6 +73,14 @@ fun DeleteWithReferencesDialog(
                     )
                     impact.referencingAbilityListings.forEach { Text(text = it) }
                 }
+                if (impact.referencingRaceTemplates.isNotEmpty()) {
+                    Text(
+                        text = "Race templates that reference this:",
+                        style = MaterialTheme.typography.labelLarge,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    impact.referencingRaceTemplates.forEach { Text(text = it) }
+                }
                 if (explanatoryNote != null) {
                     Text(
                         text = explanatoryNote,
@@ -95,6 +103,7 @@ private fun DeleteWithReferencesDialogPreview() {
                 referencingBuilds = listOf("Fire Mage Build", "Pyromancer Starter"),
                 referencingConfluenceSets = listOf("Inferno Confluence"),
                 referencingAbilityListings = listOf("Burning Aura"),
+                referencingRaceTemplates = listOf("Golem"),
             ),
             explanatoryNote = "Deleting this status effect will break {status:Flame Shroud} tokens in ability descriptions. These tokens cannot be automatically restored.",
             onCancel = {},

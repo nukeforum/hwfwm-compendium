@@ -10,6 +10,7 @@ import wizardry.compendium.repositories.AwakeningStoneRepository
 import wizardry.compendium.repositories.CharacterBuildRepository
 import wizardry.compendium.repositories.EssenceRepository
 import wizardry.compendium.repositories.IntegritySweep
+import wizardry.compendium.repositories.RaceTemplateRepository
 import wizardry.compendium.repositories.StatusEffectRepository
 
 @Module
@@ -34,6 +35,10 @@ internal interface RepositoryModule {
     @Singleton
     @Binds
     fun bindCharacterBuildRepository(impl: DefaultCharacterBuildRepository): CharacterBuildRepository
+
+    @Singleton
+    @Binds
+    fun bindRaceTemplateRepository(impl: DefaultRaceTemplateRepository): RaceTemplateRepository
 
     @Singleton
     @Binds

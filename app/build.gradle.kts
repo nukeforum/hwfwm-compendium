@@ -109,6 +109,8 @@ dependencies {
     implementation(project(":essence:details"))
     implementation(project(":essence:search"))
     implementation(project(":model-core"))
+    implementation(project(":race-template:contributions"))
+    implementation(project(":race-template:search"))
     implementation(project(":randomizer"))
     implementation(project(":repositories:impl"))
     implementation(project(":settings"))
