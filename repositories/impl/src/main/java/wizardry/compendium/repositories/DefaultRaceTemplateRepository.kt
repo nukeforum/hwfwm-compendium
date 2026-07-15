@@ -34,10 +34,11 @@ import wizardry.compendium.persistence.RawRaceTemplateSnapshot
  * canonical and contributed listing caches at read time; canonical templates
  * only ever hold `canon:<name>` refs, contributions encode `contr:<id>` when
  * the listing is itself a contribution. Canonical templates are read-only:
- * saves under a canonical name are rejected and deletes only see the
- * contributions DB. A contribution that nonetheless shares a canonical name
- * (e.g. restored from an old backup) shadows the canonical entry, mirroring
- * the merged-view precedence of the other repositories.
+ * saves that would create a new contribution under a canonical name are
+ * rejected and deletes only see the contributions DB. A contribution that
+ * nonetheless shares a canonical name (e.g. restored from an old backup)
+ * shadows the canonical entry, mirroring the merged-view precedence of the
+ * other repositories, and may be updated in place.
  */
 @Singleton
 internal class DefaultRaceTemplateRepository @Inject constructor(
@@ -77,8 +78,10 @@ internal class DefaultRaceTemplateRepository @Inject constructor(
 
     override suspend fun saveRaceTemplateContribution(template: RaceTemplate): ContributionResult =
         writeMutex.withLock {
+            val key = template.name.normalized()
             val canonicalNames = ensureCanonicalLoaded().templates.map { it.name.normalized() }.toSet()
-            if (template.name.normalized() in canonicalNames) {
+            val shadowingContribution = database.readAllRaceTemplates().any { it.name.normalized() == key }
+            if (key in canonicalNames && !shadowingContribution) {
                 return@withLock ContributionResult.Failure(
                     "A canonical race template named \"${template.name}\" already exists"
                 )

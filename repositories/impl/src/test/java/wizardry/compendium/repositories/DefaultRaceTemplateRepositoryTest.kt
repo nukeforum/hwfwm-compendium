@@ -298,6 +298,36 @@ class DefaultRaceTemplateRepositoryTest {
         assertEquals(listOf("Human"), result.map { it.name })
         assertEquals(3, result.single().racialAbilities.size)
     }
+
+    @Test
+    fun `updating an existing shadowing contribution succeeds while a new canonical-name save still fails`() = runBlocking {
+        val racials = sixListings()
+        val templateDb = newTemplateDatabase()
+        val repo = repository(
+            templateDb = templateDb,
+            canonicalListings = racials,
+            canonicalTemplates = listOf(template("Human", racials), template("Elf", racials)),
+        )
+
+        // A shadowing contribution only exists via a restored backup — write
+        // it straight into the contributions DB.
+        templateDb.upsert(
+            template("Human", racials.take(3)),
+            object : wizardry.compendium.persistence.RaceTemplateRefResolver {
+                override fun encodeListing(listing: Ability.Listing) = "canon:${listing.name}"
+            },
+        )
+
+        val update = repo.saveRaceTemplateContribution(template("Human", racials.take(4)))
+        assertEquals(ContributionResult.Success, update)
+        assertEquals(4, repo.getRaceTemplate("Human")!!.racialAbilities.size)
+        assertEquals(1, templateDb.readAllRaceTemplates().size)
+
+        val fresh = repo.saveRaceTemplateContribution(template("elf", racials))
+        assertTrue(fresh is ContributionResult.Failure)
+        assertTrue((fresh as ContributionResult.Failure).message.contains("canonical"))
+        assertEquals(listOf("Human"), templateDb.readAllRaceTemplates().map { it.name })
+    }
 }
 
 // --- Fakes ------------------------------------------------------------------
