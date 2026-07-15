@@ -22,7 +22,9 @@ This file is the project's committed home for project-intrinsic agent knowledge:
 - **Canonical seed data** lives in `app/src/main/assets/*.csv`, parsed by per-entity loaders
   in `dataloader/` (bound in `app/.../di/DataLoaderModule.kt`) and lazily written into the
   `@Canonical` DB/cache on first read (`ensureCanonicalLoaded` in each `Default*Repository`).
-  Canonical rows are read-only; contributions may not reuse a canonical name.
+  Canonical rows are read-only; saves may not create a new contribution under a canonical
+  name. A contribution that nonetheless shares one (e.g. restored from an old backup) shadows
+  the canonical row in the merged view and may still be updated in place.
 - **Canonical races** seed from `races.csv` (`RaceName,Ability1..Ability6`, names only) into
   the `@Canonical` `RaceTemplateDatabase` as `canon:<name>` refs. The referenced racial
   abilities are first-class canonical ability listings seeded from `ability_listings.csv`

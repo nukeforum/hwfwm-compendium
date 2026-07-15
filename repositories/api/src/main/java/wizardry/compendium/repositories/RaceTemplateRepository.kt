@@ -7,8 +7,10 @@ import wizardry.compendium.domain.model.RaceTemplate
  * Race templates come from two sources: the canonical seed (the book races —
  * Human, Elf, Celestine, … — loaded from `races.csv` like the other canonical
  * entities) and user contributions. Canonical templates are read-only; only
- * contributions can be saved or deleted, and a contribution may not reuse a
- * canonical race's name. The shape otherwise mirrors [CharacterBuildRepository]:
+ * contributions can be saved or deleted, and a save may not create a new
+ * contribution under a canonical race's name (a contribution that already
+ * shadows one — e.g. restored from an old backup — may be updated in place).
+ * The shape otherwise mirrors [CharacterBuildRepository]:
  * a live [raceTemplates] flow plus point reads and contribution writes.
  */
 interface RaceTemplateRepository {
