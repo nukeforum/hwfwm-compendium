@@ -128,6 +128,35 @@ class EssenceDetailViewModelHistoryTest {
         )
     }
 
+    @Test
+    fun `an essence opened right after pressing back remembers the screen it was opened from`() = runTest(dispatcher) {
+        val vm = viewModel()
+        vm.load("Flame")
+        advanceUntilIdle()
+        vm.load(inferno)
+        advanceUntilIdle()
+
+        // Both calls land before any background work runs: the user presses
+        // back on Inferno and taps Ash while Inferno is still on screen.
+        vm.goBack()
+        vm.load(ash)
+        advanceUntilIdle()
+
+        assertEquals(
+            ManifestationUiState(ash, previousEssence = inferno, isContribution = false, knownConfluences = listOf(inferno)),
+            vm.state.value,
+        )
+
+        // The back press took Flame off the history when it was made, so the
+        // only way back from Ash is Inferno.
+        vm.goBack()
+        advanceUntilIdle()
+        assertEquals(
+            ConfluenceUiState(inferno, previousEssence = null, isContribution = false),
+            vm.state.value,
+        )
+    }
+
     private fun viewModel() = EssenceDetailViewModel(
         essenceRepository = repo,
         ioDispatcher = dispatcher,

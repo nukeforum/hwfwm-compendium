@@ -24,6 +24,9 @@ class EssenceDetailViewModel @Inject constructor(
     private val shareUseCase: EssenceShareUseCase,
 ) : ViewModel() {
 
+    // Owned by the thread that calls load() and goBack(), which is the main
+    // thread. Only those two functions touch it; the coroutines they launch on
+    // ioDispatcher are handed the essences they need and never see the deque.
     private val history = ArrayDeque<Essence>()
     private val _state = MutableStateFlow<EssenceDetailUiState>(EssenceDetailUiState.Loading)
     val state = _state.asStateFlow()
@@ -37,31 +40,37 @@ class EssenceDetailViewModel @Inject constructor(
             // drop(1) avoids double-loading on first composition since load() is called
             // by the composable via LaunchedEffect.
             essenceRepository.essences.drop(1).collect { essences ->
-                val currentEssence = currentlyLoadedEssence ?: return@collect
-                val refreshed = essences.find { it.name == currentEssence.name } ?: return@collect
-                buildState(refreshed, previous = history.firstOrNull())
+                val current = state.value as? EssenceDetailUiState.Success ?: return@collect
+                val refreshed = essences.find { it.name == current.essence.name } ?: return@collect
+                buildState(refreshed, previous = current.previousEssence)
             }
         }
     }
 
     fun load(essenceName: String) {
-        currentlyLoadedEssence?.let { history.addFirst(it) }
+        val previous = pushEssenceOnScreen()
         viewModelScope.launch(ioDispatcher) {
             _state.emit(EssenceDetailUiState.Loading)
 
             essenceRepository.getEssences().find { it.name == essenceName }
-                ?.let { essence -> buildState(essence, previous = history.firstOrNull()) }
+                ?.let { essence -> buildState(essence, previous) }
                 ?: _state.emit(EssenceDetailUiState.Error(IllegalArgumentException("no essence found with name: $essenceName")))
         }
     }
 
     fun load(essence: Essence) {
-        currentlyLoadedEssence?.let { history.addFirst(it) }
+        val previous = pushEssenceOnScreen()
         viewModelScope.launch(ioDispatcher) {
             _state.emit(EssenceDetailUiState.Loading)
 
-            buildState(essence, previous = history.firstOrNull())
+            buildState(essence, previous)
         }
+    }
+
+    /** Pushes the essence on screen, if any, and returns the new top of the history. */
+    private fun pushEssenceOnScreen(): Essence? {
+        currentlyLoadedEssence?.let { history.addFirst(it) }
+        return history.firstOrNull()
     }
 
     fun requestShareAsText(essence: Essence) {
@@ -128,9 +137,10 @@ class EssenceDetailViewModel @Inject constructor(
         }
 
     fun goBack() {
+        val essence = history.removeFirst()
+        val previous = history.firstOrNull()
         viewModelScope.launch(ioDispatcher) {
-            val essence = history.removeFirst()
-            buildState(essence, previous = history.firstOrNull())
+            buildState(essence, previous)
         }
     }
 
