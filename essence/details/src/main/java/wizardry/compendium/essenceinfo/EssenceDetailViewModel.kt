@@ -39,7 +39,7 @@ class EssenceDetailViewModel @Inject constructor(
             essenceRepository.essences.drop(1).collect { essences ->
                 val currentEssence = currentlyLoadedEssence ?: return@collect
                 val refreshed = essences.find { it.name == currentEssence.name } ?: return@collect
-                buildState(refreshed)
+                buildState(refreshed, previous = history.firstOrNull())
             }
         }
     }
@@ -50,7 +50,7 @@ class EssenceDetailViewModel @Inject constructor(
             _state.emit(EssenceDetailUiState.Loading)
 
             essenceRepository.getEssences().find { it.name == essenceName }
-                ?.let { essence -> buildState(essence) }
+                ?.let { essence -> buildState(essence, previous = history.firstOrNull()) }
                 ?: _state.emit(EssenceDetailUiState.Error(IllegalArgumentException("no essence found with name: $essenceName")))
         }
     }
@@ -60,7 +60,7 @@ class EssenceDetailViewModel @Inject constructor(
         viewModelScope.launch(ioDispatcher) {
             _state.emit(EssenceDetailUiState.Loading)
 
-            buildState(essence)
+            buildState(essence, previous = history.firstOrNull())
         }
     }
 
@@ -86,29 +86,29 @@ class EssenceDetailViewModel @Inject constructor(
         }
     }
 
-    private suspend fun buildState(essence: Essence) {
+    private suspend fun buildState(essence: Essence, previous: Essence?) {
         when (essence) {
-            is Essence.Manifestation -> buildManifestationState(essence)
-            is Essence.Confluence -> buildConfluenceState(essence)
+            is Essence.Manifestation -> buildManifestationState(essence, previous)
+            is Essence.Confluence -> buildConfluenceState(essence, previous)
         }
     }
 
-    private suspend fun buildConfluenceState(essence: Essence.Confluence) {
+    private suspend fun buildConfluenceState(essence: Essence.Confluence, previous: Essence?) {
         EssenceDetailUiState.Success.ConfluenceUiState(
             essence = essence,
-            previousEssence = history.firstOrNull() as? Essence.Manifestation,
+            previousEssence = previous as? Essence.Manifestation,
             isContribution = essenceRepository.isContribution(essence.name),
         ).emit()
     }
 
-    private suspend fun buildManifestationState(essence: Essence.Manifestation) {
+    private suspend fun buildManifestationState(essence: Essence.Manifestation, previous: Essence?) {
         val confluences = essenceRepository.getEssences()
             .filterIsInstance<Essence.Confluence>()
             .filter { it.isProducedBy(essence) }
 
         EssenceDetailUiState.Success.ManifestationUiState(
             essence = essence,
-            previousEssence = history.firstOrNull() as? Essence.Confluence,
+            previousEssence = previous as? Essence.Confluence,
             isContribution = essenceRepository.isContribution(essence.name),
             knownConfluences = confluences,
         ).emit()
@@ -129,10 +129,8 @@ class EssenceDetailViewModel @Inject constructor(
 
     fun goBack() {
         viewModelScope.launch(ioDispatcher) {
-            when (val essence = history.removeFirst()) {
-                is Essence.Manifestation -> buildManifestationState(essence)
-                is Essence.Confluence -> buildConfluenceState(essence)
-            }
+            val essence = history.removeFirst()
+            buildState(essence, previous = history.firstOrNull())
         }
     }
 
