@@ -39,6 +39,9 @@ internal class DefaultEssenceRepository @Inject constructor(
 ) : EssenceRepository {
 
     private val writeMutex = Mutex()
+    // Held only inside readCanonical(). Writers call that while holding
+    // writeMutex, so the order is always writeMutex, then this one.
+    private val canonicalLoadMutex = Mutex()
     private val invalidations = MutableStateFlow(0)
     @Volatile private var canonicalLoaded = false
 
@@ -335,17 +338,31 @@ internal class DefaultEssenceRepository @Inject constructor(
         invalidations.update { it + 1 }
     }
 
-    private suspend fun readCanonical(): List<Essence> {
+    /**
+     * The canonical essences, loaded into their cache on first use.
+     *
+     * Deciding "not loaded yet" and loading are one step under
+     * [canonicalLoadMutex]: a caller that arrives during a load waits for it
+     * and then reads what it stored, instead of loading a second time.
+     *
+     * Internal rather than private so a test can run two callers on one
+     * scheduler; the public read paths hop to Dispatchers.IO.
+     */
+    internal suspend fun readCanonical(): List<Essence> {
         if (!canonicalLoaded) {
-            val existing = readCacheAsEssences(canonicalCache, fallbackCanonical = emptyList())
-            if (existing.isNotEmpty()) {
-                canonicalLoaded = true
-                return existing
+            canonicalLoadMutex.withLock {
+                if (!canonicalLoaded) {
+                    val existing = readCacheAsEssences(canonicalCache, fallbackCanonical = emptyList())
+                    if (existing.isNotEmpty()) {
+                        canonicalLoaded = true
+                        return existing
+                    }
+                    val loaded = dataLoader.loadEssenceData()
+                    canonicalCache.replaceAll(loaded)
+                    canonicalLoaded = true
+                    return loaded
+                }
             }
-            val loaded = dataLoader.loadEssenceData()
-            canonicalCache.replaceAll(loaded)
-            canonicalLoaded = true
-            return loaded
         }
         return readCacheAsEssences(canonicalCache, fallbackCanonical = emptyList())
     }
