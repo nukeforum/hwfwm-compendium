@@ -101,17 +101,23 @@ class EssenceDetailViewModelShareTest {
             )
         }
     }
-
-    private fun stubWireIo(essenceRepo: EssenceRepository): WireIoRepository = WireIoRepository(
-        essenceRepository = essenceRepo,
-        awakeningStoneRepository = StubAwakeningStoneRepo,
-        abilityListingRepository = StubAbilityListingRepo,
-        statusEffectRepository = StubStatusEffectRepo,
-    )
 }
 
-private class FakeEssenceRepo(initial: List<Essence>) : EssenceRepository {
+internal fun stubWireIo(essenceRepo: EssenceRepository): WireIoRepository = WireIoRepository(
+    essenceRepository = essenceRepo,
+    awakeningStoneRepository = StubAwakeningStoneRepo,
+    abilityListingRepository = StubAbilityListingRepo,
+    statusEffectRepository = StubStatusEffectRepo,
+)
+
+internal class FakeEssenceRepo(initial: List<Essence>) : EssenceRepository {
     private val flow = MutableStateFlow(initial)
+
+    /** Stands in for the data set changing underneath an open screen. */
+    fun replaceEssences(essences: List<Essence>) {
+        flow.value = essences
+    }
+
     override val essences: Flow<List<Essence>> = flow
     override val conflicts: Flow<List<EssenceConflict>> = MutableStateFlow(emptyList())
     override suspend fun getEssences(): List<Essence> = flow.value
