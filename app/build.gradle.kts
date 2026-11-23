@@ -31,7 +31,11 @@ val releaseSigning: Map<String, String>? = run {
 
 android {
     namespace = "wizardry.compendium"
-    compileSdk = libs.versions.compile.sdk.get().toInt()
+    // compile_sdk is "<major>" or "<major>.<minor>" (e.g. "37.2").
+    val compileSdkLevel = libs.versions.compile.sdk.get().split('.').map(String::toInt)
+    compileSdk {
+        version = release(compileSdkLevel[0]) { minorApiLevel = compileSdkLevel.getOrNull(1) }
+    }
 
     defaultConfig {
         applicationId = "wizardry.compendium"
