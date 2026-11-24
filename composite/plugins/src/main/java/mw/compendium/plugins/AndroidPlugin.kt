@@ -14,7 +14,11 @@ class AndroidPlugin : Plugin<Project> {
         apply(plugin = "com.google.devtools.ksp")
 
         configure<LibraryExtension> {
-            compileSdk = findVersion("compile_sdk").toInt()
+            // compile_sdk is "<major>" or "<major>.<minor>" (e.g. "37.2").
+            val compileSdkLevel = findVersion("compile_sdk").split('.').map(String::toInt)
+            compileSdk {
+                version = release(compileSdkLevel[0]) { minorApiLevel = compileSdkLevel.getOrNull(1) }
+            }
             defaultConfig {
                 minSdk = findVersion("min_sdk").toInt()
                 testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
